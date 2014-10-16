@@ -16,6 +16,7 @@ maxView: [[long,lat],[long,lat]]    default = [[-180,90],[180,-90]]
 projection: projection              default = d3.geo.mercator()
 */
 
+
 d3.mappu.Map = function(elem, config) {
     return d3_mappu_Map(elem, config);
 };
@@ -24,7 +25,7 @@ d3_mappu_Map = function(elem, config) {
     var map = {};
     this.elem = elem;
     this.config = config;
-   
+
 // exposed functions
 
 ////getter/setter functions
