@@ -37,8 +37,6 @@ d3_mappu_Map = function(elem, config) {
     var map = {};
     this.elem = elem;
     this.config = config;
-    
-    
 
 // exposed functions
 
@@ -55,47 +53,50 @@ d3_mappu_Map = function(elem, config) {
     });
 
 // .minZoom : (zoomlevel)
-  /*  Object.defineProperty(map, 'minZoom', {
-        value: 0,
+    Object.defineProperty(map, 'minZoom', {
         get: function() {
-            return this.minZoom;
+            return this._minZoom===undefined?0:this._minZoom;
         },
         set: function(minZoom) {
-            this.minZoom = minZoom;
+            this._minZoom = minZoom;
         }
     });
 // .maxZoom : (zoomlevel)
     Object.defineProperty(map, 'maxZoom', {
-        value: 13,
         get: function() {
-            return this.maxZoom;
+            return this._maxZoom===undefined?13:this._maxZoom;
         },
         set: function(maxZoom) {
-            this.maxZoom = maxZoom;
+            this._maxZoom = maxZoom;
         }
     });
 // .maxView : ([[long,lat],[long,lat]])
     Object.defineProperty(map, 'maxView', {
-        value: [[-180,90],[180,-90]],
         get: function() {
-            return this.maxView;
+            return this._maxView===undefined?[[-180,90],[180,-90]]:this._maxView;
         },
         set: function(maxView) {
-            this.maxView = maxView;
+            this._maxView = maxView;
         }
     });
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
-        value: [0,0],
         get: function() {
-            return this.center;
+            return this._center===undefined?[0,0]:this._center;
         },
         set: function(center) {
-            this.center = center;
+            this._center = center;
         }
-    });*/
+    });
 // .projection : ({projection})
-
+    Object.defineProperty(map, 'projection', {
+        get: function() {
+            return this._projection===undefined?d3.geo.mercator():this._projection;
+        },
+        set: function(projection) {
+            this._projection = projection;
+        }
+    });
 ////singular functions
 
 // .addLayers([{layer}])
@@ -155,8 +156,12 @@ d3_mappu_Layer = function(name, config){
   
   d3_mappu_VectorLayer = function(name, config) {
       d3_mappu_Layer.call(this,name, config);
+      var layer = d3_mappu_Layer(name, config);
       this._layertype = 'vector';
-      return d3_mappu_Layer(name, config);
+      layer.prototype.data = function(data){
+          this.data = data;
+      };
+      return layer;
   };
   
   d3_mappu_VectorLayer.prototype = Object.create(d3_mappu_Layer.prototype);
