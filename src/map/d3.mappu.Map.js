@@ -24,9 +24,7 @@ d3_mappu_Map = function(elem, config) {
     var map = {};
     this.elem = elem;
     this.config = config;
-    
-    //TODO: add a default projection
-    this.projection = {};
+   
 // exposed functions
 
 ////getter/setter functions
@@ -80,7 +78,7 @@ d3_mappu_Map = function(elem, config) {
 // .projection : ({projection})
     Object.defineProperty(map, 'projection', {
         get: function() {
-            return this._projection;
+            return this._projection===undefined?d3.geo.mercator():this._projection;
         },
         set: function(projection) {
             this._projection = projection;
