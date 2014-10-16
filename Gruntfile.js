@@ -9,10 +9,10 @@ module.exports = function(grunt){
           dist: {
             // the files to concatenate
             src: [
-	    'src/core/d3.mappu.util.js',
+            'src/core/d3.mappu.util.js',
             'src/map/d3.mappu.Map.js',
-	    'src/layer/d3.mappu.Layer.js',
-	    'src/layer/d3.mappu.VectorLayer.js',
+            'src/layer/d3.mappu.Layer.js',
+            'src/layer/d3.mappu.VectorLayer.js'
             ],
             // the location of the resulting JS file
             dest: 'dist/<%= pkg.name %>.js'
