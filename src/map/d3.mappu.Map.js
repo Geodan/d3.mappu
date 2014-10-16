@@ -9,10 +9,10 @@
 element = dom object
 options: 
 center: [long,lat]                  default = [0,0]
-zoom: zoomlevel                     default = 0
+zoom: zoomlevel                     default = 0.0
 layers: [layer]                     default = null
-minZoom: zoomlevel                  default = 0
-maxZoom: zoomlevel                  default = 13
+minZoom: zoomlevel                  default = 0.0
+maxZoom: zoomlevel                  default = 13.0
 maxView: [[long,lat],[long,lat]]    default = [[-180,90],[180,-90]]
 projection: projection              default = d3.geo.mercator()
 */
@@ -22,6 +22,12 @@ projection: projection              default = d3.geo.mercator()
 ////getter/setter functions
 
 // .zoom : (zoomlevel)
+
+// .minZoom : (zoomlevel)
+
+// .maxZoom : (zoomlevel)
+
+// .maxView : ([[long,lat],[long,lat]])
 
 // .center : ([long,lat])
 
