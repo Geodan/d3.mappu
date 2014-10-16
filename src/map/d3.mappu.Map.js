@@ -2,8 +2,6 @@
  * d3.mappu.Map is the central class of the API - it is used to create a map.
  */
  
- 
- 
 /* d3.mappu.Map(element, options)
 
 element = dom object
@@ -16,6 +14,8 @@ maxZoom: zoomlevel                  default = 13.0
 maxView: [[long,lat],[long,lat]]    default = [[-180,90],[180,-90]]
 projection: projection              default = d3.geo.mercator()
 */
+
+import "../d3.mappu";
  
 // exposed functions
 
