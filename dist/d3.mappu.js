@@ -10,11 +10,12 @@ d3.mappu.util.createID = function(){
 };
 
 //                                                                          マップ
-;/*
+;d3.mappu = d3.mappu || {};
+/*
  * d3.mappu.Map is the central class of the API - it is used to create a map.
  */
  
-/* d3.mappu.Map(element, options)
+/* d3.mappu.Map(element, config)
 
 element = dom object
 options: 
@@ -27,22 +28,72 @@ maxView: [[long,lat],[long,lat]]    default = [[-180,90],[180,-90]]
 projection: projection              default = d3.geo.mercator()
 */
 
-//import "../d3.mappu";
- 
+
+d3.mappu.Map = function(elem, config) {
+    return d3_mappu_Map(elem, config);
+};
+
+d3_mappu_Map = function(elem, config) {
+    var map = {};
+    this.elem = elem;
+    this.config = config;
+    
+    
+
 // exposed functions
 
 ////getter/setter functions
 
 // .zoom : (zoomlevel)
+    Object.defineProperty(map, 'zoom', {
+        get: function() {
+            return this._zoom===undefined?0:this._zoom;
+        },
+        set: function(zoom) {
+            this._zoom = zoom;
+        }
+    });
 
 // .minZoom : (zoomlevel)
-
+  /*  Object.defineProperty(map, 'minZoom', {
+        value: 0,
+        get: function() {
+            return this.minZoom;
+        },
+        set: function(minZoom) {
+            this.minZoom = minZoom;
+        }
+    });
 // .maxZoom : (zoomlevel)
-
+    Object.defineProperty(map, 'maxZoom', {
+        value: 13,
+        get: function() {
+            return this.maxZoom;
+        },
+        set: function(maxZoom) {
+            this.maxZoom = maxZoom;
+        }
+    });
 // .maxView : ([[long,lat],[long,lat]])
-
+    Object.defineProperty(map, 'maxView', {
+        value: [[-180,90],[180,-90]],
+        get: function() {
+            return this.maxView;
+        },
+        set: function(maxView) {
+            this.maxView = maxView;
+        }
+    });
 // .center : ([long,lat])
-
+    Object.defineProperty(map, 'center', {
+        value: [0,0],
+        get: function() {
+            return this.center;
+        },
+        set: function(center) {
+            this.center = center;
+        }
+    });*/
 // .projection : ({projection})
 
 ////singular functions
@@ -54,6 +105,8 @@ projection: projection              default = d3.geo.mercator()
 // .removeLayers([{layer}])
 
 // .refresh()
+    return map;
+};
 
 //                                                                          マップ
 ;/**
@@ -93,3 +146,19 @@ d3_mappu_Layer = function(name, config){
     
     return layer;
 };
+;  /**
+	 
+  **/
+  d3.mappu.VectorLayer = function(name, config){
+      return d3_mappu_VectorLayer(name, config);
+  };
+  
+  d3_mappu_VectorLayer = function(name, config) {
+      d3_mappu_Layer.call(this,name, config);
+      this._layertype = 'vector';
+      return d3_mappu_Layer(name, config);
+  };
+  
+  d3_mappu_VectorLayer.prototype = Object.create(d3_mappu_Layer.prototype);
+  
+  

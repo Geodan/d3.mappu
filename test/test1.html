@@ -5,10 +5,10 @@
 <script src="../dist/d3.mappu.js"></script>
 </head>
 <body>
-
+<div id='map'></div>
 <script>
-
-//var map = new d3.mappu.Map('mymap');
+var element = document.getElementById('map');
+var map = new d3.mappu.Map(element, {key: 'value'});
 var layer = new d3.mappu.VectorLayer('mylayer',{key:'val'});
 
 </script>
