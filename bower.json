@@ -1,0 +1,26 @@
+{
+  "name": "d3.mappu",
+  "version": "0.0.1",
+  "homepage": "https://github.com/Geodan/d3.mappu",
+  "description": "map library based on d3",
+  "keywords": [
+    "d3",
+    "map",
+    "geo"
+  ],
+  "authors": [
+    "Steven Ottens",
+    "Tom van Tilburg"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "d3": "~3.4.12"
+  }
+}
