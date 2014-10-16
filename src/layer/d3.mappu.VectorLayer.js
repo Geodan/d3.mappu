@@ -9,7 +9,7 @@
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       this._layertype = 'vector';
-      layer.prototype.data = function(data){
+      layer.data = function(data){
           this.data = data;
       };
       return layer;
