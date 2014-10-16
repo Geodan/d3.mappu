@@ -1,4 +1,4 @@
-/*
+﻿/*
  * d3.mappu.Map is the central class of the API - it is used to create a map.
  */
  
@@ -35,5 +35,6 @@ projection: projection              default = d3.geo.mercator()
 
 // .removeLayers([{layer}])
 
+// .refresh()
 
-
+//                                                                          マップ
