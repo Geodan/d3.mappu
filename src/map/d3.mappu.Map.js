@@ -25,7 +25,8 @@ d3_mappu_Map = function(elem, config) {
     this.elem = elem;
     this.config = config;
     
-    
+    //TODO: add a default projection
+    this.projection = {};
 // exposed functions
 
 ////getter/setter functions
@@ -41,47 +42,50 @@ d3_mappu_Map = function(elem, config) {
     });
 
 // .minZoom : (zoomlevel)
-  /*  Object.defineProperty(map, 'minZoom', {
-        value: 0,
+    Object.defineProperty(map, 'minZoom', {
         get: function() {
-            return this.minZoom;
+            return this._minZoom===undefined?0:this._minZoom;
         },
         set: function(minZoom) {
-            this.minZoom = minZoom;
+            this._minZoom = minZoom;
         }
     });
 // .maxZoom : (zoomlevel)
     Object.defineProperty(map, 'maxZoom', {
-        value: 13,
         get: function() {
-            return this.maxZoom;
+            return this._maxZoom===undefined?13:this._maxZoom;
         },
         set: function(maxZoom) {
-            this.maxZoom = maxZoom;
+            this._maxZoom = maxZoom;
         }
     });
 // .maxView : ([[long,lat],[long,lat]])
     Object.defineProperty(map, 'maxView', {
-        value: [[-180,90],[180,-90]],
         get: function() {
-            return this.maxView;
+            return this._maxView===undefined?[[-180,90],[180,-90]]:this._maxView;
         },
         set: function(maxView) {
-            this.maxView = maxView;
+            this._maxView = maxView;
         }
     });
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
-        value: [0,0],
         get: function() {
-            return this.center;
+            return this._center===undefined?[0,0]:this._center;
         },
         set: function(center) {
-            this.center = center;
+            this._center = center;
         }
-    });*/
+    });
 // .projection : ({projection})
-
+    Object.defineProperty(map, 'projection', {
+        get: function() {
+            return this._projection;
+        },
+        set: function(projection) {
+            this._projection = projection;
+        }
+    });
 ////singular functions
 
 // .addLayers([{layer}])
