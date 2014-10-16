@@ -15,7 +15,7 @@ maxView: [[long,lat],[long,lat]]    default = [[-180,90],[180,-90]]
 projection: projection              default = d3.geo.mercator()
 */
 
-import "../d3.mappu";
+//import "../d3.mappu";
  
 // exposed functions
 
