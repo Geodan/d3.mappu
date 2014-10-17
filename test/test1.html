@@ -2,6 +2,7 @@
 <html>
 <head>
 <script src="../bower_components/d3/d3.js"></script>
+<script src="../bower_components/topojson/topojson.js"></script>
 <script src="../dist/d3.mappu.js"></script>
 </head>
 <body>
@@ -10,6 +11,15 @@
 var element = document.getElementById('map');
 var map = new d3.mappu.Map(element, {key: 'value'});
 var layer = new d3.mappu.VectorLayer('mylayer',{key:'val'});
+
+d3.json('gemeenten.topojson', function(e, data){
+   if (e) return console.error(e);
+   var coll = topojson.feature(data,data.objects.gemeenten);
+   coll.features.forEach(function(d,i){
+           d.id = i;
+   });
+   layer.data = coll.features;   
+});
 
 </script>
 
