@@ -32,10 +32,9 @@ d3_mappu_Layer = function(name, config){
 
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
+        this.map = map;
     };
     layer._onRemove = function(){ //Removes the layer from the map object
-    };
-    layer._draw = function(){
     };
     
     return layer;

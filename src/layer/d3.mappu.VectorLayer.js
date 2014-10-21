@@ -6,9 +6,7 @@
   };
   
   d3_mappu_VectorLayer = function(name, config) {
-
-      
-      
+   
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       this._layertype = 'vector';
@@ -20,14 +18,15 @@
         },
         set: function(array) {
             _data = array;
-            this._draw();
+            this.draw();
         }
       });
       
-      layer.zoomTo = function(){
+      layer.draw = function(){
+          this.drawboard
+            .datum(this.data)
+            .attr("d", this.map.path);
       };
-      
-      
       
       return layer;
   };

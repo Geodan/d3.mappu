@@ -22,6 +22,7 @@
   ],
   "dependencies": {
     "d3": "~3.4.12",
-    "topojson": "~1.6.18"
+    "topojson": "~1.6.18",
+    "d3-plugins": "*"
   }
 }
