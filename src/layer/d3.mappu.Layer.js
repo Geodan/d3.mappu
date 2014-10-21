@@ -17,6 +17,11 @@ d3_mappu_Layer = function(name, config){
     layer.opacity = 1;
     layer.visible = true;  
   
+          
+    /* DEBUG */
+    layer.drawboard = d3.select('map');
+    /* END DEBUG */
+    
     /* exposed: */
     layer.refresh =  function(){
     };
@@ -26,11 +31,10 @@ d3_mappu_Layer = function(name, config){
     };
 
     /* private: */
-    this._onAdd =  function(map){ //Adds the layer to the given map object
+    layer._onAdd =  function(map){ //Adds the layer to the given map object
+        this.map = map;
     };
-    this._onRemove = function(){ //Removes the layer from the map object
-    };
-    this._draw = function(){
+    layer._onRemove = function(){ //Removes the layer from the map object
     };
     
     return layer;
