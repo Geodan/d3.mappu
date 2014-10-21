@@ -12,16 +12,16 @@
       this._layertype = 'vector';
 	  this.path = d3.geo.path()
 					.projection(map.projection);
-      var _data = [];
+     
 	  this.drawboard = map.svg.append('path');
 	  
       /* exposed */
       Object.defineProperty(layer, 'data', {
         get: function() {
-            return _data===undefined?[]:_data;
+            return self._data===undefined?[]:self._data;
         },
         set: function(array) {
-            _data = array;
+            self._data = array;
             this.draw();
         }
       });

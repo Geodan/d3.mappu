@@ -28,6 +28,7 @@ d3_mappu_Map = function(elem, config) {
 	var width = 1024;
 	var height = 768;
 	
+	//TODO check if elem is an actual dom-element
 	//TODO: check if SVG?
 	var svg = d3.select(elem).append('svg')
 		.attr("width", width)
@@ -38,6 +39,7 @@ d3_mappu_Map = function(elem, config) {
 	
 	//TODO parse config;
 	self._center = config.center;
+	self._projection = config.projection;
 	
 // exposed functions
 
