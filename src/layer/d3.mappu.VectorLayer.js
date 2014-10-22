@@ -6,26 +6,30 @@
   };
   
   d3_mappu_VectorLayer = function(name, config) {
-   
+	  var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       this._layertype = 'vector';
-      var _data = [];
+	  this.path = d3.geo.path()
+					.projection(map.projection);
+     
+	  this.drawboard = map.svg.append('path');
+	  
       /* exposed */
       Object.defineProperty(layer, 'data', {
         get: function() {
-            return _data===undefined?[]:_data;
+            return self._data===undefined?[]:self._data;
         },
         set: function(array) {
-            _data = array;
+            self._data = array;
             this.draw();
         }
       });
       
       layer.draw = function(){
-          this.drawboard
-            .datum(this.data)
-            .attr("d", this.map.path);
+          self.drawboard
+            .datum(layer.data)
+            .attr("d", self.path);
       };
       
       return layer;

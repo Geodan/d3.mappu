@@ -23,68 +23,94 @@ d3.mappu.Map = function(elem, config) {
 
 d3_mappu_Map = function(elem, config) {
     var map = {};
-    this.elem = elem;
-    this.config = config;
-
+	var self = this;
+	//TODO: how to get the size of the map
+	var width = 1024;
+	var height = 768;
+	
+	//TODO check if elem is an actual dom-element
+	//TODO: check if SVG?
+	var svg = d3.select(elem).append('svg')
+		.attr("width", width)
+		.attr("height", height);
+	
+    self.svg = svg;
+    self.config = config;
+	
+	//TODO parse config;
+	self._center = config.center;
+	self._projection = config.projection;
+	
 // exposed functions
 
 ////getter/setter functions
-
+	 Object.defineProperty(map, 'svg', {
+        get: function() {
+            return self.svg;
+        },
+        set: function(svg) {
+            console.log("do not touch the svg");
+        }
+    });
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
-            return this._zoom===undefined?0:this._zoom;
+            return self._zoom===undefined?0:self._zoom;
         },
         set: function(zoom) {
-            this._zoom = zoom;
+            self._zoom = zoom;
         }
     });
 
 // .minZoom : (zoomlevel)
     Object.defineProperty(map, 'minZoom', {
         get: function() {
-            return this._minZoom===undefined?0:this._minZoom;
+            return self._minZoom===undefined?0:self._minZoom;
         },
         set: function(minZoom) {
-            this._minZoom = minZoom;
+            self._minZoom = minZoom;
         }
     });
 // .maxZoom : (zoomlevel)
     Object.defineProperty(map, 'maxZoom', {
         get: function() {
-            return this._maxZoom===undefined?13:this._maxZoom;
+            return self._maxZoom===undefined?13:self._maxZoom;
         },
         set: function(maxZoom) {
-            this._maxZoom = maxZoom;
+            self._maxZoom = maxZoom;
         }
     });
 // .maxView : ([[long,lat],[long,lat]])
     Object.defineProperty(map, 'maxView', {
         get: function() {
-            return this._maxView===undefined?[[-180,90],[180,-90]]:this._maxView;
+            return self._maxView===undefined?[[-180,90],[180,-90]]:self._maxView;
         },
         set: function(maxView) {
-            this._maxView = maxView;
+            self._maxView = maxView;
         }
     });
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
         get: function() {
-            return this._center===undefined?[0,0]:this._center;
+            return self._center===undefined?[0,0]:self._center;
         },
         set: function(center) {
-            this._center = center;
+            self._center = center;
         }
     });
 // .projection : ({projection})
     Object.defineProperty(map, 'projection', {
         get: function() {
-            return this._projection===undefined?d3.geo.mercator():this._projection;
+            return self._projection===undefined?d3.geo.mercator():self._projection;
         },
         set: function(projection) {
-            this._projection = projection;
+          //  self._projection = projection;
+			//TODO: redraw
         }
     });
+	map.setProjection = function(p) {
+		map.projection = p;
+	};
 ////singular functions
 
 // .addLayers([{layer}])

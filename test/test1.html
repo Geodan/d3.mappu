@@ -24,12 +24,16 @@ path {
 <div id='map'></div>
 <script>
 var element = document.getElementById('map');
-var map = new d3.mappu.Map(element, {key: 'value'});
-var layer = new d3.mappu.VectorLayer('mylayer',{key:'val'});
+var map = new d3.mappu.Map(element, {
+
+center: [5,52],
+projection: d3.geo.albers()
+});
+var mylayer = new d3.mappu.VectorLayer('mylayer',{key:'val'});
 
 
 /** Some temporary map background **/
-
+/*
 var width = Math.max(960, window.innerWidth),
     height = Math.max(500, window.innerHeight);
 
@@ -57,8 +61,8 @@ var svg = d3.select("body").append("svg")
 
 var raster = svg.append("g");
 
-var vector = svg.append("path");
-
+var vector = svg.append("path");*/
+/*
 function zoomed() {
   var tiles = tile
       .scale(zoom.scale())
@@ -87,25 +91,25 @@ function zoomed() {
       .attr("x", function(d) { return d[0]; })
       .attr("y", function(d) { return d[1]; });
 }
-
+*/
 /** End of temporary map background **/
 
 /** Some workarounds: */
 
 
-layer.drawboard = vector;
-var map = {
+//layer.drawboard = vector;
+/*var map = {
     path: path
-}
+}*/
 
 
-d3.json("gemeenten_simple.topojson", function(error, us) {
+d3.json("world.json", function(error, topology) {
   if (error) return console.error(error);
-  svg.call(zoom);
+ // svg.call(zoom);
   
-  layer._onAdd(map);
-  layer.data = topojson.feature(us, us.objects.gemeenten);
-  zoomed();
+  mylayer._onAdd(map);
+  mylayer.data = topojson.mesh(topology);
+ // zoomed();
 });
 
 </script>
