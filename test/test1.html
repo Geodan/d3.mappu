@@ -27,7 +27,7 @@ var element = document.getElementById('map');
 var map = new d3.mappu.Map(element, {
 
 center: [5,52],
-projection: d3.geo.mercator()
+projection: d3.geo.albers()
 });
 var mylayer = new d3.mappu.VectorLayer('mylayer',{key:'val'});
 

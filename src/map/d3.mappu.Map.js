@@ -104,9 +104,13 @@ d3_mappu_Map = function(elem, config) {
             return self._projection===undefined?d3.geo.mercator():self._projection;
         },
         set: function(projection) {
-            self._projection = projection;
+          //  self._projection = projection;
+			//TODO: redraw
         }
     });
+	map.setProjection = function(p) {
+		map.projection = p;
+	};
 ////singular functions
 
 // .addLayers([{layer}])
