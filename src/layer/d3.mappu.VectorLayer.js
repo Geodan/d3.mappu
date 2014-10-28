@@ -13,7 +13,7 @@
 	  this.path = d3.geo.path()
 					.projection(map.projection);
      
-	  this.drawboard = map.svg.append('path');
+	  this.drawboard = map.svg.append('g');
 	  
       /* exposed */
       Object.defineProperty(layer, 'data', {
@@ -27,9 +27,16 @@
       });
       
       layer.draw = function(){
-          self.drawboard
-            .datum(layer.data)
-            .attr("d", self.path);
+          var entities = self.drawboard.selectAll('.entity').data(layer.data);
+          var newpaths = entities.enter().append('path').attr("d", self.path)
+            .classed('entity',true).classed(name, true);
+            
+          // Add events from config
+          if (config.events){
+              config.events.forEach(function(d){
+                      newpaths.on(d.name, d.action);
+              });
+          }
       };
       
       return layer;
