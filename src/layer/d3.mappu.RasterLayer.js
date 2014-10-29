@@ -10,18 +10,16 @@
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       var layertype = 'raster';
-      var drawboard = map.svg.append('g');
-      this._url = config.url;
-      this._type = config.type;
-      this._name = name;
+      var drawboard;
+      var _url = config.url;
       
-      Object.defineProperty(this, 'url', {
+      Object.defineProperty(layer, 'url', {
         get: function() {
-            return this._url;
+            return _url;
         },
-        set: function(url) {
-            this._url = url;
-            this.draw();
+        set: function(val) {
+            _url = val;
+            draw();
         }
       });
       
@@ -31,8 +29,10 @@
       };
       
       //Draw the tiles (based on data-update)
-      layer.draw = function(){
-         drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+      var draw = function(){
+         var drawboard = self.drawboard;
+         var tiles = self.map.tiles;
+         self.drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();
@@ -40,7 +40,7 @@
               .classed('tile',true)
               .attr("xlink:href", function(d) {
                 var url = "";
-                url = self._url    
+                url = _url    
                     .replace('{s}',["a", "b", "c", "d"][Math.random() * 4 | 0])
                     .replace('{z}',d[2])
                     .replace('{x}',d[0])
@@ -60,12 +60,12 @@
          image.exit().remove();
       };
       
-      //Refresh the tiles (no data-update involved)
-      layer.refresh = function(){
-          //apply opacity
-          
+      var refresh = function(){
+          drawboard.style('opacity', this.opacity).style('display',this._display);
       };
       
+      layer.refresh = refresh;
+      layer.draw = draw;
       return layer;
   };
   

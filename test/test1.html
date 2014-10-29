@@ -15,13 +15,13 @@ path {
   fill: none;
   stroke: red;
   stroke-linejoin: round;
-  stroke-width: 1.5px;
+  
 }
 /**
 Layer styling happens in CSS, or in a per-feature function
 **/
 .mylayer {
-    fill: steelBlue;
+    fill: none;
     stroke: steelBlue;
 }
 
@@ -33,25 +33,36 @@ Layer styling happens in CSS, or in a per-feature function
 <script>
 /* TODO: move this to map object */
 var element = document.getElementById('map');
+var tiles;
 var width = window.innerWidth;
 var height = window.innerHeight;
+/*
 var zoom = 12;
+
+var tile = d3.geo.tile()
+        .size([window.innerWidth, window.innerHeight]);
+
 var myprojection = d3.geo.mercator()
         .scale(( zoom << 12 || 1 << 12) / 2 / Math.PI)
         .translate([width / 2, height / 2]);
+        
 var mycenter = myprojection([6,52]);
-var myzoom = d3.behavior.zoom()
-        .scale(myprojection.scale() * 2 * Math.PI)
-        .scaleExtent([1 << 8, 1 << 24])
-        .translate([width - mycenter[0], height - mycenter[1]])
-        .on("zoom", draw);
-var tile = d3.geo.tile()
-        .size([window.innerWidth, window.innerHeight]);
-var tiles = tile.scale(myzoom.scale())
-          .translate(myzoom.translate())();
+
 var mypath = d3.geo.path()
         .projection(myprojection);
-          
+        
+var myzoom = d3.behavior.zoom()
+        .scale(myprojection.scale() * 2 * Math.PI)
+        .scaleExtent([1 << 15, 1 << 24])
+        .translate([width - mycenter[0], height - mycenter[1]])
+        .on("zoom", draw);
+
+myprojection
+    .scale(1 / 2 / Math.PI)
+    .translate([0, 0]);
+        
+var tiles = tile.scale(myzoom.scale())
+          .translate(myzoom.translate())();
           
 function draw(){
     tiles = tile.scale(myzoom.scale())
@@ -66,18 +77,17 @@ function draw(){
 
     
 var map = new d3.mappu.Map(element, {
-        center: [6,52],
-        projection: myprojection
+        center: [6,52]
 });
-d3.select('svg').call(myzoom);
+
 var layer = new d3.mappu.RasterLayer('layer1', {
     type: 'tms',
     url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
-});
-layer._onAdd(map);
+}).addTo(map);
 layer.draw();
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
+    reproject: false,
     events: [{
         event: 'mouseover',
         action: function(){
@@ -88,17 +98,19 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         event: 'click',
         action: function(){console.log('Clicked', this);}
     }]
-});
+}).addTo(map);
 
 
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);
- // svg.call(zoom);
-  
-  mylayer._onAdd(map);
   mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
- // zoomed();
 });
+
+d3.json("gemeenten.topojson", function(error, data) {
+  if (error) return console.error(error);
+  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+});
+
 
 </script>
 
