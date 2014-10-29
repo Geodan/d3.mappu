@@ -30,11 +30,10 @@
           var entities = self.drawboard.selectAll('.entity').data(layer.data);
           var newpaths = entities.enter().append('path').attr("d", self.path)
             .classed('entity',true).classed(name, true);
-            
           // Add events from config
           if (config.events){
               config.events.forEach(function(d){
-                      newpaths.on(d.name, d.action);
+                 newpaths.on(d.event, d.action);
               });
           }
       };

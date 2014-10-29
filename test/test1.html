@@ -35,23 +35,33 @@ var element = document.getElementById('map');
 var myprojection = d3.geo.mercator()
     .scale(6000)
     .translate([0, 6768 ]);
-
+var tile = d3.geo.tile()
+        .size([window.innerWidth, window.innerHeight]);
+var tiles = tile.scale(6000)
+          .translate([0, 0 ])();        
+    
+    
 var map = new d3.mappu.Map(element, {
         center: [5,52],
         projection: myprojection
 });
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    key:'val',
     events: [{
         event: 'mouseover',
         action: function(){
-            d3.select(this).style('opacity',0.3).transition().style('opacity', 1);
+            d3.select(this).style('opacity',0.3)
+                .transition().style('opacity', 1);
         }
-    },{
+      },{
         event: 'click',
         action: function(){console.log('Clicked', this);}
     }]
 });
+var layer = new d3.mappu.RasterLayer('layer1', {
+    type: 'tms',
+    url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
+});
+layer._onAdd(map);
 
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);
