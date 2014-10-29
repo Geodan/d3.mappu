@@ -9,8 +9,8 @@
       var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
-      this._layertype = 'raster';
-      this.drawboard = map.svg.append('g');
+      var layertype = 'raster';
+      var drawboard = map.svg.append('g');
       this._url = config.url;
       this._type = config.type;
       this._name = name;
@@ -32,7 +32,8 @@
       
       //Draw the tiles (based on data-update)
       layer.draw = function(){
-         var image = self.drawboard.selectAll(".tile")
+         drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();
          imageEnter.append("image")

@@ -32,19 +32,36 @@ Layer styling happens in CSS, or in a per-feature function
 <div id='map'></div>
 <script>
 var element = document.getElementById('map');
+var width = window.innerWidth;
+var height = window.innerHeight;
+var zoom = 12;
 var myprojection = d3.geo.mercator()
-    .scale(6000)
-    .translate([0, 6768 ]);
+        .scale(( zoom << 12 || 1 << 12) / 2 / Math.PI)
+        .translate([width / 2, height / 2]);
+var mycenter = myprojection([6,52]);
+var myzoom = d3.behavior.zoom()
+        .scale(myprojection.scale() * 2 * Math.PI)
+        .scaleExtent([1 << 8, 1 << 24])
+        .translate([width - mycenter[0], height - mycenter[1]])
+        //.on("zoom", draw);
 var tile = d3.geo.tile()
         .size([window.innerWidth, window.innerHeight]);
-var tiles = tile.scale(6000)
-          .translate([0, 0 ])();        
-    
+var tiles = tile.scale(myzoom.scale())
+          .translate(myzoom.translate())();
+          
+
     
 var map = new d3.mappu.Map(element, {
-        center: [5,52],
+        center: [6,52],
         projection: myprojection
 });
+var layer = new d3.mappu.RasterLayer('layer1', {
+    type: 'tms',
+    url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
+});
+layer._onAdd(map);
+layer.draw();
+
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
     events: [{
         event: 'mouseover',
@@ -57,11 +74,7 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         action: function(){console.log('Clicked', this);}
     }]
 });
-var layer = new d3.mappu.RasterLayer('layer1', {
-    type: 'tms',
-    url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
-});
-layer._onAdd(map);
+
 
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);

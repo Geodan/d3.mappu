@@ -9,11 +9,11 @@
 	  var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
-      this._layertype = 'vector';
-	  this.path = d3.geo.path()
+      var layertype = 'vector';
+	  var path = d3.geo.path()
 					.projection(map.projection);
      
-	  this.drawboard = map.svg.append('g');
+	  var drawboard = map.svg.append('g');
 	  
       /* exposed */
       Object.defineProperty(layer, 'data', {
@@ -27,8 +27,11 @@
       });
       
       layer.draw = function(){
-          var entities = self.drawboard.selectAll('.entity').data(layer.data);
-          var newpaths = entities.enter().append('path').attr("d", self.path)
+          myprojection
+            .scale(myzoom.scale() / 2 / Math.PI)
+            .translate(myzoom.translate());
+          var entities = drawboard.selectAll('.entity').data(layer.data);
+          var newpaths = entities.enter().append('path').attr("d", path)
             .classed('entity',true).classed(name, true);
           // Add events from config
           if (config.events){
