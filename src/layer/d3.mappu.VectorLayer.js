@@ -11,7 +11,7 @@
       var layer = d3_mappu_Layer(name, config);
       var layertype = 'vector';
 	  var path = d3.geo.path()
-					.projection(map.projection);
+		.projection(map.projection);
      
 	  var drawboard = map.svg.append('g');
 	  
@@ -31,7 +31,7 @@
             .scale(myzoom.scale() / 2 / Math.PI)
             .translate(myzoom.translate());
           var entities = drawboard.selectAll('.entity').data(layer.data);
-          var newpaths = entities.enter().append('path').attr("d", path)
+          var newpaths = entities.enter().append('path').attr("d", mypath)
             .classed('entity',true).classed(name, true);
           // Add events from config
           if (config.events){
@@ -39,6 +39,12 @@
                  newpaths.on(d.event, d.action);
               });
           }
+          
+      };
+      
+      layer.refresh = function(){
+          var entities = drawboard.selectAll('.entity');
+          entities.attr("d", mypath);
       };
       
       return layer;

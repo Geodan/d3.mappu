@@ -31,6 +31,7 @@ Layer styling happens in CSS, or in a per-feature function
 <body>
 <div id='map'></div>
 <script>
+/* TODO: move this to map object */
 var element = document.getElementById('map');
 var width = window.innerWidth;
 var height = window.innerHeight;
@@ -43,18 +44,32 @@ var myzoom = d3.behavior.zoom()
         .scale(myprojection.scale() * 2 * Math.PI)
         .scaleExtent([1 << 8, 1 << 24])
         .translate([width - mycenter[0], height - mycenter[1]])
-        //.on("zoom", draw);
+        .on("zoom", draw);
 var tile = d3.geo.tile()
         .size([window.innerWidth, window.innerHeight]);
 var tiles = tile.scale(myzoom.scale())
           .translate(myzoom.translate())();
+var mypath = d3.geo.path()
+        .projection(myprojection);
           
+          
+function draw(){
+    tiles = tile.scale(myzoom.scale())
+          .translate(myzoom.translate())();
+    myprojection
+          .scale(myzoom.scale() / 2 / Math.PI)
+          .translate(myzoom.translate());
+    mylayer.refresh();
+    layer.draw();
+}
+/* END todo */          
 
     
 var map = new d3.mappu.Map(element, {
         center: [6,52],
         projection: myprojection
 });
+d3.select('svg').call(myzoom);
 var layer = new d3.mappu.RasterLayer('layer1', {
     type: 'tms',
     url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
