@@ -26,8 +26,8 @@ d3_mappu_Map = function(elem, config) {
 	var self = this;
 	var _layers = [];
 	//TODO: how to get the size of the map
-	//var width = 1024;
-	//var height = 768;
+	var width = width || 1024;
+	var height = height || 768;
 	
 	//TODO check if elem is an actual dom-element
 	//TODO: check if SVG?
