@@ -26,10 +26,11 @@
       
       var draw = function(rebuild){
           var drawboard = layer.drawboard;
-          var entities = drawboard.selectAll('.entity').data(_data);
           if (rebuild){
-              
+               drawboard.selectAll('.entity').remove();
           }
+          var entities = drawboard.selectAll('.entity').data(_data);
+          
           var newpaths = entities.enter().append('path').attr("d", self.map.path)
             .classed('entity',true).classed(name, true);
           // Add events from config

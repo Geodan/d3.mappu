@@ -78,7 +78,7 @@ d3_mappu_Map = function(elem, config) {
         .translate([0, 0]);
     
     var _tile = d3.geo.tile()
-        .size([height, width]);
+        .size([width,height]);
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
