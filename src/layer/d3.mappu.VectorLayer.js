@@ -25,7 +25,7 @@
       });
       
       var draw = function(rebuild){
-          var drawboard = self.drawboard;
+          var drawboard = layer.drawboard;
           var entities = drawboard.selectAll('.entity').data(_data);
           if (rebuild){
               
@@ -43,13 +43,13 @@
       
       var refresh = function(){
           var zoombehaviour = self.map.zoombehaviour;
-          self.drawboard.style('opacity', this.opacity).style('display',this._display);
+          layer.drawboard.style('opacity', this.opacity).style('display',this._display);
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
               entities.attr("d", mypath);
           }
           else {
-          self.drawboard
+          layer.drawboard
             .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
             .style("stroke-width", 1 / zoombehaviour.scale());
           }

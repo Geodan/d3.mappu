@@ -39,7 +39,7 @@ d3_mappu_Map = function(elem, config) {
 	var _projection = config.projection || d3.geo.mercator();
 	var _zoom = config.zoom || 10;
 	var _maxZoom = config.maxZoom || 24;
-	var _minZoom = config.minZoom || 1;
+	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView;
 	
 	var draw = function(){

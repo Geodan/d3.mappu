@@ -30,9 +30,9 @@
       
       //Draw the tiles (based on data-update)
       var draw = function(){
-         var drawboard = self.drawboard;
+         var drawboard = layer.drawboard;
          var tiles = self.map.tiles;
-         self.drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();
