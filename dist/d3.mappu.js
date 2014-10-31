@@ -38,8 +38,8 @@ d3_mappu_Map = function(elem, config) {
 	var self = this;
 	var _layers = [];
 	//TODO: how to get the size of the map
-	var width = width || 1024;
-	var height = height || 768;
+	var width = elem.clientWidth || 1024;
+	var height = elem.clientHeight || 768;
 	
 	//TODO check if elem is an actual dom-element
 	//TODO: check if SVG?
@@ -239,12 +239,12 @@ d3.mappu.Layer = function(name, config) {
 
 d3_mappu_Layer = function(name, config){
     var layer = {};
-    var map;
+    var _map;
     var _id = new Date().getTime();//TODO: automatic ID gen
     var _name = name;
     var opacity = 1;
-    var  visible = true;  
-    this._display = 'block';
+    var visible = true;  
+    var _display = 'block';
     
     var refresh = function(){
     };
@@ -253,9 +253,9 @@ d3_mappu_Layer = function(name, config){
     var moveDown = function(){
     };
     var addTo = function(map){
-        map = map;
-        layer.drawboard = map.svg.append('g');
-        map.addLayer(layer);
+        _map = map;
+        layer.drawboard = _map.svg.append('g');
+        _map.addLayer(layer);
         return layer;
     };
     
@@ -270,6 +270,15 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _name = val;
+        }
+    });
+    
+    Object.defineProperty(layer, 'map', {
+        get: function() {
+            return _map;
+        },
+        set: function(val) {
+            _map = val;
         }
     });
     
@@ -289,10 +298,10 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             if (val){
-                this._display = 'block';
+                _display = 'block';
             }
             else {
-                this._display = 'none';
+                _display = 'none';
             }
             visible = val;
             layer.refresh();
@@ -307,8 +316,8 @@ d3_mappu_Layer = function(name, config){
 
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
-        map = map;
-        drawboard = map.svg.append('g');
+        _map = map;
+        drawboard = _map.svg.append('g');
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     };
@@ -348,7 +357,7 @@ d3_mappu_Layer = function(name, config){
           }
           var entities = drawboard.selectAll('.entity').data(_data);
           
-          var newpaths = entities.enter().append('path').attr("d", self.map.path)
+          var newpaths = entities.enter().append('path').attr("d", layer.map.path)
             .classed('entity',true).classed(name, true);
           // Add events from config
           if (config.events){
@@ -360,7 +369,7 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(){
-          var zoombehaviour = self.map.zoombehaviour;
+          var zoombehaviour = layer.map.zoombehaviour;
           layer.drawboard.style('opacity', this.opacity).style('display',this._display);
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
@@ -414,7 +423,7 @@ d3_mappu_Layer = function(name, config){
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
-         var tiles = self.map.tiles;
+         var tiles = layer.map.tiles;
          drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });

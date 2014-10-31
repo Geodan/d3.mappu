@@ -31,7 +31,7 @@
           }
           var entities = drawboard.selectAll('.entity').data(_data);
           
-          var newpaths = entities.enter().append('path').attr("d", self.map.path)
+          var newpaths = entities.enter().append('path').attr("d", layer.map.path)
             .classed('entity',true).classed(name, true);
           // Add events from config
           if (config.events){
@@ -43,7 +43,7 @@
       };
       
       var refresh = function(){
-          var zoombehaviour = self.map.zoombehaviour;
+          var zoombehaviour = layer.map.zoombehaviour;
           layer.drawboard.style('opacity', this.opacity).style('display',this._display);
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
