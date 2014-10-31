@@ -36,46 +36,8 @@ var element = document.getElementById('map');
 var tiles;
 var width = window.innerWidth;
 var height = window.innerHeight;
-/*
-var zoom = 12;
+/* end todo */ 
 
-var tile = d3.geo.tile()
-        .size([window.innerWidth, window.innerHeight]);
-
-var myprojection = d3.geo.mercator()
-        .scale(( zoom << 12 || 1 << 12) / 2 / Math.PI)
-        .translate([width / 2, height / 2]);
-        
-var mycenter = myprojection([6,52]);
-
-var mypath = d3.geo.path()
-        .projection(myprojection);
-        
-var myzoom = d3.behavior.zoom()
-        .scale(myprojection.scale() * 2 * Math.PI)
-        .scaleExtent([1 << 15, 1 << 24])
-        .translate([width - mycenter[0], height - mycenter[1]])
-        .on("zoom", draw);
-
-myprojection
-    .scale(1 / 2 / Math.PI)
-    .translate([0, 0]);
-        
-var tiles = tile.scale(myzoom.scale())
-          .translate(myzoom.translate())();
-          
-function draw(){
-    tiles = tile.scale(myzoom.scale())
-          .translate(myzoom.translate())();
-    myprojection
-          .scale(myzoom.scale() / 2 / Math.PI)
-          .translate(myzoom.translate());
-    mylayer.refresh();
-    layer.draw();
-}
-/* END todo */          
-
-    
 var map = new d3.mappu.Map(element, {
         center: [6,52]
 });

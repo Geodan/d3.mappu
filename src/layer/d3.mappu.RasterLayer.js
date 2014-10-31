@@ -61,7 +61,8 @@
       };
       
       var refresh = function(){
-          drawboard.style('opacity', this.opacity).style('display',this._display);
+          draw();
+          layer.drawboard.style('opacity', this.opacity).style('display',this._display);
       };
       
       layer.refresh = refresh;

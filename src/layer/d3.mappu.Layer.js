@@ -11,9 +11,8 @@ d3.mappu.Layer = function(name, config) {
 d3_mappu_Layer = function(name, config){
     var layer = {};
     var map;
-    layer.name = name;
-    layer.id = null;//TODO: automatic ID gen
-    layer.name = name;
+    var _id = new Date().getTime();//TODO: automatic ID gen
+    var _name = name;
     var opacity = 1;
     var  visible = true;  
     this._display = 'block';
@@ -27,8 +26,23 @@ d3_mappu_Layer = function(name, config){
     var addTo = function(map){
         map = map;
         layer.drawboard = map.svg.append('g');
+        map.addLayer(layer);
         return layer;
     };
+    
+    Object.defineProperty(layer, 'id', {
+        get: function() {return _id;},
+        set: function() {console.warn('setting ID not allowed for layer');}
+    });
+    
+    Object.defineProperty(layer, 'name', {
+        get: function() {
+            return _name;
+        },
+        set: function(val) {
+            _name = val;
+        }
+    });
     
     Object.defineProperty(layer, 'opacity', {
         get: function() {
