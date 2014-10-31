@@ -39,7 +39,9 @@ var height = window.innerHeight;
 /* end todo */ 
 
 var map = new d3.mappu.Map(element, {
-        center: [6,52]
+        center: [6,52],
+        projection: d3.geo.mercator()
+        //projection: d3.geo.albers() //future work
 });
 
 var layer = new d3.mappu.RasterLayer('layer1', {
