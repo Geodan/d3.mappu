@@ -68,12 +68,6 @@ d3_mappu_Layer = function(name, config){
             return visible;
         },
         set: function(val) {
-            if (val){
-                _display = 'block';
-            }
-            else {
-                _display = 'none';
-            }
             visible = val;
             layer.refresh();
         }

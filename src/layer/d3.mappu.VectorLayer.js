@@ -44,15 +44,15 @@
       
       var refresh = function(){
           var zoombehaviour = layer.map.zoombehaviour;
-          layer.drawboard.style('opacity', this.opacity).style('display',this._display);
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
               entities.attr("d", mypath);
           }
           else {
-          layer.drawboard
-            .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
-            .style("stroke-width", 1 / zoombehaviour.scale());
+            layer.drawboard
+              .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
+              .style("stroke-width", 1 / zoombehaviour.scale());
           }
       };
       
