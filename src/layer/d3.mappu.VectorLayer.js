@@ -26,11 +26,12 @@
       
       var draw = function(rebuild){
           var drawboard = layer.drawboard;
-          var entities = drawboard.selectAll('.entity').data(_data);
           if (rebuild){
-              
+               drawboard.selectAll('.entity').remove();
           }
-          var newpaths = entities.enter().append('path').attr("d", self.map.path)
+          var entities = drawboard.selectAll('.entity').data(_data);
+          
+          var newpaths = entities.enter().append('path').attr("d", layer.map.path)
             .classed('entity',true).classed(name, true);
           // Add events from config
           if (config.events){
@@ -42,16 +43,16 @@
       };
       
       var refresh = function(){
-          var zoombehaviour = self.map.zoombehaviour;
-          layer.drawboard.style('opacity', this.opacity).style('display',this._display);
+          var zoombehaviour = layer.map.zoombehaviour;
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
               entities.attr("d", mypath);
           }
           else {
-          layer.drawboard
-            .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
-            .style("stroke-width", 1 / zoombehaviour.scale());
+            layer.drawboard
+              .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
+              .style("stroke-width", 1 / zoombehaviour.scale());
           }
       };
       

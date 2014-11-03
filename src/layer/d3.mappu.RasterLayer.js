@@ -31,7 +31,7 @@
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
-         var tiles = self.map.tiles;
+         var tiles = layer.map.tiles;
          drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
@@ -61,7 +61,8 @@
       };
       
       var refresh = function(){
-          drawboard.style('opacity', this.opacity).style('display',this._display);
+          draw();
+          layer.drawboard.style('opacity', this.opacity).style('display',this._display);
       };
       
       layer.refresh = refresh;

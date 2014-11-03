@@ -24,9 +24,10 @@ d3.mappu.Map = function(elem, config) {
 d3_mappu_Map = function(elem, config) {
     var map = {};
 	var self = this;
+	var _layers = [];
 	//TODO: how to get the size of the map
-	//var width = 1024;
-	//var height = 768;
+	var width = elem.clientWidth || 1024;
+	var height = elem.clientHeight || 768;
 	
 	//TODO check if elem is an actual dom-element
 	//TODO: check if SVG?
@@ -43,14 +44,17 @@ d3_mappu_Map = function(elem, config) {
 	var _maxView = config.maxView;
 	
 	var draw = function(){
+	    //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
+        //Calculate projection
         _projection
               .scale(_zoombehaviour.scale() / 2 / Math.PI)
               .translate(_zoombehaviour.translate());
-        //TODO!!!!
-        mylayer.refresh();
-        layer.draw();
+        //Refresh layers
+        _layers.forEach(function(d){
+                d.refresh();
+        });
     };
 	
 	_projection.scale(( _zoom << 12 || 1 << 12) / 2 / Math.PI)
@@ -74,7 +78,7 @@ d3_mappu_Map = function(elem, config) {
         .translate([0, 0]);
     
     var _tile = d3.geo.tile()
-        .size([height, width]);
+        .size([width,height]);
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
@@ -164,20 +168,48 @@ d3_mappu_Map = function(elem, config) {
             set: function(){console.warn('No setting allowed for zoombehaviour');}
     });
     
+    Object.defineProperty(map, 'layers', {
+            get: function(){return _layers;},
+            set: function(){console.warn('No setting allowed for layers');}
+    });
     
 	
 ////singular functions
 
-// .addLayers([{layer}])
-
-// .getLayers()
+    var addLayer = function(layer){
+        if (!layer.id){
+            console.warn('Not a valid layer. (No ID)');
+            return false;
+        }
+        //Replace existing ID
+        _layers.forEach(function(d){
+            if (d.id == layer.id){
+                d = layer; //TODO: can you replace an array item like this?
+                return map;
+            }
+        });
+        _layers.push(layer);
+        layer._onAdd(map);
+        return map;
+    };
+    var removeLayer = function(id){
+        _layers.forEach(function(d,i){
+            if (d.id == id){
+                // ?? d.onRemove(self);
+                _layers.splice(i,1);
+                return map;
+            }
+        });
+        return map;
+    };   
 
 // .removeLayers([{layer}])
 
 // .refresh()
     
     
-    
+    map.addLayer = addLayer;
+    map.removeLayer = removeLayer;
     map.draw = draw;
     return map;
 };
