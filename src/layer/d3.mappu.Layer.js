@@ -27,6 +27,7 @@ d3_mappu_Layer = function(name, config){
         _map = map;
         layer.drawboard = _map.svg.append('g');
         _map.addLayer(layer);
+        layer.draw();
         return layer;
     };
     

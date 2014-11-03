@@ -52,10 +52,16 @@ var map = new d3.mappu.Map(element, {
 });
 
 var layer = new d3.mappu.RasterLayer('layer1', {
-    type: 'tms',
+    ogc_type: 'tms',
     url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
 }).addTo(map);
-layer.draw();
+
+var nwblayer = new d3.mappu.RasterLayer('nwb', {
+    ogc_type: 'wms',
+    url: "http://pico.ontw.geodan.nl:8080/geoserver/pico/wms?",
+    layers: 'pico:oplaadpalen'
+}).addTo(map);
+
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
     reproject: false,
