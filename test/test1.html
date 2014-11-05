@@ -29,15 +29,26 @@ path {
 Layer styling happens in CSS, or in a per-feature function
 **/
 .mylayer {
-    fill: none;
+    fill: steelBlue;
+    fill-opacity: 0.4;
     stroke: steelBlue;
+}
+
+#coordinates {
+    font-size: 8pt;
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
 }
 
 </style>
 
 </head>
 <body>
-<div id='map'></div>
+<div id='map'>
+</div>
+<div id='coordinates'></div>
+
 <script>
 /* TODO: move this to map object */
 var element = document.getElementById('map');
@@ -67,19 +78,21 @@ var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
     ogc_type: 'wms',
     url: "http://pico.geodan.nl/geoserver/pico/wms?",
     layers: 'pico:pico_sjv_sf'
-})//.addTo(map);
+}).addTo(map);
 
 
 
 //var controllers = d3.mappu.Controllers(map);
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    reproject: true,
+    reproject: false,
     events: [{
         event: 'mouseover',
         action: function(){
+            var opac = d3.select(this).style('opacity');
+            var fill = d3.select(this).style('fill');
             d3.select(this).style('opacity',0.3).style('fill','#FF0033')
-                .transition().style('opacity', 1).style('fill','none');
+                .transition().style('opacity', opac).style('fill',fill);
         }
       },{
         event: 'click',
@@ -98,6 +111,15 @@ d3.json("gemeenten.topojson", function(error, data) {
   //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
 
+map.svg.on('click', function(e){
+   console.log(d3.mouse(map.svg));
+});
+
+map.svg.on('mousemove', function(e){
+    var loc = d3.mouse(this);
+    var crds = map.projection.invert(loc)
+    d3.select('#coordinates').html('lat: ' + crds[0] + '| lon: ' + crds[1]);
+});
 
 </script>
 

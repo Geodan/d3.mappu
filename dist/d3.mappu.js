@@ -85,6 +85,7 @@ d3_mappu_Map = function(elem, config) {
         .on("zoom", draw);
 	_svg.call(_zoombehaviour);
 	
+	
     _projection
         .scale(1 / 2 / Math.PI)
         .translate([0, 0]);
@@ -94,7 +95,7 @@ d3_mappu_Map = function(elem, config) {
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-
+    
 // exposed functions
 
 ////getter/setter functions
@@ -109,7 +110,7 @@ d3_mappu_Map = function(elem, config) {
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
-            return _zoom=== undefined ? 0 : _zoom;
+            return _zoom === undefined ? 0 : _zoom;
         },
         set: function(value) {
             _zoom = value;
@@ -119,7 +120,7 @@ d3_mappu_Map = function(elem, config) {
 // .minZoom : (zoomlevel)
     Object.defineProperty(map, 'minZoom', {
         get: function() {
-            return _minZoom=== undefined ? 0 : _minZoom;
+            return _minZoom === undefined ? 0 : _minZoom;
         },
         set: function(value) {
             _minZoom = value;
@@ -128,7 +129,7 @@ d3_mappu_Map = function(elem, config) {
 // .maxZoom : (zoomlevel)
     Object.defineProperty(map, 'maxZoom', {
         get: function() {
-            return _maxZoom=== undefined ? 13 : _maxZoom;
+            return _maxZoom === undefined ? 13 : _maxZoom;
         },
         set: function(value) {
             _maxZoom = value;
@@ -137,7 +138,7 @@ d3_mappu_Map = function(elem, config) {
 // .maxView : ([[long,lat],[long,lat]])
     Object.defineProperty(map, 'maxView', {
         get: function() {
-            return _maxView=== undefined ? [[-180,90],[180,-90]] : _maxView;
+            return _maxView === undefined ? [[-180,90],[180,-90]] : _maxView;
         },
         set: function(value) {
             _maxView = value;
@@ -155,7 +156,7 @@ d3_mappu_Map = function(elem, config) {
 // .projection : ({projection})
     Object.defineProperty(map, 'projection', {
         get: function() {
-            return _projection=== undefined ? d3.geo.mercator() : _projection;
+            return _projection === undefined ? d3.geo.mercator() : _projection;
         },
         set: function(obj) {
           _projection = obj;
@@ -223,6 +224,7 @@ d3_mappu_Map = function(elem, config) {
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
     map.draw = draw;
+    
     return map;
 };
 
