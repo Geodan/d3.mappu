@@ -34,6 +34,7 @@ d3.mappu.Map = function(elem, config) {
 };
 
 d3_mappu_Map = function(elem, config) {
+    
     var map = {};
 	var self = this;
 	var _layers = [];
@@ -42,6 +43,7 @@ d3_mappu_Map = function(elem, config) {
 	var height = elem.clientHeight || 768;
 	
 	//TODO check if elem is an actual dom-element
+	var _mapdiv = elem;
 	//TODO: check if SVG?
 	var _svg = d3.select(elem).append('svg')
 		.attr("width", width)
@@ -107,6 +109,16 @@ d3_mappu_Map = function(elem, config) {
             console.log("do not touch the svg");
         }
     });
+     
+    Object.defineProperty(map, 'mapdiv', {
+        get: function() {
+            return _mapdiv;
+        },
+        set: function() {
+            console.log("do not touch the mapdiv");
+        }
+    }); 
+     
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
@@ -505,4 +517,28 @@ d3_mappu_Controllers = function(map){
         });
         
     map.svg.call(drag);
+};;/**
+ Generic layer object, to be extended.
+**/
+
+
+"use strict";
+d3.mappu.Coordinates = function(config) {
+    return d3_mappu_Coordinates(config);
+};
+
+d3_mappu_Coordinates = function(config){
+    var tool = {};
+        
+    
+    tool.addTo = function(map){
+        var coordsdiv = d3.select(map.mapdiv).append('div').classed('coordinates',true);
+
+        map.svg.on('mousemove', function(e){
+            var loc = d3.mouse(this);
+            var crds = map.projection.invert(loc);
+            coordsdiv.html('lat: ' + Math.round(crds[0] * 100) / 100 + '| lon: ' + Math.round(crds[1] * 100) / 100);
+        });
+    };
+    return tool;
 };

@@ -34,11 +34,16 @@ Layer styling happens in CSS, or in a per-feature function
     stroke: steelBlue;
 }
 
-#coordinates {
+.coordinates {
     font-size: 8pt;
     position: absolute;
-    bottom: 2px;
+    top: 2px;
     left: 2px;
+}
+
+.popover {
+    position: absolute;
+    background: white;
 }
 
 </style>
@@ -62,6 +67,7 @@ var map = new d3.mappu.Map(element, {
         projection: d3.geo.mercator()
         //projection: d3.geo.albers() //future work
 });
+var coords = new d3.mappu.Coordinates().addTo(map);
 
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
@@ -96,7 +102,15 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         }
       },{
         event: 'click',
-        action: function(){console.log('Clicked', this);}
+        action: function(){
+            console.log('Clicked', this);
+            var element = document.getElementById('map');
+            var loc = d3.mouse(element);
+            d3.select('#map').append('div').classed('popover', true)
+                .style('left', loc[0]+'px')
+                .style('top', loc[1]+'px')
+                .html(function(d){return d;});
+        }
     }]
 }).addTo(map);
 
@@ -110,17 +124,13 @@ d3.json("gemeenten.topojson", function(error, data) {
   if (error) return console.error(error);
   //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
-
-map.svg.on('click', function(e){
-   console.log(d3.mouse(map.svg));
-});
-
+/*
 map.svg.on('mousemove', function(e){
     var loc = d3.mouse(this);
-    var crds = map.projection.invert(loc)
+    var crds = map.projection.invert(loc);
     d3.select('#coordinates').html('lat: ' + crds[0] + '| lon: ' + crds[1]);
 });
-
+*/
 </script>
 
 </body>
