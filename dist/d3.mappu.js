@@ -29,23 +29,25 @@ projection: projection              default = d3.geo.mercator()
 */
 
 
-d3.mappu.Map = function(elem, config) {
-    return d3_mappu_Map(elem, config);
+d3.mappu.Map = function(id, config) {
+    return d3_mappu_Map(id, config);
 };
 
-d3_mappu_Map = function(elem, config) {
+d3_mappu_Map = function(id, config) {
     
     var map = {};
 	var self = this;
 	var _layers = [];
-	//TODO: how to get the size of the map
-	var width = elem.clientWidth || 1024;
-	var height = elem.clientHeight || 768;
 	
 	//TODO check if elem is an actual dom-element
-	var _mapdiv = elem;
+	var _mapdiv = document.getElementById(id);;
+	
+	//TODO: how to get the size of the map
+	var width = _mapdiv.clientWidth || 1024;
+	var height = _mapdiv.clientHeight || 768;
+	
 	//TODO: check if SVG?
-	var _svg = d3.select(elem).append('svg')
+	var _svg = d3.select(_mapdiv).append('svg')
 		.attr("width", width)
 		.attr("height", height);
 
@@ -529,7 +531,6 @@ d3.mappu.Coordinates = function(config) {
 
 d3_mappu_Coordinates = function(config){
     var tool = {};
-        
     
     tool.addTo = function(map){
         var coordsdiv = d3.select(map.mapdiv).append('div').classed('coordinates',true);

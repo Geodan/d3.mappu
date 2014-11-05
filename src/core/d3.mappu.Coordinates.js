@@ -10,7 +10,6 @@ d3.mappu.Coordinates = function(config) {
 
 d3_mappu_Coordinates = function(config){
     var tool = {};
-        
     
     tool.addTo = function(map){
         var coordsdiv = d3.select(map.mapdiv).append('div').classed('coordinates',true);
