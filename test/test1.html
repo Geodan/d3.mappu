@@ -1,7 +1,8 @@
-<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<!DOCTYPE html>
 <html>
 <head>
-<script src="../bower_components/d3/d3.js"></script>
+<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<script src="../bower_components/d3/d3.js" charset="utf-8"></script>
 <script src="../bower_components/topojson/topojson.js"></script>
 <script src="../bower_components/d3-plugins/geo/tile/tile.js"></script>
 <script src="../dist/d3.mappu.js"></script>
@@ -56,20 +57,29 @@ var layer = new d3.mappu.RasterLayer('layer1', {
     url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
 }).addTo(map);
 
-var nwblayer = new d3.mappu.RasterLayer('nwb', {
+var laag1 = new d3.mappu.RasterLayer('pico:pc6_gas_sjv_verwacht', {
     ogc_type: 'wms',
-    url: "http://pico.ontw.geodan.nl:8080/geoserver/pico/wms?",
-    layers: 'pico:oplaadpalen'
-}).addTo(map);
+    url: "http://pico.geodan.nl/geoserver/pico/wms?",
+    layers: 'pico:pc6_gas_sjv_verwacht'
+})//.addTo(map);
 
+var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
+    ogc_type: 'wms',
+    url: "http://pico.geodan.nl/geoserver/pico/wms?",
+    layers: 'pico:pico_sjv_sf'
+})//.addTo(map);
+
+
+
+//var controllers = d3.mappu.Controllers(map);
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    reproject: false,
+    reproject: true,
     events: [{
         event: 'mouseover',
         action: function(){
-            d3.select(this).style('opacity',0.3)
-                .transition().style('opacity', 1);
+            d3.select(this).style('opacity',0.3).style('fill','#FF0033')
+                .transition().style('opacity', 1).style('fill','none');
         }
       },{
         event: 'click',
@@ -85,7 +95,7 @@ d3.json("gemeenten_simple.topojson", function(error, data) {
 
 d3.json("gemeenten.topojson", function(error, data) {
   if (error) return console.error(error);
-  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+  //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
 
 

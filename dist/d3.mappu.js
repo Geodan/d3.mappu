@@ -365,13 +365,14 @@ d3_mappu_Layer = function(name, config){
       
       var refresh = function(){
           var zoombehaviour = layer.map.zoombehaviour;
-          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          var drawboard = layer.drawboard;
+          drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.attr("d", mypath);
+              entities.attr("d", layer.map.path);
           }
           else {
-            layer.drawboard
+            drawboard
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
           }
@@ -487,4 +488,19 @@ d3_mappu_Layer = function(name, config){
   
   d3_mappu_RasterLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
-  
+  ;"use strict";
+d3.mappu.Controllers = function(map) {
+    return d3_mappu_Controllers(map);
+};
+
+d3_mappu_Controllers = function(map){
+    var drag = d3.behavior.drag()
+        .on('drag',function(e){
+            console.log('Drag', d3.mouse(this));
+        })
+        .on('dragend',function(e,d){
+            console.log('Dragend',d3.mouse(this)); 
+        });
+        
+    map.svg.call(drag);
+};
