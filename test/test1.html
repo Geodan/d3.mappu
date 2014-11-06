@@ -77,14 +77,14 @@ var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
     //url: "http://pico.geodan.nl/geoserver/pico/wms?",
     url: "/service/pico/geoserver/pico/wms?",
     layers: 'pico:pico_sjv_sf'
-}).addTo(map);
-
+})//.addTo(map);
+map.addLayer(laag2);
 
 
 //var controllers = d3.mappu.Controllers(map);
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    reproject: false,
+    reproject: true,
     events: [{
         event: 'mouseover',
         action: function(){
