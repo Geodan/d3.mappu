@@ -59,7 +59,7 @@
                     .replace('{z}',d[2])
                     .replace('{x}',d[0])
                     .replace('{y}',d[1])
-                    //FIXME: why are these curly brackets killed when used with polymer?
+                    //FIXME: why are these curly brackets killed when used with polymer?                    
                     .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 4 | 0])
                     .replace('%7Bz%7D',d[2])
                     .replace('%7Bx%7D',d[0])
@@ -86,6 +86,7 @@
             //&BBOX=144587.40296%2C458169.888794%2C146661.115594%2C460572.017456
             //&SERVICE=WMS&INFO_FORMAT=text%2Fhtml&QUERY_LAYERS=pico%3Apc6_energieverbruik_alliander&FEATURE_COUNT=50&Layers=pico%3Apc6_energieverbruik_alliander
             //&WIDTH=442&HEIGHT=512&format=image%2Fpng&styles=&srs=EPSG%3A28992&version=1.1.1&x=243&y=190
+            //TODO: make this more flexible
             var url = _url +
                 "&SRS=EPSG:900913" + 
                 "&QUERY_LAYERS=" + _layers +
@@ -134,7 +135,7 @@
       
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this._display);
+          layer.drawboard.style('opacity', this._opacity).style('display',this._display);
       };
       
       layer.refresh = refresh;

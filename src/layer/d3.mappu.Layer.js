@@ -24,6 +24,7 @@ d3_mappu_Layer = function(name, config){
     };
     var moveDown = function(){
     };
+    /*SMO: what does this do?*/
     var addTo = function(map){
         _map = map;
         layer.drawboard = _map.svg.append('g');
