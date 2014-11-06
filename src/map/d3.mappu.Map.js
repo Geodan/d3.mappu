@@ -40,7 +40,7 @@ d3_mappu_Map = function(elem, config) {
 	var _zoom = config.zoom || 10;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
-	var _maxView = config.maxView;
+	var _maxView = config.maxView || [[-180,90],[180,-90]];
 	
 	var draw = function(){
 	    //Calculate tile set
@@ -96,7 +96,7 @@ d3_mappu_Map = function(elem, config) {
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
-            return _zoom=== undefined ? 0 : _zoom;
+            return _zoom;
         },
         set: function(value) {
             _zoom = value;
@@ -106,7 +106,7 @@ d3_mappu_Map = function(elem, config) {
 // .minZoom : (zoomlevel)
     Object.defineProperty(map, 'minZoom', {
         get: function() {
-            return _minZoom=== undefined ? 0 : _minZoom;
+            return _minZoom;
         },
         set: function(value) {
             _minZoom = value;
@@ -115,7 +115,7 @@ d3_mappu_Map = function(elem, config) {
 // .maxZoom : (zoomlevel)
     Object.defineProperty(map, 'maxZoom', {
         get: function() {
-            return _maxZoom=== undefined ? 13 : _maxZoom;
+            return _maxZoom;
         },
         set: function(value) {
             _maxZoom = value;
@@ -124,7 +124,7 @@ d3_mappu_Map = function(elem, config) {
 // .maxView : ([[long,lat],[long,lat]])
     Object.defineProperty(map, 'maxView', {
         get: function() {
-            return _maxView=== undefined ? [[-180,90],[180,-90]] : _maxView;
+            return _maxView;
         },
         set: function(value) {
             _maxView = value;
@@ -133,7 +133,7 @@ d3_mappu_Map = function(elem, config) {
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
         get: function() {
-            return _center === undefined?[0,0] : _center;
+            return _center;
         },
         set: function(value) {
             _center = value;
@@ -142,7 +142,7 @@ d3_mappu_Map = function(elem, config) {
 // .projection : ({projection})
     Object.defineProperty(map, 'projection', {
         get: function() {
-            return _projection=== undefined ? d3.geo.mercator() : _projection;
+            return _projection;
         },
         set: function(obj) {
           _projection = obj;
