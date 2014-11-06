@@ -12,7 +12,8 @@ module.exports = function(grunt){
             'src/core/d3.mappu.util.js',
             'src/map/d3.mappu.Map.js',
             'src/layer/d3.mappu.Layer.js',
-            'src/layer/d3.mappu.VectorLayer.js'
+            'src/layer/d3.mappu.VectorLayer.js',
+	    'src/layer/d3.mappu.RasterLayer.js'
             ],
             // the location of the resulting JS file
             dest: 'dist/<%= pkg.name %>.js'

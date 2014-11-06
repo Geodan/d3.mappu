@@ -9,29 +9,56 @@
 	  var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
-      this._layertype = 'vector';
-	  this.path = d3.geo.path()
-					.projection(map.projection);
-     
-	  this.drawboard = map.svg.append('path');
+      var layertype = 'vector';
+      var _data = [];
+	  var drawboard;
 	  
-      /* exposed */
+      /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
-            return self._data===undefined?[]:self._data;
+            return _data;
         },
         set: function(array) {
-            self._data = array;
-            this.draw();
+            _data = array;
+            draw(true);
         }
       });
       
-      layer.draw = function(){
-          self.drawboard
-            .datum(layer.data)
-            .attr("d", self.path);
+      var draw = function(rebuild){
+          var drawboard = layer.drawboard;
+          if (rebuild){
+               drawboard.selectAll('.entity').remove();
+          }
+          var entities = drawboard.selectAll('.entity').data(_data);
+          
+          var newpaths = entities.enter().append('path').attr("d", layer.map.path)
+            .classed('entity',true).classed(name, true);
+          // Add events from config
+          if (config.events){
+              config.events.forEach(function(d){
+                 newpaths.on(d.event, d.action);
+              });
+          }
+          layer.refresh();
       };
       
+      var refresh = function(){
+          var zoombehaviour = layer.map.zoombehaviour;
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          if (config.reproject){
+              var entities = drawboard.selectAll('.entity');
+              entities.attr("d", mypath);
+          }
+          else {
+            layer.drawboard
+              .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
+              .style("stroke-width", 1 / zoombehaviour.scale());
+          }
+      };
+      
+      /* Exposed functions*/
+      layer.refresh = refresh;
+      layer.draw = draw;
       return layer;
   };
   

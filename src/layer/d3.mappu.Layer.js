@@ -10,29 +10,79 @@ d3.mappu.Layer = function(name, config) {
 
 d3_mappu_Layer = function(name, config){
     var layer = {};
-    this.config = config;
-    layer.name = name;
-    layer.id = null;//TODO: automatic ID gen
-    layer.name = name;
-    layer.opacity = 1;
-    layer.visible = true;  
-  
-          
-    /* DEBUG */
-    layer.drawboard = d3.select('map');
-    /* END DEBUG */
+    var _map;
+    var _id = new Date().getTime();//TODO: automatic ID gen
+    var _name = name;
+    var opacity = 1;
+    var visible = true;  
+    var _display = 'block';
+    
+    var refresh = function(){
+    };
+    var moveUp = function(){
+    };
+    var moveDown = function(){
+    };
+    var addTo = function(map){
+        _map = map;
+        layer.drawboard = _map.svg.append('g');
+        _map.addLayer(layer);
+        return layer;
+    };
+    
+    Object.defineProperty(layer, 'id', {
+        get: function() {return _id;},
+        set: function() {console.warn('setting ID not allowed for layer');}
+    });
+    
+    Object.defineProperty(layer, 'name', {
+        get: function() {
+            return _name;
+        },
+        set: function(val) {
+            _name = val;
+        }
+    });
+    
+    Object.defineProperty(layer, 'map', {
+        get: function() {
+            return _map;
+        },
+        set: function(val) {
+            _map = val;
+        }
+    });
+    
+    Object.defineProperty(layer, 'opacity', {
+        get: function() {
+            return opacity;
+        },
+        set: function(val) {
+            opacity = val;
+            layer.refresh();
+        }
+    });
+    
+    Object.defineProperty(layer, 'visible', {
+        get: function() {
+            return visible;
+        },
+        set: function(val) {
+            visible = val;
+            layer.refresh();
+        }
+    });
     
     /* exposed: */
-    layer.refresh =  function(){
-    };
-    layer.moveUp = function(){
-    };
-    layer.moveDown = function(){
-    };
+    layer.refresh = refresh;  
+    layer.moveUp = moveUp;
+    layer.moveDown = moveDown;
+    layer.addTo = addTo;
 
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
-        this.map = map;
+        _map = map;
+        drawboard = _map.svg.append('g');
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     };
