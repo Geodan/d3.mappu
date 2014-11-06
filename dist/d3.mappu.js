@@ -36,7 +36,6 @@ d3.mappu.Map = function(id, config) {
 d3_mappu_Map = function(id, config) {
     
     var map = {};
-	var self = this;
 	var _layers = [];
 	
 	//TODO check if elem is an actual dom-element
@@ -57,7 +56,7 @@ d3_mappu_Map = function(id, config) {
 	var _zoom = config.zoom || 10;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
-	var _maxView = config.maxView;
+	var _maxView = config.maxView || [[-180,90],[180,-90]];
 	
 	var draw = function(){
 	    //Calculate tile set
@@ -100,6 +99,7 @@ d3_mappu_Map = function(id, config) {
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
     
+   
 // exposed functions
 
 ////getter/setter functions
@@ -124,53 +124,53 @@ d3_mappu_Map = function(id, config) {
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
-            return _zoom === undefined ? 0 : _zoom;
+            return _zoom;
         },
-        set: function(value) {
-            _zoom = value;
+        set: function(val) {
+            _zoom = val;
         }
     });
 
 // .minZoom : (zoomlevel)
     Object.defineProperty(map, 'minZoom', {
         get: function() {
-            return _minZoom === undefined ? 0 : _minZoom;
+            return _minZoom;
         },
-        set: function(value) {
-            _minZoom = value;
+        set: function(val) {
+            _minZoom = val;
         }
     });
 // .maxZoom : (zoomlevel)
     Object.defineProperty(map, 'maxZoom', {
         get: function() {
-            return _maxZoom === undefined ? 13 : _maxZoom;
+            return _maxZoom;
         },
-        set: function(value) {
-            _maxZoom = value;
+        set: function(val) {
+            _maxZoom = val;
         }
     });
 // .maxView : ([[long,lat],[long,lat]])
     Object.defineProperty(map, 'maxView', {
         get: function() {
-            return _maxView === undefined ? [[-180,90],[180,-90]] : _maxView;
+            return _maxView;
         },
-        set: function(value) {
-            _maxView = value;
+        set: function(val) {
+            _maxView = val;
         }
     });
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
         get: function() {
-            return _center === undefined?[0,0] : _center;
+            return _center;
         },
-        set: function(value) {
-            _center = value;
+        set: function(val) {
+            _center = val;
         }
     });
 // .projection : ({projection})
     Object.defineProperty(map, 'projection', {
         get: function() {
-            return _projection === undefined ? d3.geo.mercator() : _projection;
+            return _projection;
         },
         set: function(obj) {
           _projection = obj;
@@ -256,10 +256,11 @@ d3.mappu.Layer = function(name, config) {
 d3_mappu_Layer = function(name, config){
     var layer = {};
     var _map;
-    var _id = new Date().getTime();//TODO: automatic ID gen
+    var _id = d3.mappu.util.createID();
     var _name = name;
-    var opacity = 1;
-    var visible = true;  
+    //TODO: parse config
+    var _opacity = 1;
+    var _visible = true;  
     var _display = 'block';
     
     var refresh = function(){
@@ -268,6 +269,7 @@ d3_mappu_Layer = function(name, config){
     };
     var moveDown = function(){
     };
+    /*SMO: what does this do?*/
     var addTo = function(map){
         _map = map;
         layer.drawboard = _map.svg.append('g');
@@ -301,20 +303,20 @@ d3_mappu_Layer = function(name, config){
     
     Object.defineProperty(layer, 'opacity', {
         get: function() {
-            return opacity;
+            return _opacity;
         },
         set: function(val) {
-            opacity = val;
+            _opacity = val;
             layer.refresh();
         }
     });
     
     Object.defineProperty(layer, 'visible', {
         get: function() {
-            return visible;
+            return _visible;
         },
         set: function(val) {
-            visible = val;
+            _visible = val;
             layer.refresh();
         }
     });
@@ -335,6 +337,7 @@ d3_mappu_Layer = function(name, config){
     
     return layer;
 };
+//                                                                          マップ
 ;  /**
 	 
   **/
@@ -343,7 +346,6 @@ d3_mappu_Layer = function(name, config){
   };
   
   d3_mappu_VectorLayer = function(name, config) {
-	  var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       var layertype = 'vector';
@@ -402,6 +404,7 @@ d3_mappu_Layer = function(name, config){
   
   d3_mappu_VectorLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
+  //                                                                          マップ
   ;  /**
 	 
   **/
@@ -463,7 +466,7 @@ d3_mappu_Layer = function(name, config){
                     .replace('{z}',d[2])
                     .replace('{x}',d[0])
                     .replace('{y}',d[1])
-                    //FIXME: why are these curly brackets killed when used with polymer?
+                    //FIXME: why are these curly brackets killed when used with polymer?                    
                     .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 4 | 0])
                     .replace('%7Bz%7D',d[2])
                     .replace('%7Bx%7D',d[0])
@@ -490,6 +493,7 @@ d3_mappu_Layer = function(name, config){
             //&BBOX=144587.40296%2C458169.888794%2C146661.115594%2C460572.017456
             //&SERVICE=WMS&INFO_FORMAT=text%2Fhtml&QUERY_LAYERS=pico%3Apc6_energieverbruik_alliander&FEATURE_COUNT=50&Layers=pico%3Apc6_energieverbruik_alliander
             //&WIDTH=442&HEIGHT=512&format=image%2Fpng&styles=&srs=EPSG%3A28992&version=1.1.1&x=243&y=190
+            //TODO: make this more flexible
             var url = _url +
                 "&SRS=EPSG:900913" + 
                 "&QUERY_LAYERS=" + _layers +
@@ -506,10 +510,12 @@ d3_mappu_Layer = function(name, config){
                 "&BBOX=" + getbbox(d);
             d3.json(url, function(error,response){
                 var feat = response.features[0];
+                //TODO: check if there is a response
+                //TODO: show more than 1 response
                 d3.select('#map').append('div').classed('popover', true)
                     .style('left', loc2[0]+'px')
                     .style('top', loc2[1]+'px')
-                    .html(feat); 
+                    .html(feat.id); 
             });
             console.log(url);
           }
@@ -529,7 +535,8 @@ d3_mappu_Layer = function(name, config){
               .attr("xlink:href", tileurl)
               .attr("width", 1)
               .attr("height", 1)
-              .attr('opacity', self._opacity)
+              //SMO: why self?
+              .attr('opacity', self.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
               .on('click', getFeatureInfo);
@@ -538,7 +545,7 @@ d3_mappu_Layer = function(name, config){
       
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this._display);
+          layer.drawboard.style('opacity', this.opacity).style('display',this.display);
       };
       
       layer.refresh = refresh;
@@ -548,6 +555,7 @@ d3_mappu_Layer = function(name, config){
   
   d3_mappu_RasterLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
+  //                                                                          マップ
   ;"use strict";
 d3.mappu.Controllers = function(map) {
     return d3_mappu_Controllers(map);
