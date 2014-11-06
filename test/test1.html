@@ -74,7 +74,8 @@ var laag1 = new d3.mappu.RasterLayer('pico:pc6_gas_sjv_verwacht', {
 
 var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
     ogc_type: 'wms',
-    url: "http://pico.geodan.nl/geoserver/pico/wms?",
+    //url: "http://pico.geodan.nl/geoserver/pico/wms?",
+    url: "/service/pico/geoserver/pico/wms?",
     layers: 'pico:pico_sjv_sf'
 }).addTo(map);
 
@@ -109,7 +110,7 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
 
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);
-  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+  //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
 
 d3.json("gemeenten.topojson", function(error, data) {
