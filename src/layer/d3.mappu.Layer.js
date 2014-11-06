@@ -14,8 +14,8 @@ d3_mappu_Layer = function(name, config){
     var _id = d3.mappu.util.createID();
     var _name = name;
     //TODO: parse config
-    var opacity = 1;
-    var visible = true;  
+    var _opacity = 1;
+    var _visible = true;  
     var _display = 'block';
     
     var refresh = function(){
@@ -56,20 +56,20 @@ d3_mappu_Layer = function(name, config){
     
     Object.defineProperty(layer, 'opacity', {
         get: function() {
-            return opacity;
+            return _opacity;
         },
         set: function(val) {
-            opacity = val;
+            _opacity = val;
             layer.refresh();
         }
     });
     
     Object.defineProperty(layer, 'visible', {
         get: function() {
-            return visible;
+            return _visible;
         },
         set: function(val) {
-            visible = val;
+            _visible = val;
             layer.refresh();
         }
     });

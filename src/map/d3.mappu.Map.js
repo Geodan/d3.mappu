@@ -82,6 +82,7 @@ d3_mappu_Map = function(elem, config) {
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
 
+    var _qt = d3.quadTiles(_projection
 // exposed functions
 
 ////getter/setter functions
