@@ -13,6 +13,7 @@ d3_mappu_Layer = function(name, config){
     var _map;
     var _id = d3.mappu.util.createID();
     var _name = name;
+    //TODO: parse config
     var opacity = 1;
     var visible = true;  
     var _display = 'block';

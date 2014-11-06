@@ -98,8 +98,8 @@ d3_mappu_Map = function(elem, config) {
         get: function() {
             return _zoom;
         },
-        set: function(value) {
-            _zoom = value;
+        set: function(val) {
+            _zoom = val;
         }
     });
 
@@ -108,8 +108,8 @@ d3_mappu_Map = function(elem, config) {
         get: function() {
             return _minZoom;
         },
-        set: function(value) {
-            _minZoom = value;
+        set: function(val) {
+            _minZoom = val;
         }
     });
 // .maxZoom : (zoomlevel)
@@ -117,8 +117,8 @@ d3_mappu_Map = function(elem, config) {
         get: function() {
             return _maxZoom;
         },
-        set: function(value) {
-            _maxZoom = value;
+        set: function(val) {
+            _maxZoom = val;
         }
     });
 // .maxView : ([[long,lat],[long,lat]])
@@ -126,8 +126,8 @@ d3_mappu_Map = function(elem, config) {
         get: function() {
             return _maxView;
         },
-        set: function(value) {
-            _maxView = value;
+        set: function(val) {
+            _maxView = val;
         }
     });
 // .center : ([long,lat])
@@ -135,8 +135,8 @@ d3_mappu_Map = function(elem, config) {
         get: function() {
             return _center;
         },
-        set: function(value) {
-            _center = value;
+        set: function(val) {
+            _center = val;
         }
     });
 // .projection : ({projection})
