@@ -6,7 +6,6 @@
   };
   
   d3_mappu_VectorLayer = function(name, config) {
-	  var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       var layertype = 'vector';

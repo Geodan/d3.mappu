@@ -99,7 +99,7 @@ d3_mappu_Map = function(id, config) {
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
     
-   //var _qt = d3.quadTiles(_projection
+   
 // exposed functions
 
 ////getter/setter functions
@@ -269,6 +269,7 @@ d3_mappu_Layer = function(name, config){
     };
     var moveDown = function(){
     };
+    /*SMO: what does this do?*/
     var addTo = function(map){
         _map = map;
         layer.drawboard = _map.svg.append('g');
@@ -345,7 +346,6 @@ d3_mappu_Layer = function(name, config){
   };
   
   d3_mappu_VectorLayer = function(name, config) {
-	  var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       var layertype = 'vector';
@@ -466,7 +466,7 @@ d3_mappu_Layer = function(name, config){
                     .replace('{z}',d[2])
                     .replace('{x}',d[0])
                     .replace('{y}',d[1])
-                    //FIXME: why are these curly brackets killed when used with polymer?
+                    //FIXME: why are these curly brackets killed when used with polymer?                    
                     .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 4 | 0])
                     .replace('%7Bz%7D',d[2])
                     .replace('%7Bx%7D',d[0])
@@ -493,6 +493,7 @@ d3_mappu_Layer = function(name, config){
             //&BBOX=144587.40296%2C458169.888794%2C146661.115594%2C460572.017456
             //&SERVICE=WMS&INFO_FORMAT=text%2Fhtml&QUERY_LAYERS=pico%3Apc6_energieverbruik_alliander&FEATURE_COUNT=50&Layers=pico%3Apc6_energieverbruik_alliander
             //&WIDTH=442&HEIGHT=512&format=image%2Fpng&styles=&srs=EPSG%3A28992&version=1.1.1&x=243&y=190
+            //TODO: make this more flexible
             var url = _url +
                 "&SRS=EPSG:900913" + 
                 "&QUERY_LAYERS=" + _layers +
@@ -509,6 +510,8 @@ d3_mappu_Layer = function(name, config){
                 "&BBOX=" + getbbox(d);
             d3.json(url, function(error,response){
                 var feat = response.features[0];
+                //TODO: check if there is a response
+                //TODO: show more than 1 response
                 d3.select('#map').append('div').classed('popover', true)
                     .style('left', loc2[0]+'px')
                     .style('top', loc2[1]+'px')
@@ -532,7 +535,8 @@ d3_mappu_Layer = function(name, config){
               .attr("xlink:href", tileurl)
               .attr("width", 1)
               .attr("height", 1)
-              .attr('opacity', self._opacity)
+              //SMO: why self?
+              .attr('opacity', self.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
               .on('click', getFeatureInfo);
@@ -541,7 +545,7 @@ d3_mappu_Layer = function(name, config){
       
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this._display);
+          layer.drawboard.style('opacity', this.opacity).style('display',this.display);
       };
       
       layer.refresh = refresh;

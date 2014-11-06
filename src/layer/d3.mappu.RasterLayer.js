@@ -103,6 +103,8 @@
                 "&BBOX=" + getbbox(d);
             d3.json(url, function(error,response){
                 var feat = response.features[0];
+                //TODO: check if there is a response
+                //TODO: show more than 1 response
                 d3.select('#map').append('div').classed('popover', true)
                     .style('left', loc2[0]+'px')
                     .style('top', loc2[1]+'px')
@@ -126,7 +128,8 @@
               .attr("xlink:href", tileurl)
               .attr("width", 1)
               .attr("height", 1)
-              .attr('opacity', self._opacity)
+              //SMO: why self?
+              .attr('opacity', self.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
               .on('click', getFeatureInfo);
@@ -135,7 +138,7 @@
       
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this._opacity).style('display',this._display);
+          layer.drawboard.style('opacity', this.opacity).style('display',this.display);
       };
       
       layer.refresh = refresh;
