@@ -17,21 +17,24 @@ projection: projection              default = d3.geo.mercator()
 */
 
 
-d3.mappu.Map = function(elem, config) {
-    return d3_mappu_Map(elem, config);
+d3.mappu.Map = function(id, config) {
+    return d3_mappu_Map(id, config);
 };
 
-d3_mappu_Map = function(elem, config) {
+d3_mappu_Map = function(id, config) {
+    
     var map = {};
-	var self = this;
 	var _layers = [];
-	//TODO: how to get the size of the map
-	var width = elem.clientWidth || 1024;
-	var height = elem.clientHeight || 768;
 	
 	//TODO check if elem is an actual dom-element
+	var _mapdiv = document.getElementById(id);;
+	
+	//TODO: how to get the size of the map
+	var width = _mapdiv.clientWidth || 1024;
+	var height = _mapdiv.clientHeight || 768;
+	
 	//TODO: check if SVG?
-	var _svg = d3.select(elem).append('svg')
+	var _svg = d3.select(_mapdiv).append('svg')
 		.attr("width", width)
 		.attr("height", height);
 
@@ -41,7 +44,7 @@ d3_mappu_Map = function(elem, config) {
 	var _zoom = config.zoom || 10;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
-	var _maxView = config.maxView;
+	var _maxView = config.maxView || [[-180,90],[180,-90]];
 	
 	var draw = function(){
 	    //Calculate tile set
@@ -73,6 +76,7 @@ d3_mappu_Map = function(elem, config) {
         .on("zoom", draw);
 	_svg.call(_zoombehaviour);
 	
+	
     _projection
         .scale(1 / 2 / Math.PI)
         .translate([0, 0]);
@@ -82,7 +86,8 @@ d3_mappu_Map = function(elem, config) {
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-
+    
+   
 // exposed functions
 
 ////getter/setter functions
@@ -94,56 +99,66 @@ d3_mappu_Map = function(elem, config) {
             console.log("do not touch the svg");
         }
     });
+     
+    Object.defineProperty(map, 'mapdiv', {
+        get: function() {
+            return _mapdiv;
+        },
+        set: function() {
+            console.log("do not touch the mapdiv");
+        }
+    }); 
+     
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
-            return _zoom=== undefined ? 0 : _zoom;
+            return _zoom;
         },
-        set: function(value) {
-            _zoom = value;
+        set: function(val) {
+            _zoom = val;
         }
     });
 
 // .minZoom : (zoomlevel)
     Object.defineProperty(map, 'minZoom', {
         get: function() {
-            return _minZoom=== undefined ? 0 : _minZoom;
+            return _minZoom;
         },
-        set: function(value) {
-            _minZoom = value;
+        set: function(val) {
+            _minZoom = val;
         }
     });
 // .maxZoom : (zoomlevel)
     Object.defineProperty(map, 'maxZoom', {
         get: function() {
-            return _maxZoom=== undefined ? 13 : _maxZoom;
+            return _maxZoom;
         },
-        set: function(value) {
-            _maxZoom = value;
+        set: function(val) {
+            _maxZoom = val;
         }
     });
 // .maxView : ([[long,lat],[long,lat]])
     Object.defineProperty(map, 'maxView', {
         get: function() {
-            return _maxView=== undefined ? [[-180,90],[180,-90]] : _maxView;
+            return _maxView;
         },
-        set: function(value) {
-            _maxView = value;
+        set: function(val) {
+            _maxView = val;
         }
     });
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
         get: function() {
-            return _center === undefined?[0,0] : _center;
+            return _center;
         },
-        set: function(value) {
-            _center = value;
+        set: function(val) {
+            _center = val;
         }
     });
 // .projection : ({projection})
     Object.defineProperty(map, 'projection', {
         get: function() {
-            return _projection=== undefined ? d3.geo.mercator() : _projection;
+            return _projection;
         },
         set: function(obj) {
           _projection = obj;
@@ -211,6 +226,7 @@ d3_mappu_Map = function(elem, config) {
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
     map.draw = draw;
+    
     return map;
 };
 

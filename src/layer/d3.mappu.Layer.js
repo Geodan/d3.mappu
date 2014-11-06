@@ -11,10 +11,11 @@ d3.mappu.Layer = function(name, config) {
 d3_mappu_Layer = function(name, config){
     var layer = {};
     var _map;
-    var _id = new Date().getTime();//TODO: automatic ID gen
+    var _id = d3.mappu.util.createID();
     var _name = name;
-    var opacity = 1;
-    var visible = true;  
+    //TODO: parse config
+    var _opacity = 1;
+    var _visible = true;  
     var _display = 'block';
     
     var refresh = function(){
@@ -23,10 +24,12 @@ d3_mappu_Layer = function(name, config){
     };
     var moveDown = function(){
     };
+    /*SMO: what does this do?*/
     var addTo = function(map){
         _map = map;
         layer.drawboard = _map.svg.append('g');
         _map.addLayer(layer);
+        layer.draw();
         return layer;
     };
     
@@ -55,20 +58,20 @@ d3_mappu_Layer = function(name, config){
     
     Object.defineProperty(layer, 'opacity', {
         get: function() {
-            return opacity;
+            return _opacity;
         },
         set: function(val) {
-            opacity = val;
+            _opacity = val;
             layer.refresh();
         }
     });
     
     Object.defineProperty(layer, 'visible', {
         get: function() {
-            return visible;
+            return _visible;
         },
         set: function(val) {
-            visible = val;
+            _visible = val;
             layer.refresh();
         }
     });
@@ -89,3 +92,4 @@ d3_mappu_Layer = function(name, config){
     
     return layer;
 };
+//                                                                          マップ
