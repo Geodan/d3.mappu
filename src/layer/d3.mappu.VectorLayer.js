@@ -64,4 +64,5 @@
   
   d3_mappu_VectorLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
+  //                                                                          マップ
   

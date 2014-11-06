@@ -72,4 +72,5 @@
   
   d3_mappu_RasterLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
+  //                                                                          マップ
   
