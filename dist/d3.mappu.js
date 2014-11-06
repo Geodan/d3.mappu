@@ -239,7 +239,7 @@ d3.mappu.Layer = function(name, config) {
 d3_mappu_Layer = function(name, config){
     var layer = {};
     var _map;
-    var _id = new Date().getTime();//TODO: automatic ID gen
+    var _id = d3.mappu.util.createID();
     var _name = name;
     var opacity = 1;
     var visible = true;  
@@ -317,6 +317,7 @@ d3_mappu_Layer = function(name, config){
     
     return layer;
 };
+//                                                                          マップ
 ;  /**
 	 
   **/
@@ -383,6 +384,7 @@ d3_mappu_Layer = function(name, config){
   
   d3_mappu_VectorLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
+  //                                                                          マップ
   ;  /**
 	 
   **/
@@ -457,4 +459,5 @@ d3_mappu_Layer = function(name, config){
   
   d3_mappu_RasterLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
+  //                                                                          マップ
   
