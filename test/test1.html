@@ -1,7 +1,8 @@
-<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<!DOCTYPE html>
 <html>
 <head>
-<script src="../bower_components/d3/d3.js"></script>
+<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<script src="../bower_components/d3/d3.js" charset="utf-8"></script>
 <script src="../bower_components/topojson/topojson.js"></script>
 <script src="../bower_components/d3-plugins/geo/tile/tile.js"></script>
 <script src="../dist/d3.mappu.js"></script>
@@ -28,8 +29,21 @@ path {
 Layer styling happens in CSS, or in a per-feature function
 **/
 .mylayer {
-    fill: none;
+    fill: steelBlue;
+    fill-opacity: 0.4;
     stroke: steelBlue;
+}
+
+.coordinates {
+    font-size: 8pt;
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+}
+
+.popover {
+    position: absolute;
+    background: white;
 }
 
 </style>
@@ -37,51 +51,72 @@ Layer styling happens in CSS, or in a per-feature function
 </head>
 <body>
 <div id='map'></div>
-<script>
-/* TODO: move this to map object */
-var element = document.getElementById('map');
-var tiles;
-var width = window.innerWidth;
-var height = window.innerHeight;
-/* end todo */ 
 
-var map = new d3.mappu.Map(element, {
+<script>
+
+var map = new d3.mappu.Map('map', {
         center: [6,52],
         projection: d3.geo.mercator()
         //projection: d3.geo.albers() //future work
 });
+var coords = new d3.mappu.Coordinates().addTo(map);
 
 var layer = new d3.mappu.RasterLayer('layer1', {
-    type: 'tms',
+    ogc_type: 'tms',
     url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
 }).addTo(map);
-layer.draw();
+
+var laag1 = new d3.mappu.RasterLayer('pico:pc6_gas_sjv_verwacht', {
+    ogc_type: 'wms',
+    url: "http://pico.geodan.nl/geoserver/pico/wms?",
+    layers: 'pico:pc6_gas_sjv_verwacht'
+})//.addTo(map);
+
+var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
+    ogc_type: 'wms',
+    //url: "http://pico.geodan.nl/geoserver/pico/wms?",
+    url: "/service/pico/geoserver/pico/wms?",
+    layers: 'pico:pico_sjv_sf'
+}).addTo(map);
+
+
+
+//var controllers = d3.mappu.Controllers(map);
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
     reproject: false,
     events: [{
         event: 'mouseover',
         action: function(){
-            d3.select(this).style('opacity',0.3)
-                .transition().style('opacity', 1);
+            var opac = d3.select(this).style('opacity');
+            var fill = d3.select(this).style('fill');
+            d3.select(this).style('opacity',0.3).style('fill','#FF0033')
+                .transition().style('opacity', opac).style('fill',fill);
         }
       },{
         event: 'click',
-        action: function(){console.log('Clicked', this);}
+        action: function(){
+            d3.selectAll('.popover').remove();
+            var element = document.getElementById('map');
+            var loc = d3.mouse(element);
+            d3.select('#map').append('div').classed('popover', true)
+                .style('left', loc[0]+'px')
+                .style('top', loc[1]+'px')
+                .html('Info goes here....');
+        }
     }]
 }).addTo(map);
 
 
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);
-  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+  //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
 
 d3.json("gemeenten.topojson", function(error, data) {
   if (error) return console.error(error);
-  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+  //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
-
 
 </script>
 
