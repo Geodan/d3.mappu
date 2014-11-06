@@ -29,20 +29,24 @@ projection: projection              default = d3.geo.mercator()
 */
 
 
-d3.mappu.Map = function(elem, config) {
-    return d3_mappu_Map(elem, config);
+d3.mappu.Map = function(id, config) {
+    return d3_mappu_Map(id, config);
 };
 
-d3_mappu_Map = function(elem, config) {
+d3_mappu_Map = function(id, config) {
+    
     var map = {};
 	var _layers = [];
-	//TODO: how to get the size of the map
-	var width = elem.clientWidth || 1024;
-	var height = elem.clientHeight || 768;
 	
 	//TODO check if elem is an actual dom-element
+	var _mapdiv = document.getElementById(id);;
+	
+	//TODO: how to get the size of the map
+	var width = _mapdiv.clientWidth || 1024;
+	var height = _mapdiv.clientHeight || 768;
+	
 	//TODO: check if SVG?
-	var _svg = d3.select(elem).append('svg')
+	var _svg = d3.select(_mapdiv).append('svg')
 		.attr("width", width)
 		.attr("height", height);
 
@@ -84,6 +88,7 @@ d3_mappu_Map = function(elem, config) {
         .on("zoom", draw);
 	_svg.call(_zoombehaviour);
 	
+	
     _projection
         .scale(1 / 2 / Math.PI)
         .translate([0, 0]);
@@ -93,7 +98,8 @@ d3_mappu_Map = function(elem, config) {
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-
+    
+   //var _qt = d3.quadTiles(_projection
 // exposed functions
 
 ////getter/setter functions
@@ -105,6 +111,16 @@ d3_mappu_Map = function(elem, config) {
             console.log("do not touch the svg");
         }
     });
+     
+    Object.defineProperty(map, 'mapdiv', {
+        get: function() {
+            return _mapdiv;
+        },
+        set: function() {
+            console.log("do not touch the mapdiv");
+        }
+    }); 
+     
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
@@ -222,6 +238,7 @@ d3_mappu_Map = function(elem, config) {
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
     map.draw = draw;
+    
     return map;
 };
 
@@ -242,8 +259,8 @@ d3_mappu_Layer = function(name, config){
     var _id = d3.mappu.util.createID();
     var _name = name;
     //TODO: parse config
-    var opacity = 1;
-    var visible = true;  
+    var _opacity = 1;
+    var _visible = true;  
     var _display = 'block';
     
     var refresh = function(){
@@ -256,6 +273,7 @@ d3_mappu_Layer = function(name, config){
         _map = map;
         layer.drawboard = _map.svg.append('g');
         _map.addLayer(layer);
+        layer.draw();
         return layer;
     };
     
@@ -284,20 +302,20 @@ d3_mappu_Layer = function(name, config){
     
     Object.defineProperty(layer, 'opacity', {
         get: function() {
-            return opacity;
+            return _opacity;
         },
         set: function(val) {
-            opacity = val;
+            _opacity = val;
             layer.refresh();
         }
     });
     
     Object.defineProperty(layer, 'visible', {
         get: function() {
-            return visible;
+            return _visible;
         },
         set: function(val) {
-            visible = val;
+            _visible = val;
             layer.refresh();
         }
     });
@@ -365,13 +383,14 @@ d3_mappu_Layer = function(name, config){
       
       var refresh = function(){
           var zoombehaviour = layer.map.zoombehaviour;
-          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          var drawboard = layer.drawboard;
+          drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.attr("d", mypath);
+              entities.attr("d", layer.map.path);
           }
           else {
-            layer.drawboard
+            drawboard
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
           }
@@ -400,6 +419,8 @@ d3_mappu_Layer = function(name, config){
       var layertype = 'raster';
       var drawboard;
       var _url = config.url;
+      var _ogc_type = config.ogc_type || 'tms';
+      var _layers = config.layers;
       
       Object.defineProperty(layer, 'url', {
         get: function() {
@@ -411,24 +432,36 @@ d3_mappu_Layer = function(name, config){
         }
       });
       
+      Object.defineProperty(layer, 'layers', {
+        get: function() {
+            return _layers;
+        },
+        set: function(val) {
+            _layers = val;
+            draw();
+        }
+      });
+      
       
       //Clear all tiles
       layer.clear = function(){
       };
       
-      //Draw the tiles (based on data-update)
-      var draw = function(){
-         var drawboard = layer.drawboard;
-         var tiles = layer.map.tiles;
-         drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
-         var image = drawboard.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
-         var imageEnter = image.enter();
-         imageEnter.append("image")
-              .classed('tile',true)
-              .attr("xlink:href", function(d) {
-                var url = "";
-                url = _url    
+      
+      
+      var getbbox = function(d){
+        var numtiles = 2 << (d[2]-1);
+        var tilesize = (20037508.34 * 2) / (numtiles);
+        var x = -20037508.34 + (d[0] * tilesize);
+        var y = 20037508.34 - ((d[1]+1) * tilesize);//shift 1 down, because we want LOWER left
+        var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
+        return bbox;
+      };
+      
+      var tileurl = function(d){
+          var url;
+          if (_ogc_type == 'tms') {
+              url = _url    
                     .replace('{s}',["a", "b", "c", "d"][Math.random() * 4 | 0])
                     .replace('{z}',d[2])
                     .replace('{x}',d[0])
@@ -438,13 +471,71 @@ d3_mappu_Layer = function(name, config){
                     .replace('%7Bz%7D',d[2])
                     .replace('%7Bx%7D',d[0])
                     .replace('%7By%7D',d[1]);
-                return url;
-              })
+          }
+          else if (_ogc_type == 'wms'){
+                //This calculation only works for tiles that are square and always the same size
+                var bbox = getbbox(d);
+                url =  _url + 
+                     "&bbox=" + bbox + 
+                     "&layers=" + _layers + 
+                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:900913&transparent=TRUE&format=image%2Fpng";
+          }
+          return url;
+      };
+      
+      var getFeatureInfo = function(d){
+          if (_ogc_type == 'wms'){
+            var loc = d3.mouse(this);
+            var loc2 = d3.mouse(map.mapdiv);
+            //http://pico.geodan.nl/geoserver/pico/wms?
+            //REQUEST=GetFeatureInfo
+            //&EXCEPTIONS=application%2Fvnd.ogc.se_xml
+            //&BBOX=144587.40296%2C458169.888794%2C146661.115594%2C460572.017456
+            //&SERVICE=WMS&INFO_FORMAT=text%2Fhtml&QUERY_LAYERS=pico%3Apc6_energieverbruik_alliander&FEATURE_COUNT=50&Layers=pico%3Apc6_energieverbruik_alliander
+            //&WIDTH=442&HEIGHT=512&format=image%2Fpng&styles=&srs=EPSG%3A28992&version=1.1.1&x=243&y=190
+            var url = _url +
+                "&SRS=EPSG:900913" + 
+                "&QUERY_LAYERS=" + _layers +
+                "&LAYERS=" + _layers + 
+                "&INFO_FORMAT=application/json" + 
+                "&REQUEST=GetFeatureInfo" + 
+                "&FEATURE_COUNT=50" + 
+                "&EXCEPTIONS=application/vnd.ogc.se_xml" + 
+                "&SERVICE=WMS" + 
+                "&VERSION=1.1.0" + 
+                "&WIDTH=256&HEIGHT=256" + 
+                "&X="+ Math.round(loc[0]) + 
+                "&Y="+ Math.round(loc[1]) + 
+                "&BBOX=" + getbbox(d);
+            d3.json(url, function(error,response){
+                var feat = response.features[0];
+                d3.select('#map').append('div').classed('popover', true)
+                    .style('left', loc2[0]+'px')
+                    .style('top', loc2[1]+'px')
+                    .html(feat.id); 
+            });
+            console.log(url);
+          }
+      };
+      
+      //Draw the tiles (based on data-update)
+      var draw = function(){
+
+         var drawboard = layer.drawboard;
+         var tiles = layer.map.tiles;
+         drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         var image = drawboard.selectAll(".tile")
+            .data(tiles, function(d) { return d; });
+         var imageEnter = image.enter();
+         imageEnter.append("image")
+              .classed('tile',true)
+              .attr("xlink:href", tileurl)
               .attr("width", 1)
               .attr("height", 1)
               .attr('opacity', self._opacity)
               .attr("x", function(d) { return d[0]; })
-              .attr("y", function(d) { return d[1]; });
+              .attr("y", function(d) { return d[1]; })
+              .on('click', getFeatureInfo);
          image.exit().remove();
       };
       
@@ -461,4 +552,42 @@ d3_mappu_Layer = function(name, config){
   d3_mappu_RasterLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
   //                                                                          マップ
-  
+  ;"use strict";
+d3.mappu.Controllers = function(map) {
+    return d3_mappu_Controllers(map);
+};
+
+d3_mappu_Controllers = function(map){
+    var drag = d3.behavior.drag()
+        .on('drag',function(e){
+            console.log('Drag', d3.mouse(this));
+        })
+        .on('dragend',function(e,d){
+            console.log('Dragend',d3.mouse(this)); 
+        });
+        
+    map.svg.call(drag);
+};;/**
+ Generic layer object, to be extended.
+**/
+
+
+"use strict";
+d3.mappu.Coordinates = function(config) {
+    return d3_mappu_Coordinates(config);
+};
+
+d3_mappu_Coordinates = function(config){
+    var tool = {};
+    
+    tool.addTo = function(map){
+        var coordsdiv = d3.select(map.mapdiv).append('div').classed('coordinates',true);
+
+        map.svg.on('mousemove', function(e){
+            var loc = d3.mouse(this);
+            var crds = map.projection.invert(loc);
+            coordsdiv.html('lat: ' + Math.round(crds[0] * 100) / 100 + '| lon: ' + Math.round(crds[1] * 100) / 100);
+        });
+    };
+    return tool;
+};
