@@ -23,7 +23,6 @@ d3.mappu.Map = function(elem, config) {
 
 d3_mappu_Map = function(elem, config) {
     var map = {};
-	var self = this;
 	var _layers = [];
 	//TODO: how to get the size of the map
 	var width = elem.clientWidth || 1024;
