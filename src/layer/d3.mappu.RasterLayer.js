@@ -138,7 +138,7 @@
       
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this.display);
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
       
       layer.refresh = refresh;
