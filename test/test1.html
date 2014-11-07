@@ -117,6 +117,18 @@ d3.json("gemeenten.topojson", function(error, data) {
   if (error) return console.error(error);
   //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
+var w = window,
+    d = document,
+    e = d.documentElement,
+    g = d.getElementsByTagName('body')[0],
+    x = w.innerWidth || e.clientWidth || g.clientWidth,
+    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+window.addEventListener("resize",function(){
+    x = w.innerWidth || e.clientWidth || g.clientWidth;
+    y = w.innerHeight|| e.clientHeight|| g.clientHeight;
+    map.size = [y,x];
+    map.draw();
+});
 
 </script>
 

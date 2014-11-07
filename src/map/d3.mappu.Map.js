@@ -110,6 +110,11 @@ d3_mappu_Map = function(id, config) {
             set: function(val){
                 _height = val[0];
                 _width = val[1];
+                _tile = d3.geo.tile()
+                    .size([_width,_height]);
+                d3.select(_mapdiv).select('svg')
+                    .attr("width", _width)
+                    .attr("height", _height);
                 map.draw();
             }
     });
