@@ -37,9 +37,14 @@ d3_mappu_Map = function(id, config) {
     
     var map = {};
 	var _layers = [];
-	
-	//TODO check if elem is an actual dom-element
-	var _mapdiv = document.getElementById(id);;
+	var _mapdiv;
+	//check if elem is a dom-element or an identifier
+	if (typeof(id) == 'object'){
+	    _mapdiv = id;
+	}
+	else {
+	    _mapdiv = document.getElementById(id);
+	}
 	
 	//TODO: how to get the size of the map
 	var width = _mapdiv.clientWidth || 1024;
