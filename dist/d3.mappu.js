@@ -265,8 +265,8 @@ d3_mappu_Layer = function(name, config){
     var _name = name;
     //TODO: parse config
     var _opacity = 1;
-    var _visible = true;  
-    var _display = 'block';
+	var _visible = true;  
+	var _display = 'block';
     
     var refresh = function(){
     };
@@ -357,7 +357,7 @@ d3_mappu_Layer = function(name, config){
       var layertype = 'vector';
       var _data = [];
 	  var drawboard;
-	  
+    
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
@@ -490,6 +490,7 @@ d3_mappu_Layer = function(name, config){
       };
       
       var getFeatureInfo = function(d){
+          return; /* WORK IN PROGRESS */
           if (_ogc_type == 'wms'){
             var loc = d3.mouse(this);
             var loc2 = d3.mouse(map.mapdiv);
@@ -523,7 +524,7 @@ d3_mappu_Layer = function(name, config){
                     .style('top', loc2[1]+'px')
                     .html(feat.id); 
             });
-            console.log(url);
+            
           }
       };
       
@@ -541,8 +542,7 @@ d3_mappu_Layer = function(name, config){
               .attr("xlink:href", tileurl)
               .attr("width", 1)
               .attr("height", 1)
-              //SMO: why self?
-              .attr('opacity', self.opacity)
+              .attr('opacity', this.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
               .on('click', getFeatureInfo);
