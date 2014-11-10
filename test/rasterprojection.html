@@ -46,11 +46,7 @@ var projectionx = d3.geo.albers()
 var raster = d3.geo.raster(projectionx)
     .scaleExtent([0, 6])
     .url("//{subdomain}.tiles.mapbox.com/v3/mapbox.natural-earth-2/{z}/{x}/{y}.png");
-
-var layer = d3.select("#map")
-    .style("width", width / ratio + "px")
-    .style("height", height / ratio + "px")
-    .call(d3.behavior.zoom()
+var zoombehaviour = d3.behavior.zoom()
       .translate([.5 * width / ratio, .5 * height / ratio])
       .scale(projectionx.scale() / ratio)
       .scaleExtent([1e2, 5e3])
@@ -59,7 +55,12 @@ var layer = d3.select("#map")
             s = d3.event.scale;
         projectionx.translate([t[0] * ratio, t[1] * ratio]).scale(s * ratio);
         layer.call(raster);
-      }))
+      });
+    
+var layer = d3.select("#map")
+    .style("width", width / ratio + "px")
+    .style("height", height / ratio + "px")
+    .call(zoombehaviour)
   .append("div")
     .style(prefix + "transform", "scale(" + 1 / ratio + ")")
     .style(prefix + "transform-origin", "0 0 0")
