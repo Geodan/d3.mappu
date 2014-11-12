@@ -70,7 +70,7 @@ Layer styling happens in CSS, or in a per-feature function
 var map = new d3.mappu.Map('map', {
         center: [6,52],
         zoom: 1,
-        projection: d3.geo.albers()
+        projection: d3.geo.mercator()
 });
 
 var coords = new d3.mappu.Coordinates().addTo(map);
@@ -78,7 +78,7 @@ var coords = new d3.mappu.Coordinates().addTo(map);
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
     url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
-}).addTo(map);
+})//.addTo(map);
 /*
 var laag1 = new d3.mappu.RasterLayer('pico:pc6_gas_sjv_verwacht', {
     ogc_type: 'wms',

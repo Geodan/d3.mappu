@@ -36,7 +36,7 @@ var ratio = window.devicePixelRatio || 1,
     height = 600 * ratio,
     p = .5 * ratio;
 
-var projectionx = d3.geo.albers()
+var projectionx = d3.geo.mercator()
     .rotate([0, 0])
     .center([0, 52])
     .scale(150 * ratio)
@@ -44,8 +44,9 @@ var projectionx = d3.geo.albers()
     .clipExtent([[p, p], [width - p, height - p]]);
 
 var raster = d3.geo.raster(projectionx)
-    .scaleExtent([0, 6])
-    .url("//{subdomain}.tiles.mapbox.com/v3/mapbox.natural-earth-2/{z}/{x}/{y}.png");
+    .scaleExtent([0, 10])
+    .url("//{subdomain}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png");
+    //.url("//{subdomain}.tiles.mapbox.com/v3/mapbox.natural-earth-2/{z}/{x}/{y}.png");
 var zoombehaviour = d3.behavior.zoom()
       .translate([.5 * width / ratio, .5 * height / ratio])
       .scale(projectionx.scale() / ratio)
