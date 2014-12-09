@@ -77,6 +77,7 @@
       };
       
       var getFeatureInfo = function(d){
+          return; /* WORK IN PROGRESS */
           if (_ogc_type == 'wms'){
             var loc = d3.mouse(this);
             var loc2 = d3.mouse(map.mapdiv);
@@ -110,7 +111,7 @@
                     .style('top', loc2[1]+'px')
                     .html(feat.id); 
             });
-            console.log(url);
+            
           }
       };
       
@@ -128,8 +129,7 @@
               .attr("xlink:href", tileurl)
               .attr("width", 1)
               .attr("height", 1)
-              //SMO: why self?
-              .attr('opacity', self.opacity)
+              .attr('opacity', this.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
               .on('click', getFeatureInfo);
@@ -138,7 +138,7 @@
       
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this.display);
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
       
       layer.refresh = refresh;

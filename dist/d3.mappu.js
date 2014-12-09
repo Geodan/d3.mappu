@@ -37,44 +37,69 @@ d3_mappu_Map = function(id, config) {
     
     var map = {};
 	var _layers = [];
+	var _mapdiv;
 	
-	//TODO check if elem is an actual dom-element
-	var _mapdiv = document.getElementById(id);;
+	//check if elem is a dom-element or an identifier
+	if (typeof(id) == 'object'){
+	    _mapdiv = id;
+	}
+	else {
+	    _mapdiv = document.getElementById(id);
+	}
 	
 	//TODO: how to get the size of the map
-	var width = _mapdiv.clientWidth || 1024;
-	var height = _mapdiv.clientHeight || 768;
+	var _width = _mapdiv.clientWidth || 2024;
+	var _height = _mapdiv.clientHeight || 768;
+	var _ratio = 1;
 	
-	//TODO: check if SVG?
+	
+	var _canvasdiv = d3.select(_mapdiv)
+		.style("width", _width + 'px')
+		.style("height", _height + 'px')
+	  .append("div")
+		.style("transform", "scale(" + 1 / _ratio + ")")
+		.style("transform-origin", "0 0 0");
+		
 	var _svg = d3.select(_mapdiv).append('svg')
-		.attr("width", width)
-		.attr("height", height);
-
+	    .style('position', 'absolute')
+		.attr("width", _width)
+		.attr("height", _height);
+	
+		
+		
 	//TODO parse config;
 	var _center = config.center || [0,0];
 	var _projection = config.projection || d3.geo.mercator();
 	var _zoom = config.zoom || 10;
-	var _maxZoom = config.maxZoom || 24;
-	var _minZoom = config.minZoom || 15;
+	var _maxZoom = config.maxZoom || 1;
+	var _minZoom = config.minZoom || 5e3;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
 	
-	var draw = function(){
-	    //Calculate tile set
+
+    var redraw = function(){
+        //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
+        
         //Calculate projection
         _projection
-              .scale(_zoombehaviour.scale() / 2 / Math.PI)
-              .translate(_zoombehaviour.translate());
-        //Refresh layers
+           .scale(_zoombehaviour.scale() / 2 / Math.PI)
+           .translate(_zoombehaviour.translate());
+        
+        /* EXPERIMENTAL */
+        layer.call(raster);
+        
         _layers.forEach(function(d){
-                d.refresh();
+            d.refresh();
         });
     };
-	
+    
+    var p = .5 * _ratio;
 	_projection.scale(( _zoom << 12 || 1 << 12) / 2 / Math.PI)
-        .translate([width / 2, height / 2]);
-	
+        .translate([_width / 2, _height / 2])
+	    .center(_center)
+        .clipExtent([[p, p], [_width - p, _height - p]]);
+        
     var _projcenter = _projection(_center);     
     
     //TODO: reset this on projection change
@@ -82,11 +107,11 @@ d3_mappu_Map = function(id, config) {
         .projection(_projection);    
         
 	var _zoombehaviour = d3.behavior.zoom()
-        .scale(_projection.scale() * 2 * Math.PI)
-        .scaleExtent([1 << _minZoom, 1 << _maxZoom])
-        .translate([width - _projcenter[0], height - _projcenter[1]])
-        .on("zoom", draw);
-	_svg.call(_zoombehaviour);
+	    .scale(_projection.scale() * 2 * Math.PI)
+        //.scaleExtent([1 << _minZoom, 1 << _maxZoom])
+        .translate([_width - _projcenter[0], _height - _projcenter[1]])
+        .on("zoom", redraw);
+	d3.select(_mapdiv).call(_zoombehaviour);
 	
 	
     _projection
@@ -94,11 +119,19 @@ d3_mappu_Map = function(id, config) {
         .translate([0, 0]);
     
     var _tile = d3.geo.tile()
-        .size([width,height]);
+        .size([_width,_height]);
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-    
+    var raster = d3.geo.raster(_projection)
+        .scaleExtent([0, 10])
+        //.url("//{subdomain}.tiles.mapbox.com/v3/mapbox.natural-earth-2/{z}/{x}/{y}.png");
+        .url("//{subdomain}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png");
+
+    var layer = _canvasdiv
+      .append("div")
+        .style("transform-origin", "0 0 0")
+        .call(raster);
    
 // exposed functions
 
@@ -111,6 +144,20 @@ d3_mappu_Map = function(id, config) {
             console.log("do not touch the svg");
         }
     });
+    
+    Object.defineProperty(map, 'size', {
+            get: function(){return [_height, _width];},
+            set: function(val){
+                _height = val[0];
+                _width = val[1];
+                _tile = d3.geo.tile()
+                    .size([_width,_height]);
+                d3.select(_mapdiv).select('svg')
+                    .attr("width", _width)
+                    .attr("height", _height);
+                //map.redraw();
+            }
+    });
      
     Object.defineProperty(map, 'mapdiv', {
         get: function() {
@@ -118,6 +165,15 @@ d3_mappu_Map = function(id, config) {
         },
         set: function() {
             console.log("do not touch the mapdiv");
+        }
+    });
+    
+    Object.defineProperty(map, 'canvasdiv', {
+        get: function() {
+            return _canvasdiv;
+        },
+        set: function() {
+            console.log("do not touch the canvasdiv");
         }
     }); 
      
@@ -237,7 +293,7 @@ d3_mappu_Map = function(id, config) {
     
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
-    map.draw = draw;
+    map.redraw = redraw;
     
     return map;
 };
@@ -260,8 +316,8 @@ d3_mappu_Layer = function(name, config){
     var _name = name;
     //TODO: parse config
     var _opacity = 1;
-    var _visible = true;  
-    var _display = 'block';
+	var _visible = true;  
+	var _display = 'block';
     
     var refresh = function(){
     };
@@ -330,7 +386,8 @@ d3_mappu_Layer = function(name, config){
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        drawboard = _map.svg.append('g');
+        layer.drawboard = _map.svg.append('g');
+        layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     };
@@ -351,7 +408,7 @@ d3_mappu_Layer = function(name, config){
       var layertype = 'vector';
       var _data = [];
 	  var drawboard;
-	  
+    
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
@@ -484,6 +541,7 @@ d3_mappu_Layer = function(name, config){
       };
       
       var getFeatureInfo = function(d){
+          return; /* WORK IN PROGRESS */
           if (_ogc_type == 'wms'){
             var loc = d3.mouse(this);
             var loc2 = d3.mouse(map.mapdiv);
@@ -517,7 +575,7 @@ d3_mappu_Layer = function(name, config){
                     .style('top', loc2[1]+'px')
                     .html(feat.id); 
             });
-            console.log(url);
+            
           }
       };
       
@@ -535,8 +593,7 @@ d3_mappu_Layer = function(name, config){
               .attr("xlink:href", tileurl)
               .attr("width", 1)
               .attr("height", 1)
-              //SMO: why self?
-              .attr('opacity', self.opacity)
+              .attr('opacity', this.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
               .on('click', getFeatureInfo);
@@ -545,7 +602,7 @@ d3_mappu_Layer = function(name, config){
       
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this.display);
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
       
       layer.refresh = refresh;

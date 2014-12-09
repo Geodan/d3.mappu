@@ -36,7 +36,7 @@ var ratio = window.devicePixelRatio || 1,
     height = 600 * ratio,
     p = .5 * ratio;
 
-var projectionx = d3.geo.albers()
+var projectionx = d3.geo.mercator()
     .rotate([0, 0])
     .center([0, 52])
     .scale(150 * ratio)
@@ -44,13 +44,10 @@ var projectionx = d3.geo.albers()
     .clipExtent([[p, p], [width - p, height - p]]);
 
 var raster = d3.geo.raster(projectionx)
-    .scaleExtent([0, 6])
-    .url("//{subdomain}.tiles.mapbox.com/v3/mapbox.natural-earth-2/{z}/{x}/{y}.png");
-
-var layer = d3.select("#map")
-    .style("width", width / ratio + "px")
-    .style("height", height / ratio + "px")
-    .call(d3.behavior.zoom()
+    .scaleExtent([0, 10])
+    .url("//{subdomain}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png");
+    //.url("//{subdomain}.tiles.mapbox.com/v3/mapbox.natural-earth-2/{z}/{x}/{y}.png");
+var zoombehaviour = d3.behavior.zoom()
       .translate([.5 * width / ratio, .5 * height / ratio])
       .scale(projectionx.scale() / ratio)
       .scaleExtent([1e2, 5e3])
@@ -59,7 +56,12 @@ var layer = d3.select("#map")
             s = d3.event.scale;
         projectionx.translate([t[0] * ratio, t[1] * ratio]).scale(s * ratio);
         layer.call(raster);
-      }))
+      });
+    
+var layer = d3.select("#map")
+    .style("width", width / ratio + "px")
+    .style("height", height / ratio + "px")
+    .call(zoombehaviour)
   .append("div")
     .style(prefix + "transform", "scale(" + 1 / ratio + ")")
     .style(prefix + "transform-origin", "0 0 0")

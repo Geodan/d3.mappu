@@ -15,8 +15,8 @@ d3_mappu_Layer = function(name, config){
     var _name = name;
     //TODO: parse config
     var _opacity = 1;
-    var _visible = true;  
-    var _display = 'block';
+	var _visible = true;  
+	var _display = 'block';
     
     var refresh = function(){
     };
@@ -85,7 +85,8 @@ d3_mappu_Layer = function(name, config){
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        drawboard = _map.svg.append('g');
+        layer.drawboard = _map.svg.append('g');
+        layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     };
