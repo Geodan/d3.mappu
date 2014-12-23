@@ -201,10 +201,19 @@ d3_mappu_Map = function(id, config) {
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
         get: function() {
-            return _center;
+            //return _center;
+            var pixcenter = [_width/2,_height/2];
+            return _projection.invert(pixcenter);
         },
         set: function(val) {
-            _center = val;
+            //_center = val;
+            var pixcenter = _projection(val);
+            var curtranslate = _zoombehaviour.translate();
+            _zoombehaviour.translate([
+            	curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+            	curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+            ]);
+            this.redraw();
         }
     });
 // .projection : ({projection})
