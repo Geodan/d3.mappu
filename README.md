@@ -20,6 +20,7 @@ map.removeLayer(id) - Removes layer with id
 map.maxZoom - get/set maxzoomlevel
 map.minZoom - get/zet minzoomlevel
 map.zoom - get/set zoomlevel
+map.center - get/set the map center coordinates
 ```
 Layer object
 ```
