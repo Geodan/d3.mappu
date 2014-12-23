@@ -66,7 +66,7 @@ d3_mappu_Map = function(id, config) {
 	
 	var _center = config.center || [0,0];
 	var _projection = config.projection || d3.geo.mercator();
-	var _zoom = config.zoom || 10;
+	var _zoom = config.zoom || 22;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
@@ -179,7 +179,19 @@ d3_mappu_Map = function(id, config) {
             return _zoom;
         },
         set: function(val) {
-            _zoom = val;
+        	if (val <= _maxZoom && val >= _minZoom){
+				_zoom = val;
+				_zoombehaviour.scale((1 << val) / 2 / Math.PI);
+				//Adapt projection based on new zoomlevel
+				_projection
+				   .scale(_zoombehaviour.scale() / 2 / Math.PI)
+				   .translate(_zoombehaviour.translate());
+				//recenter map based on new zoomlevel
+				this.center = _center;
+			}
+			else {
+				console.log('Zoomlevel exceeded', val);
+			}
         }
     });
 
@@ -190,6 +202,7 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
             _minZoom = val;
+            this.zoombehaviour.scaleExtent([1 << _minZoom, 1 << _maxZoom]);
         }
     });
 // .maxZoom : (zoomlevel)
@@ -199,6 +212,7 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
             _maxZoom = val;
+            this.zoombehaviour.scaleExtent([1 << _minZoom, 1 << _maxZoom]);
         }
     });
 // .maxView : ([[long,lat],[long,lat]])
@@ -213,12 +227,11 @@ d3_mappu_Map = function(id, config) {
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
         get: function() {
-            //return _center;
             var pixcenter = [_width/2,_height/2];
             return _projection.invert(pixcenter);
         },
         set: function(val) {
-            //_center = val;
+        	_center = val;
             var pixcenter = _projection(val);
             var curtranslate = _zoombehaviour.translate();
             _zoombehaviour.translate([
