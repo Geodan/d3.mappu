@@ -25,7 +25,8 @@ path {
   position: relative;
   margin: 0 auto;
   overflow: hidden;
-  
+  height: 100%;
+  width: 100%;
 }
 
 .tile {
@@ -71,10 +72,12 @@ Layer styling happens in CSS, or in a per-feature function
 var map = new d3.mappu.Map('map', {
         center: [6,52],
         zoom: 22,
+        minZoom: 1,
+        maxZoom: 26,
         projection: d3.geo.mercator()
 });
 
-var coords = new d3.mappu.Coordinates().addTo(map);
+//var coords = new d3.mappu.Coordinates().addTo(map);
 
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
@@ -85,7 +88,7 @@ var laag1 = new d3.mappu.RasterLayer('pico:pc6_gas_sjv_verwacht', {
     ogc_type: 'wms',
     url: "http://geodata.nationaalgeoregister.nl/kadastralekaart/wms?",
     layers: 'grens'
-}).addTo(map);
+})//.addTo(map);
 /*
 var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
     ogc_type: 'wms',
@@ -120,11 +123,12 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         }
     }]
 }).addTo(map);
-map.redraw();
+
 
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);
-  //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+  map.redraw();
 });
 
 d3.json("gemeenten.topojson", function(error, data) {

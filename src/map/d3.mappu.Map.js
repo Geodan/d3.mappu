@@ -38,7 +38,7 @@ d3_mappu_Map = function(id, config) {
 	
 	//TODO: how to get the size of the map
 	var _width = _mapdiv.clientWidth || 2024;
-	var _height = _mapdiv.clientHeight || 768;
+	var _height = _mapdiv.clientHeight || window.innerHeight || 768;
 	var _ratio = 1;
 	
 	var _canvasdiv = d3.select(_mapdiv)
@@ -65,18 +65,18 @@ d3_mappu_Map = function(id, config) {
         //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-        
-        //Calculate projection
+        //Calculate projection, so we can find out coordinates
         _projection
            .scale(_zoombehaviour.scale() / 2 / Math.PI)
            .translate(_zoombehaviour.translate());
-        
+
         /* EXPERIMENTAL */
         //layer.call(raster);
-        
+
         _layers.forEach(function(d){
             d.refresh();
         });
+        
         map._duration = 0;
     };
     
@@ -179,7 +179,8 @@ d3_mappu_Map = function(id, config) {
 		];
 		_zoombehaviour
 			.translate(translate);
-		map._duration = 1000;
+		//TODO: calculate duration based on distance to be moved
+		map._duration = 2000;
 		map.redraw();
     }
     

@@ -9,7 +9,7 @@
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       var layertype = 'vector';
-      var _data = [];
+      var _data = [];                         
 	  var drawboard;
 	  var _duration = 0;
 	  
@@ -18,11 +18,11 @@
         get: function() {
             return _data;
         },
-        set: function(array) {
+        set: function(array) { 
             _data = array;
             draw(true);
         }
-      });
+      });                                                           
       
       var draw = function(rebuild){
           var drawboard = layer.drawboard;
@@ -43,7 +43,6 @@
       };
       
       var refresh = function(){
-          var zoombehaviour = layer.map.zoombehaviour;
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
@@ -51,7 +50,9 @@
               entities.transition().duration(layer.map._duration).attr("d", layer.map.path);
           }
           else {
-            drawboard.transition().duration(layer.map._duration)
+          	//based on: http://bl.ocks.org/mbostock/5914438
+          	var zoombehaviour = layer.map.zoombehaviour;
+          	drawboard.transition().duration(layer.map._duration)
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
           }

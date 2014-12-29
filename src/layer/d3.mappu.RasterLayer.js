@@ -41,8 +41,6 @@
       layer.clear = function(){
       };
       
-      
-      
       var getbbox = function(d){
         var numtiles = 2 << (d[2]-1);
         var tilesize = (20037508.34 * 2) / (numtiles);

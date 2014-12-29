@@ -50,7 +50,7 @@ d3_mappu_Map = function(id, config) {
 	
 	//TODO: how to get the size of the map
 	var _width = _mapdiv.clientWidth || 2024;
-	var _height = _mapdiv.clientHeight || 768;
+	var _height = _mapdiv.clientHeight || window.innerHeight || 768;
 	var _ratio = 1;
 	
 	var _canvasdiv = d3.select(_mapdiv)
@@ -77,18 +77,18 @@ d3_mappu_Map = function(id, config) {
         //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-        
-        //Calculate projection
+        //Calculate projection, so we can find out coordinates
         _projection
            .scale(_zoombehaviour.scale() / 2 / Math.PI)
            .translate(_zoombehaviour.translate());
-        
+
         /* EXPERIMENTAL */
         //layer.call(raster);
-        
+
         _layers.forEach(function(d){
             d.refresh();
         });
+        
         map._duration = 0;
     };
     
@@ -191,9 +191,8 @@ d3_mappu_Map = function(id, config) {
 		];
 		_zoombehaviour
 			.translate(translate);
-
-		
-		map._duration = 1000;
+		//TODO: calculate duration based on distance to be moved
+		map._duration = 2000;
 		map.redraw();
     }
     
@@ -205,14 +204,6 @@ d3_mappu_Map = function(id, config) {
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
 				_zoom = val;
-				/*
-				_zoombehaviour.scale((1 << val) / 2 / Math.PI);
-				//Adapt projection based on new zoomlevel
-				_projection
-				   .scale(_zoombehaviour.scale() / 2 / Math.PI)
-				   .translate(_zoombehaviour.translate());
-				this.redraw();
-				*/
 				zoomcenter();
 			}
 			else {
@@ -258,19 +249,6 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	_center = val;
-        	/*
-			var pixcenter = _projection(val);
-			var curtranslate = _zoombehaviour.translate();
-			var translate = [
-				curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-				curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-			];
-			_zoombehaviour.translate(translate);
-			//define translate duration based on pixel distance to destination
-			//TODO this._duration = 1 + (Math.sqrt(Math.pow(_width - pixcenter[0],2) + Math.pow(_height - pixcenter[1],2)) / 10);
-			this._duration = 1000;
-			this.redraw();
-			*/
 			zoomcenter();
         }
     });
@@ -457,7 +435,7 @@ d3_mappu_Layer = function(name, config){
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       var layertype = 'vector';
-      var _data = [];
+      var _data = [];                         
 	  var drawboard;
 	  var _duration = 0;
 	  
@@ -466,11 +444,11 @@ d3_mappu_Layer = function(name, config){
         get: function() {
             return _data;
         },
-        set: function(array) {
+        set: function(array) { 
             _data = array;
             draw(true);
         }
-      });
+      });                                                           
       
       var draw = function(rebuild){
           var drawboard = layer.drawboard;
@@ -491,7 +469,6 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(){
-          var zoombehaviour = layer.map.zoombehaviour;
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
@@ -499,7 +476,9 @@ d3_mappu_Layer = function(name, config){
               entities.transition().duration(layer.map._duration).attr("d", layer.map.path);
           }
           else {
-            drawboard.transition().duration(layer.map._duration)
+          	//based on: http://bl.ocks.org/mbostock/5914438
+          	var zoombehaviour = layer.map.zoombehaviour;
+          	drawboard.transition().duration(layer.map._duration)
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
           }
@@ -556,8 +535,6 @@ d3_mappu_Layer = function(name, config){
       //Clear all tiles
       layer.clear = function(){
       };
-      
-      
       
       var getbbox = function(d){
         var numtiles = 2 << (d[2]-1);
@@ -636,7 +613,7 @@ d3_mappu_Layer = function(name, config){
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         //drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();
@@ -653,7 +630,11 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(){
-          draw();
+      	 var drawboard = layer.drawboard;
+         var tiles = layer.map.tiles;
+         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         
+          window.setTimeout(draw,2000);
           layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
       
