@@ -38,7 +38,8 @@ d3_mappu_Map = function(id, config) {
     var map = {};
 	var _layers = [];
 	var _mapdiv;
-	
+	var _duration = 0;
+	map._duration = _duration;
 	//check if elem is a dom-element or an identifier
 	if (typeof(id) == 'object'){
 	    _mapdiv = id;
@@ -88,6 +89,7 @@ d3_mappu_Map = function(id, config) {
         _layers.forEach(function(d){
             d.refresh();
         });
+        map._duration = 0;
     };
     
     //var p = .5 * _ratio;
@@ -232,13 +234,14 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	_center = val;
-            var pixcenter = _projection(val);
-            var curtranslate = _zoombehaviour.translate();
-            _zoombehaviour.translate([
-            	curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-            	curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-            ]);
-            this.redraw();
+			var pixcenter = _projection(val);
+			var curtranslate = _zoombehaviour.translate();
+			_zoombehaviour.translate([
+				curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+				curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+			]);
+			this._duration = 1000;
+			this.redraw();
         }
     });
 // .projection : ({projection})
@@ -336,7 +339,7 @@ d3_mappu_Layer = function(name, config){
     var _opacity = 1;
 	var _visible = true;  
 	var _display = 'block';
-    
+	
     var refresh = function(){
     };
     var moveUp = function(){
@@ -426,7 +429,8 @@ d3_mappu_Layer = function(name, config){
       var layertype = 'vector';
       var _data = [];
 	  var drawboard;
-    
+	  var _duration = 0;
+	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
@@ -462,10 +466,10 @@ d3_mappu_Layer = function(name, config){
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.attr("d", layer.map.path);
+              entities.transition().duration(layer.map._duration).attr("d", layer.map.path);
           }
           else {
-            drawboard
+            drawboard.transition().duration(layer.map._duration)
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
           }
@@ -496,6 +500,7 @@ d3_mappu_Layer = function(name, config){
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _layers = config.layers;
+      var _duration = 0;
       
       Object.defineProperty(layer, 'url', {
         get: function() {
@@ -553,7 +558,7 @@ d3_mappu_Layer = function(name, config){
                 url =  _url + 
                      "&bbox=" + bbox + 
                      "&layers=" + _layers + 
-                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:900913&transparent=TRUE&format=image%2Fpng";
+                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
           }
           return url;
       };
@@ -599,10 +604,9 @@ d3_mappu_Layer = function(name, config){
       
       //Draw the tiles (based on data-update)
       var draw = function(){
-
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();

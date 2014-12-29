@@ -11,7 +11,8 @@
       var layertype = 'vector';
       var _data = [];
 	  var drawboard;
-    
+	  var _duration = 0;
+	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
@@ -47,10 +48,10 @@
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.attr("d", layer.map.path);
+              entities.transition().duration(layer.map._duration).attr("d", layer.map.path);
           }
           else {
-            drawboard
+            drawboard.transition().duration(layer.map._duration)
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
           }

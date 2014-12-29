@@ -26,7 +26,8 @@ d3_mappu_Map = function(id, config) {
     var map = {};
 	var _layers = [];
 	var _mapdiv;
-	
+	var _duration = 0;
+	map._duration = _duration;
 	//check if elem is a dom-element or an identifier
 	if (typeof(id) == 'object'){
 	    _mapdiv = id;
@@ -76,6 +77,7 @@ d3_mappu_Map = function(id, config) {
         _layers.forEach(function(d){
             d.refresh();
         });
+        map._duration = 0;
     };
     
     //var p = .5 * _ratio;
@@ -220,13 +222,14 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	_center = val;
-            var pixcenter = _projection(val);
-            var curtranslate = _zoombehaviour.translate();
-            _zoombehaviour.translate([
-            	curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-            	curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-            ]);
-            this.redraw();
+			var pixcenter = _projection(val);
+			var curtranslate = _zoombehaviour.translate();
+			_zoombehaviour.translate([
+				curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+				curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+			]);
+			this._duration = 1000;
+			this.redraw();
         }
     });
 // .projection : ({projection})

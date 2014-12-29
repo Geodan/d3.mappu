@@ -14,6 +14,7 @@
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _layers = config.layers;
+      var _duration = 0;
       
       Object.defineProperty(layer, 'url', {
         get: function() {
@@ -71,7 +72,7 @@
                 url =  _url + 
                      "&bbox=" + bbox + 
                      "&layers=" + _layers + 
-                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:900913&transparent=TRUE&format=image%2Fpng";
+                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
           }
           return url;
       };
@@ -117,10 +118,9 @@
       
       //Draw the tiles (based on data-update)
       var draw = function(){
-
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();

@@ -17,7 +17,7 @@ d3_mappu_Layer = function(name, config){
     var _opacity = 1;
 	var _visible = true;  
 	var _display = 'block';
-    
+	
     var refresh = function(){
     };
     var moveUp = function(){
