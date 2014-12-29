@@ -38,7 +38,8 @@ d3_mappu_Map = function(id, config) {
     var map = {};
 	var _layers = [];
 	var _mapdiv;
-	
+	var _duration = 0;
+	map._duration = _duration;
 	//check if elem is a dom-element or an identifier
 	if (typeof(id) == 'object'){
 	    _mapdiv = id;
@@ -49,7 +50,7 @@ d3_mappu_Map = function(id, config) {
 	
 	//TODO: how to get the size of the map
 	var _width = _mapdiv.clientWidth || 2024;
-	var _height = _mapdiv.clientHeight || 768;
+	var _height = _mapdiv.clientHeight || window.innerHeight || 768;
 	var _ratio = 1;
 	
 	var _canvasdiv = d3.select(_mapdiv)
@@ -76,18 +77,19 @@ d3_mappu_Map = function(id, config) {
         //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-        
-        //Calculate projection
+        //Calculate projection, so we can find out coordinates
         _projection
            .scale(_zoombehaviour.scale() / 2 / Math.PI)
            .translate(_zoombehaviour.translate());
-        
+
         /* EXPERIMENTAL */
         //layer.call(raster);
-        
+
         _layers.forEach(function(d){
             d.refresh();
         });
+        
+        map._duration = 0;
     };
     
     //var p = .5 * _ratio;
@@ -172,7 +174,28 @@ d3_mappu_Map = function(id, config) {
             console.log("do not touch the canvasdiv");
         }
     }); 
-     
+    
+    function zoomcenter(){
+    	_zoombehaviour.scale((1 << _zoom) / 2 / Math.PI);
+    	//Adapt projection based on new zoomlevel
+		_projection
+		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
+		   .translate(_zoombehaviour.translate());
+		   
+	   //recenter map based on new zoomlevel
+		var pixcenter = _projection(_center);
+		var curtranslate = _zoombehaviour.translate();
+		var translate = [
+			curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+		];
+		_zoombehaviour
+			.translate(translate);
+		//TODO: calculate duration based on distance to be moved
+		map._duration = 2000;
+		map.redraw();
+    }
+    
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
@@ -181,16 +204,10 @@ d3_mappu_Map = function(id, config) {
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
 				_zoom = val;
-				_zoombehaviour.scale((1 << val) / 2 / Math.PI);
-				//Adapt projection based on new zoomlevel
-				_projection
-				   .scale(_zoombehaviour.scale() / 2 / Math.PI)
-				   .translate(_zoombehaviour.translate());
-				//recenter map based on new zoomlevel
-				this.center = _center;
+				zoomcenter();
 			}
 			else {
-				console.log('Zoomlevel exceeded', val);
+				console.log('Zoomlevel exceeded', _minZoom , _maxZoom);
 			}
         }
     });
@@ -232,13 +249,7 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	_center = val;
-            var pixcenter = _projection(val);
-            var curtranslate = _zoombehaviour.translate();
-            _zoombehaviour.translate([
-            	curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-            	curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-            ]);
-            this.redraw();
+			zoomcenter();
         }
     });
 // .projection : ({projection})
@@ -336,7 +347,7 @@ d3_mappu_Layer = function(name, config){
     var _opacity = 1;
 	var _visible = true;  
 	var _display = 'block';
-    
+	
     var refresh = function(){
     };
     var moveUp = function(){
@@ -424,19 +435,20 @@ d3_mappu_Layer = function(name, config){
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       var layertype = 'vector';
-      var _data = [];
+      var _data = [];                         
 	  var drawboard;
-    
+	  var _duration = 0;
+	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
             return _data;
         },
-        set: function(array) {
+        set: function(array) { 
             _data = array;
             draw(true);
         }
-      });
+      });                                                           
       
       var draw = function(rebuild){
           var drawboard = layer.drawboard;
@@ -457,15 +469,16 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(){
-          var zoombehaviour = layer.map.zoombehaviour;
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.attr("d", layer.map.path);
+              entities.transition().duration(layer.map._duration).attr("d", layer.map.path);
           }
           else {
-            drawboard
+          	//based on: http://bl.ocks.org/mbostock/5914438
+          	var zoombehaviour = layer.map.zoombehaviour;
+          	drawboard.transition().duration(layer.map._duration)
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
           }
@@ -496,6 +509,7 @@ d3_mappu_Layer = function(name, config){
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _layers = config.layers;
+      var _duration = 0;
       
       Object.defineProperty(layer, 'url', {
         get: function() {
@@ -521,8 +535,6 @@ d3_mappu_Layer = function(name, config){
       //Clear all tiles
       layer.clear = function(){
       };
-      
-      
       
       var getbbox = function(d){
         var numtiles = 2 << (d[2]-1);
@@ -553,7 +565,7 @@ d3_mappu_Layer = function(name, config){
                 url =  _url + 
                      "&bbox=" + bbox + 
                      "&layers=" + _layers + 
-                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:900913&transparent=TRUE&format=image%2Fpng";
+                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
           }
           return url;
       };
@@ -599,10 +611,9 @@ d3_mappu_Layer = function(name, config){
       
       //Draw the tiles (based on data-update)
       var draw = function(){
-
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         drawboard.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         //drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();
@@ -619,7 +630,11 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(){
-          draw();
+      	 var drawboard = layer.drawboard;
+         var tiles = layer.map.tiles;
+         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         
+          window.setTimeout(draw,2000);
           layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
       

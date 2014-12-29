@@ -26,7 +26,8 @@ d3_mappu_Map = function(id, config) {
     var map = {};
 	var _layers = [];
 	var _mapdiv;
-	
+	var _duration = 0;
+	map._duration = _duration;
 	//check if elem is a dom-element or an identifier
 	if (typeof(id) == 'object'){
 	    _mapdiv = id;
@@ -37,7 +38,7 @@ d3_mappu_Map = function(id, config) {
 	
 	//TODO: how to get the size of the map
 	var _width = _mapdiv.clientWidth || 2024;
-	var _height = _mapdiv.clientHeight || 768;
+	var _height = _mapdiv.clientHeight || window.innerHeight || 768;
 	var _ratio = 1;
 	
 	var _canvasdiv = d3.select(_mapdiv)
@@ -64,18 +65,19 @@ d3_mappu_Map = function(id, config) {
         //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-        
-        //Calculate projection
+        //Calculate projection, so we can find out coordinates
         _projection
            .scale(_zoombehaviour.scale() / 2 / Math.PI)
            .translate(_zoombehaviour.translate());
-        
+
         /* EXPERIMENTAL */
         //layer.call(raster);
-        
+
         _layers.forEach(function(d){
             d.refresh();
         });
+        
+        map._duration = 0;
     };
     
     //var p = .5 * _ratio;
@@ -160,7 +162,28 @@ d3_mappu_Map = function(id, config) {
             console.log("do not touch the canvasdiv");
         }
     }); 
-     
+    
+    function zoomcenter(){
+    	_zoombehaviour.scale((1 << _zoom) / 2 / Math.PI);
+    	//Adapt projection based on new zoomlevel
+		_projection
+		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
+		   .translate(_zoombehaviour.translate());
+		   
+	   //recenter map based on new zoomlevel
+		var pixcenter = _projection(_center);
+		var curtranslate = _zoombehaviour.translate();
+		var translate = [
+			curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+		];
+		_zoombehaviour
+			.translate(translate);
+		//TODO: calculate duration based on distance to be moved
+		map._duration = 2000;
+		map.redraw();
+    }
+    
 // .zoom : (zoomlevel)
     Object.defineProperty(map, 'zoom', {
         get: function() {
@@ -169,16 +192,10 @@ d3_mappu_Map = function(id, config) {
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
 				_zoom = val;
-				_zoombehaviour.scale((1 << val) / 2 / Math.PI);
-				//Adapt projection based on new zoomlevel
-				_projection
-				   .scale(_zoombehaviour.scale() / 2 / Math.PI)
-				   .translate(_zoombehaviour.translate());
-				//recenter map based on new zoomlevel
-				this.center = _center;
+				zoomcenter();
 			}
 			else {
-				console.log('Zoomlevel exceeded', val);
+				console.log('Zoomlevel exceeded', _minZoom , _maxZoom);
 			}
         }
     });
@@ -220,13 +237,7 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	_center = val;
-            var pixcenter = _projection(val);
-            var curtranslate = _zoombehaviour.translate();
-            _zoombehaviour.translate([
-            	curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-            	curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-            ]);
-            this.redraw();
+			zoomcenter();
         }
     });
 // .projection : ({projection})
