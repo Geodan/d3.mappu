@@ -24,6 +24,15 @@
         }
       });                                                           
       
+      function addstyle(d){
+      	  var entity = d3.select(this);
+      	  if (d.style){
+      	  	  for (var key in d.style) { 
+      	  	  	  entity.style(key, d.style[key]);
+      	  	  }
+      	  }
+      }
+      
       var draw = function(rebuild){
           var drawboard = layer.drawboard;
           if (rebuild){
@@ -32,7 +41,9 @@
           var entities = drawboard.selectAll('.entity').data(_data);
           
           var newpaths = entities.enter().append('path').attr("d", layer.map.path)
-            .classed('entity',true).classed(name, true);
+            .classed('entity',true).classed(name, true)
+            .style('stroke', 'blue')
+            .each(addstyle);
           // Add events from config
           if (config.events){
               config.events.forEach(function(d){
@@ -47,7 +58,7 @@
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.transition().duration(layer.map._duration).attr("d", layer.map.path);
+              entities.transition().duration(layer.map._duration).attr("d", layer.map.path).each(addstyle);
           }
           else {
           	//based on: http://bl.ocks.org/mbostock/5914438

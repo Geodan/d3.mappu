@@ -345,9 +345,11 @@ d3_mappu_Layer = function(name, config){
     var _name = name;
     //TODO: parse config
     var _opacity = 1;
-	var _visible = true;  
+    var _visible = true;
+    if (typeof(config.visible) == 'boolean'){
+    	_visible = config.visible;
+    }
 	var _display = 'block';
-	
     var refresh = function(){
     };
     var moveUp = function(){
@@ -450,6 +452,15 @@ d3_mappu_Layer = function(name, config){
         }
       });                                                           
       
+      function addstyle(d){
+      	  var entity = d3.select(this);
+      	  if (d.style){
+      	  	  for (var key in d.style) { 
+      	  	  	  entity.style(key, d.style[key]);
+      	  	  }
+      	  }
+      }
+      
       var draw = function(rebuild){
           var drawboard = layer.drawboard;
           if (rebuild){
@@ -458,7 +469,9 @@ d3_mappu_Layer = function(name, config){
           var entities = drawboard.selectAll('.entity').data(_data);
           
           var newpaths = entities.enter().append('path').attr("d", layer.map.path)
-            .classed('entity',true).classed(name, true);
+            .classed('entity',true).classed(name, true)
+            .style('stroke', 'blue')
+            .each(addstyle);
           // Add events from config
           if (config.events){
               config.events.forEach(function(d){
@@ -473,7 +486,7 @@ d3_mappu_Layer = function(name, config){
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.transition().duration(layer.map._duration).attr("d", layer.map.path);
+              entities.transition().duration(layer.map._duration).attr("d", layer.map.path).each(addstyle);
           }
           else {
           	//based on: http://bl.ocks.org/mbostock/5914438
@@ -613,7 +626,7 @@ d3_mappu_Layer = function(name, config){
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         //drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();
@@ -630,11 +643,7 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(){
-      	 var drawboard = layer.drawboard;
-         var tiles = layer.map.tiles;
-         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
-         
-          window.setTimeout(draw,2000);
+          draw();
           layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
       
