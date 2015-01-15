@@ -345,9 +345,11 @@ d3_mappu_Layer = function(name, config){
     var _name = name;
     //TODO: parse config
     var _opacity = 1;
-	var _visible = true;  
+    var _visible = true;
+    if (typeof(config.visible) == 'boolean'){
+    	_visible = config.visible;
+    }
 	var _display = 'block';
-	
     var refresh = function(){
     };
     var moveUp = function(){
@@ -453,7 +455,7 @@ d3_mappu_Layer = function(name, config){
       function addstyle(d){
       	  var entity = d3.select(this);
       	  if (d.style){
-      	  	  for (var key in d.style) { //First check for generic layer style
+      	  	  for (var key in d.style) { 
       	  	  	  entity.style(key, d.style[key]);
       	  	  }
       	  }

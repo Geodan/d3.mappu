@@ -15,9 +15,11 @@ d3_mappu_Layer = function(name, config){
     var _name = name;
     //TODO: parse config
     var _opacity = 1;
-	var _visible = true;  
+    var _visible = true;
+    if (typeof(config.visible) == 'boolean'){
+    	_visible = config.visible;
+    }
 	var _display = 'block';
-	
     var refresh = function(){
     };
     var moveUp = function(){
