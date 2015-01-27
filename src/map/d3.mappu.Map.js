@@ -92,8 +92,6 @@ d3_mappu_Map = function(id, config) {
 		d3.select(_mapdiv).select('svg')
 			.attr("width", _width)
 			.attr("height", _height);
-		_projection.translate([_width / 2, _height / 2]);
-		_zoombehaviour.translate([_width - _projcenter[0], _height - _projcenter[1]]);
 		_tile.size([_width,_height]);
 		redraw();
 	};
@@ -153,7 +151,7 @@ d3_mappu_Map = function(id, config) {
             console.log("do not touch the svg");
         }
     });
-    
+    /* TT: Obsolete? 
     Object.defineProperty(map, 'size', {
             get: function(){return [_height, _width];},
             set: function(val){
@@ -167,7 +165,7 @@ d3_mappu_Map = function(id, config) {
                 map.redraw();
             }
     });
-     
+    */
     Object.defineProperty(map, 'mapdiv', {
         get: function() {
             return _mapdiv;
