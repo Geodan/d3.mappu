@@ -64,7 +64,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _opacity = val;
-            layer.refresh();
+            layer.refresh(0);
         }
     });
     
@@ -74,7 +74,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _visible = val;
-            layer.refresh();
+            layer.refresh(0);
         }
     });
     

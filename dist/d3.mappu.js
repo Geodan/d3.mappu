@@ -38,8 +38,8 @@ d3_mappu_Map = function(id, config) {
     var map = {};
 	var _layers = [];
 	var _mapdiv;
-	var _duration = 0;
-	map._duration = _duration;
+	
+	
 	//check if elem is a dom-element or an identifier
 	if (typeof(id) == 'object'){
 	    _mapdiv = id;
@@ -49,8 +49,6 @@ d3_mappu_Map = function(id, config) {
 	}
 	
 	window.onresize = function(){
-		//TODO: redraw the map with new extents
-		console.log('Map resize detected');
 		resize();
 	};
 	
@@ -92,10 +90,8 @@ d3_mappu_Map = function(id, config) {
         //layer.call(raster);
 
         _layers.forEach(function(d){
-            d.refresh();
+            d.refresh(0);
         });
-        
-        map._duration = 0;
     };
     
     var resize = function(){
@@ -212,8 +208,6 @@ d3_mappu_Map = function(id, config) {
 		];
 		_zoombehaviour
 			.translate(translate);
-		//TODO: calculate duration based on distance to be moved
-		map._duration = 2000;
 		map.redraw();
     }
     
@@ -415,7 +409,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _opacity = val;
-            layer.refresh();
+            layer.refresh(0);
         }
     });
     
@@ -425,7 +419,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _visible = val;
-            layer.refresh();
+            layer.refresh(0);
         }
     });
     
@@ -460,7 +454,7 @@ d3_mappu_Layer = function(name, config){
       var layertype = 'vector';
       var _data = [];                         
 	  var drawboard;
-	  var _duration = 0;
+	  var _duration = config.duration || 0;
 	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
@@ -469,7 +463,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(array) { 
             _data = array;
-            draw(true);
+            draw(false);
         }
       });                                                           
       
@@ -487,7 +481,9 @@ d3_mappu_Layer = function(name, config){
           if (rebuild){
                drawboard.selectAll('.entity').remove();
           }
-          var entities = drawboard.selectAll('.entity').data(_data);
+          var entities = drawboard.selectAll('.entity').data(_data, function(d){
+          	return d.id;
+          });
           
           var newpaths = entities.enter().append('path').attr("d", layer.map.path)
             .classed('entity',true).classed(name, true)
@@ -499,15 +495,15 @@ d3_mappu_Layer = function(name, config){
                  newpaths.on(d.event, d.action);
               });
           }
-          layer.refresh();
+          layer.refresh(rebuild?0:_duration);
       };
       
-      var refresh = function(){
+      var refresh = function(duration){
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.transition().duration(layer.map._duration).attr("d", layer.map.path).each(addstyle);
+              entities.transition().duration(duration).attr("d", layer.map.path).each(addstyle);
           }
           else {
           	//based on: http://bl.ocks.org/mbostock/5914438
@@ -648,7 +644,7 @@ d3_mappu_Layer = function(name, config){
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         drawboard.transition().duration(_duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();

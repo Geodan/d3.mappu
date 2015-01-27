@@ -26,8 +26,8 @@ d3_mappu_Map = function(id, config) {
     var map = {};
 	var _layers = [];
 	var _mapdiv;
-	var _duration = 0;
-	map._duration = _duration;
+	
+	
 	//check if elem is a dom-element or an identifier
 	if (typeof(id) == 'object'){
 	    _mapdiv = id;
@@ -37,8 +37,6 @@ d3_mappu_Map = function(id, config) {
 	}
 	
 	window.onresize = function(){
-		//TODO: redraw the map with new extents
-		console.log('Map resize detected');
 		resize();
 	};
 	
@@ -80,10 +78,8 @@ d3_mappu_Map = function(id, config) {
         //layer.call(raster);
 
         _layers.forEach(function(d){
-            d.refresh();
+            d.refresh(0);
         });
-        
-        map._duration = 0;
     };
     
     var resize = function(){
@@ -200,8 +196,6 @@ d3_mappu_Map = function(id, config) {
 		];
 		_zoombehaviour
 			.translate(translate);
-		//TODO: calculate duration based on distance to be moved
-		map._duration = 2000;
 		map.redraw();
     }
     

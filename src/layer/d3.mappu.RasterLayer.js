@@ -118,7 +118,7 @@
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         drawboard.transition().duration(layer.map._duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
+         drawboard.transition().duration(_duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();

@@ -11,7 +11,7 @@
       var layertype = 'vector';
       var _data = [];                         
 	  var drawboard;
-	  var _duration = 0;
+	  var _duration = config.duration || 0;
 	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
@@ -20,7 +20,7 @@
         },
         set: function(array) { 
             _data = array;
-            draw(true);
+            draw(false);
         }
       });                                                           
       
@@ -38,7 +38,9 @@
           if (rebuild){
                drawboard.selectAll('.entity').remove();
           }
-          var entities = drawboard.selectAll('.entity').data(_data);
+          var entities = drawboard.selectAll('.entity').data(_data, function(d){
+          	return d.id;
+          });
           
           var newpaths = entities.enter().append('path').attr("d", layer.map.path)
             .classed('entity',true).classed(name, true)
@@ -50,15 +52,15 @@
                  newpaths.on(d.event, d.action);
               });
           }
-          layer.refresh();
+          layer.refresh(rebuild?0:_duration);
       };
       
-      var refresh = function(){
+      var refresh = function(duration){
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
-              entities.transition().duration(layer.map._duration).attr("d", layer.map.path).each(addstyle);
+              entities.transition().duration(duration).attr("d", layer.map.path).each(addstyle);
           }
           else {
           	//based on: http://bl.ocks.org/mbostock/5914438
