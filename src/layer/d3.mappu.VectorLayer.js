@@ -63,7 +63,8 @@
           else {
           	//based on: http://bl.ocks.org/mbostock/5914438
           	var zoombehaviour = layer.map.zoombehaviour;
-          	drawboard.transition().duration(layer.map._duration)
+          	//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
+          	drawboard
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
           }
