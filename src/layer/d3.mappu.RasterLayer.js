@@ -122,6 +122,7 @@
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();
+         if (layer.visible){
          imageEnter.append("image")
               .classed('tile',true)
               .attr("xlink:href", tileurl)
@@ -131,6 +132,7 @@
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
               .on('click', getFeatureInfo);
+         }
          image.exit().remove();
       };
       

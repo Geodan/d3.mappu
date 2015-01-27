@@ -104,8 +104,6 @@ d3_mappu_Map = function(id, config) {
 		d3.select(_mapdiv).select('svg')
 			.attr("width", _width)
 			.attr("height", _height);
-		//_projection.translate([_width / 2, _height / 2]);
-		//_zoombehaviour.translate([_width - _projcenter[0], _height - _projcenter[1]]);
 		_tile.size([_width,_height]);
 		redraw();
 	};
@@ -654,6 +652,7 @@ d3_mappu_Layer = function(name, config){
          var image = drawboard.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          var imageEnter = image.enter();
+         if (layer.visible){
          imageEnter.append("image")
               .classed('tile',true)
               .attr("xlink:href", tileurl)
@@ -663,6 +662,7 @@ d3_mappu_Layer = function(name, config){
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
               .on('click', getFeatureInfo);
+         }
          image.exit().remove();
       };
       
