@@ -9,7 +9,7 @@
       var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
-      var layertype = 'raster';
+      layer.type = 'raster';
       var drawboard;
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
@@ -54,12 +54,12 @@
           var url;
           if (_ogc_type == 'tms') {
               url = _url    
-                    .replace('{s}',["a", "b", "c", "d"][Math.random() * 4 | 0])
+                    .replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
                     .replace('{z}',d[2])
                     .replace('{x}',d[0])
                     .replace('{y}',d[1])
                     //FIXME: why are these curly brackets killed when used with polymer?                    
-                    .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 4 | 0])
+                    .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
                     .replace('%7Bz%7D',d[2])
                     .replace('%7Bx%7D',d[0])
                     .replace('%7By%7D',d[1]);

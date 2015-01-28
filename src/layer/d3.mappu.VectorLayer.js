@@ -8,7 +8,7 @@
   d3_mappu_VectorLayer = function(name, config) {
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
-      var layertype = 'vector';
+      layer.type = 'vector';
       var _data = [];                         
 	  var drawboard;
 	  var _duration = config.duration || 0;
