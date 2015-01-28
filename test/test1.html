@@ -125,7 +125,7 @@ var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
 //var controllers = d3.mappu.Controllers(map);
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    reproject: true,
+    reproject: false,
     events: [{
         event: 'mouseover',
         action: function(){
@@ -151,7 +151,12 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
 
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);
-  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+  var counter = 0;
+  var feats = topojson.feature(data, data.objects.gemeenten).features;
+  feats.forEach(function(d){
+		  d.id = 'id' + counter++;
+  });
+  mylayer.data = feats;
   map.redraw();
 });
 

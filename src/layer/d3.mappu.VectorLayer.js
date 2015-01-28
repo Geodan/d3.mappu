@@ -57,18 +57,23 @@
       
       var refresh = function(duration){
           var drawboard = layer.drawboard;
-          drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
-          if (config.reproject){
-              var entities = drawboard.selectAll('.entity');
-              entities.transition().duration(duration).attr("d", layer.map.path).each(addstyle);
+          drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
+          if (layer.visible){
+			  if (config.reproject){
+				  var entities = drawboard.selectAll('.entity');
+				  entities.transition().duration(duration).attr("d", layer.map.path).each(addstyle);
+			  }
+			  else {
+				//based on: http://bl.ocks.org/mbostock/5914438
+				var zoombehaviour = layer.map.zoombehaviour;
+				//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
+				drawboard
+				  .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
+				  .style("stroke-width", 1 / zoombehaviour.scale());
+			  }
           }
           else {
-          	//based on: http://bl.ocks.org/mbostock/5914438
-          	var zoombehaviour = layer.map.zoombehaviour;
-          	//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
-          	drawboard
-              .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
-              .style("stroke-width", 1 / zoombehaviour.scale());
+          	  drawboard.selectAll('.entity').remove();
           }
       };
       

@@ -74,6 +74,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _visible = val;
+            layer.draw(true);
             layer.refresh(0);
         }
     });

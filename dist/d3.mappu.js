@@ -419,6 +419,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _visible = val;
+            layer.draw(true);
             layer.refresh(0);
         }
     });
@@ -499,8 +500,10 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(duration){
+      	  
           var drawboard = layer.drawboard;
-          drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
+          if (layer.visible){
           if (config.reproject){
               var entities = drawboard.selectAll('.entity');
               entities.transition().duration(duration).attr("d", layer.map.path).each(addstyle);
@@ -512,6 +515,10 @@ d3_mappu_Layer = function(name, config){
           	drawboard
               .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
               .style("stroke-width", 1 / zoombehaviour.scale());
+          }
+          }
+          else {
+          	  drawboard.selectAll('.entity').remove();
           }
       };
       
