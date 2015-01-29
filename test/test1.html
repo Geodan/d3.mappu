@@ -8,7 +8,7 @@
 <script src="../dist/d3.mappu.js"></script>
 
 <style>
-body {
+html, body {
   margin: 0;
   width: 100%;
   height: 100%;
@@ -21,12 +21,32 @@ path {
   
 }
 
+#header {
+	position: relative;
+	height: 10%;
+	width: 100%;
+	background: green;
+}
+
+#content {
+	position: relative;
+	height: 90%;
+	width: 100%;
+}
+#leftbar {
+	position: absolute;
+	height: 100%;
+	width: 100px;
+	background: red;
+}
+
 #map {
-  position: relative;
+  position: absolute;
   margin: 0 auto;
   overflow: hidden;
+  left: 100px;
   height: 100%;
-  width: 100%;
+  right: 0px;
 }
 
 .tile {
@@ -62,7 +82,11 @@ Layer styling happens in CSS, or in a per-feature function
 
 </head>
 <body>
-<div id='map'></div>
+<div id="header">Header</div>
+<div id="content">
+	<div id="leftbar">leftbar</div>
+	<div id='map'></div>
+</div>
 <!--
 <script src="../src/d3.dev/d3.geo.raster.js"></script>
 <script src="../src/d3.dev/d3.quadtiles.js"></script>
@@ -101,7 +125,7 @@ var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
 //var controllers = d3.mappu.Controllers(map);
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    reproject: true,
+    reproject: false,
     events: [{
         event: 'mouseover',
         action: function(){
@@ -127,7 +151,12 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
 
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);
-  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+  var counter = 0;
+  var feats = topojson.feature(data, data.objects.gemeenten).features;
+  feats.forEach(function(d){
+		  d.id = 'id' + counter++;
+  });
+  mylayer.data = feats;
   map.redraw();
 });
 

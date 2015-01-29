@@ -8,10 +8,10 @@
   d3_mappu_VectorLayer = function(name, config) {
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
-      var layertype = 'vector';
+      layer.type = 'vector';
       var _data = [];                         
 	  var drawboard;
-	  var _duration = 0;
+	  var _duration = config.duration || 0;
 	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
@@ -20,7 +20,7 @@
         },
         set: function(array) { 
             _data = array;
-            draw(true);
+            draw(false);
         }
       });                                                           
       
@@ -38,7 +38,9 @@
           if (rebuild){
                drawboard.selectAll('.entity').remove();
           }
-          var entities = drawboard.selectAll('.entity').data(_data);
+          var entities = drawboard.selectAll('.entity').data(_data, function(d){
+          	return d.id;
+          });
           
           var newpaths = entities.enter().append('path').attr("d", layer.map.path)
             .classed('entity',true).classed(name, true)
@@ -50,22 +52,28 @@
                  newpaths.on(d.event, d.action);
               });
           }
-          layer.refresh();
+          layer.refresh(rebuild?0:_duration);
       };
       
-      var refresh = function(){
+      var refresh = function(duration){
           var drawboard = layer.drawboard;
-          drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
-          if (config.reproject){
-              var entities = drawboard.selectAll('.entity');
-              entities.transition().duration(layer.map._duration).attr("d", layer.map.path).each(addstyle);
+          drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
+          if (layer.visible){
+			  if (config.reproject){
+				  var entities = drawboard.selectAll('.entity');
+				  entities.transition().duration(duration).attr("d", layer.map.path).each(addstyle);
+			  }
+			  else {
+				//based on: http://bl.ocks.org/mbostock/5914438
+				var zoombehaviour = layer.map.zoombehaviour;
+				//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
+				drawboard
+				  .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
+				  .style("stroke-width", 1 / zoombehaviour.scale());
+			  }
           }
           else {
-          	//based on: http://bl.ocks.org/mbostock/5914438
-          	var zoombehaviour = layer.map.zoombehaviour;
-          	drawboard.transition().duration(layer.map._duration)
-              .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
-              .style("stroke-width", 1 / zoombehaviour.scale());
+          	  drawboard.selectAll('.entity').remove();
           }
       };
       
