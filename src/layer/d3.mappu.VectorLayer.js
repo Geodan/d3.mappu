@@ -12,6 +12,8 @@
       var _data = [];                         
 	  var drawboard;
 	  var _duration = config.duration || 0;
+	  var path;
+	    
 	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
@@ -24,23 +26,42 @@
         }
       });                                                           
       
-      function addstyle(d){
+      function setStyle(d){
       	  var entity = d3.select(this);
       	  if (d.style){
       	  	  for (var key in d.style) { 
-      	  	  	  entity.style(key, d.style[key]);
+      	  	  	  entity.select('path').style(key, d.style[key]);
       	  	  }
+      	  }
+      	  if (d._selected){
+      	  	  //make halo around entity to show as selected
+      	  	  entity.selectAll('.halo').data([1]).enter()
+      	  	  	.append('path').attr("d", _path)
+      	  	  	.style('stroke', 'blue')
+      	  	  	.classed('halo', true);
+      	  }
+      	  else {
+      	  	  entity.selectAll('.halo').remove();
       	  }
       }
       
       function build(d){
-      	  d3.select(this).append('path').attr("d", layer.map.path)
+      	  d3.select(this).append('path').attr("d", _path)
             .classed(name, true)
-            .style('stroke', 'blue')
-            .each(addstyle);
+            .style('stroke', 'blue');
       }
       
       var draw = function(rebuild){
+		  _path = d3.geo.path()
+			.projection(layer.map.projection)
+			.pointRadius(function(d) {
+				if (d._selected){
+					return 30; 
+				}
+				return 4.5;
+			});
+      	  
+      	  
           var drawboard = layer.drawboard;
           if (rebuild){
                drawboard.selectAll('.entity').remove();
@@ -55,6 +76,7 @@
                     return 'entity'+ d.id;
             });
           newentity.each(build);
+          newentity.each(setStyle);
             
           // Add events from config
           if (config.events){
@@ -71,7 +93,8 @@
           if (layer.visible){
           	  var entities = drawboard.selectAll('.entity');
 			  if (config.reproject){
-				  entities.select('path').transition().duration(duration).attr("d", layer.map.path).each(addstyle);
+				  entities.select('path').transition().duration(duration).attr("d", _path);
+				  entities.each(setStyle);
 			  }
 			  else {
 				//based on: http://bl.ocks.org/mbostock/5914438

@@ -103,10 +103,6 @@ d3_mappu_Map = function(id, config) {
      
     var _projcenter = _projection(_center);     
     
-    //TODO: reset this on projection change
-    var _path = d3.geo.path()
-        .projection(_projection);    
-        
 	var _zoombehaviour = d3.behavior.zoom()
 	    .scale(_projection.scale() * 2 * Math.PI)
         .scaleExtent([1 << _minZoom, 1 << _maxZoom])
@@ -262,15 +258,8 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(obj) {
           _projection = obj;
-          _path = d3.geo.path()
-            .projection(_projection);
           //TODO: redraw
         }
-    });
-    
-    Object.defineProperty(map, 'path', {
-            get: function(){return _path;},
-            set: function(){console.warn('No setting allowed for path');}
     });
     
     Object.defineProperty(map, 'tiles', {
