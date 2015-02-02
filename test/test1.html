@@ -147,8 +147,12 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         }
     }]
 }).addTo(map);
-
-
+/*
+d3.json('us.json', function(error, data){
+		mylayer.data = data;
+		map.redraw();
+});
+*/
 d3.json("gemeenten_simple.topojson", function(error, data) {
   if (error) return console.error(error);
   var counter = 0;

@@ -18,7 +18,7 @@
         get: function() {
             return _data;
         },
-        set: function(array) { 
+        set: function(array) {
             _data = array;
             draw(false);
         }
@@ -33,6 +33,13 @@
       	  }
       }
       
+      function build(d){
+      	  d3.select(this).append('path').attr("d", layer.map.path)
+            .classed(name, true)
+            .style('stroke', 'blue')
+            .each(addstyle);
+      }
+      
       var draw = function(rebuild){
           var drawboard = layer.drawboard;
           if (rebuild){
@@ -42,14 +49,17 @@
           	return d.id;
           });
           
-          var newpaths = entities.enter().append('path').attr("d", layer.map.path)
-            .classed('entity',true).classed(name, true)
-            .style('stroke', 'blue')
-            .each(addstyle);
+          var newentity = entities.enter().append('g')
+          	.classed('entity',true)
+          	.attr('id',function(d){
+                    return 'entity'+ d.id;
+            });
+          newentity.each(build);
+            
           // Add events from config
           if (config.events){
               config.events.forEach(function(d){
-                 newpaths.on(d.event, d.action);
+                 newentity.select('path').on(d.event, d.action);
               });
           }
           layer.refresh(rebuild?0:_duration);
@@ -59,9 +69,9 @@
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){
+          	  var entities = drawboard.selectAll('.entity');
 			  if (config.reproject){
-				  var entities = drawboard.selectAll('.entity');
-				  entities.transition().duration(duration).attr("d", layer.map.path).each(addstyle);
+				  entities.select('path').transition().duration(duration).attr("d", layer.map.path).each(addstyle);
 			  }
 			  else {
 				//based on: http://bl.ocks.org/mbostock/5914438
