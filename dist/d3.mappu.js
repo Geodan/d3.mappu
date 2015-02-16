@@ -78,6 +78,14 @@ d3_mappu_Map = function(id, config) {
 	
 
     var redraw = function(){
+    	//Set internal zoom
+    	var scale = _zoombehaviour.scale();
+    	_zoom = (Math.log(scale* 2 * Math.PI)/Math.log(2));
+    	
+    	//Set internal center
+    	var pixcenter = [_width/2,_height/2];
+        _center =  _projection.invert(pixcenter);
+        
         //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
@@ -92,6 +100,20 @@ d3_mappu_Map = function(id, config) {
         _layers.forEach(function(d){
             d.refresh(0);
         });
+        
+        Object.getNotifier(map).notify({
+			type: 'update',
+			name: 'zoom',
+			oldValue: _zoom
+		});
+		
+		Object.getNotifier(map).notify({
+			type: 'update',
+			name: 'center',
+			oldValue: _center
+		});
+        
+        
     };
     
     var resize = function(){
@@ -189,6 +211,7 @@ d3_mappu_Map = function(id, config) {
     }); 
     
     function zoomcenter(){
+    	
     	_zoombehaviour.scale((1 << _zoom) / 2 / Math.PI);
     	//Adapt projection based on new zoomlevel
 		_projection
@@ -214,6 +237,7 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
+        		
 				_zoom = val;
 				zoomcenter();
 			}
@@ -255,8 +279,7 @@ d3_mappu_Map = function(id, config) {
 // .center : ([long,lat])
     Object.defineProperty(map, 'center', {
         get: function() {
-            var pixcenter = [_width/2,_height/2];
-            return _projection.invert(pixcenter);
+            return _center;
         },
         set: function(val) {
         	_center = val;
@@ -327,6 +350,7 @@ d3_mappu_Map = function(id, config) {
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
     map.redraw = redraw;
+    map.resize = resize;
     
     return map;
 };
@@ -468,9 +492,10 @@ d3_mappu_Layer = function(name, config){
       	  }
       	  if (d._selected){
       	  	  //make halo around entity to show as selected
-      	  	  entity.selectAll('.halo').data([1]).enter()
+      	  	  entity
       	  	  	.append('path').attr("d", _path)
-      	  	  	.style('stroke', 'blue')
+      	  	  	.style('stroke', 'none')
+      	  	  	.style('fill', 'red')
       	  	  	.classed('halo', true);
       	  }
       	  else {
@@ -488,10 +513,12 @@ d3_mappu_Layer = function(name, config){
 		  _path = d3.geo.path()
 			.projection(layer.map.projection)
 			.pointRadius(function(d) {
-				if (d._selected){
-					return 30; 
+				if (d.style && d.style.radius){
+					return d.style.radius;
 				}
-				return 4.5;
+				else {
+					return 4.5;
+				}
 			});
       	  
       	  

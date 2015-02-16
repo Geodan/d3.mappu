@@ -35,9 +35,10 @@
       	  }
       	  if (d._selected){
       	  	  //make halo around entity to show as selected
-      	  	  entity.selectAll('.halo').data([1]).enter()
+      	  	  entity
       	  	  	.append('path').attr("d", _path)
-      	  	  	.style('stroke', 'blue')
+      	  	  	.style('stroke', 'none')
+      	  	  	.style('fill', 'red')
       	  	  	.classed('halo', true);
       	  }
       	  else {
@@ -55,10 +56,12 @@
 		  _path = d3.geo.path()
 			.projection(layer.map.projection)
 			.pointRadius(function(d) {
-				if (d._selected){
-					return 30; 
+				if (d.style && d.style.radius){
+					return d.style.radius;
 				}
-				return 4.5;
+				else {
+					return 4.5;
+				}
 			});
       	  
       	  
