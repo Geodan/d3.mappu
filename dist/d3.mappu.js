@@ -538,6 +538,8 @@ d3_mappu_Layer = function(name, config){
           newentity.each(build);
           newentity.each(setStyle);
             
+          entities.exit().remove();
+          
           // Add events from config
           if (config.events){
               config.events.forEach(function(d){
