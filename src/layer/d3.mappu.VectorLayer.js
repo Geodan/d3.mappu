@@ -26,6 +26,19 @@
         }
       });                                                           
       
+      function ringIsClockwise(ringToTest) {
+		var total = 0,i = 0;
+		var rLength = ringToTest.length;
+		var pt1 = ringToTest[i];
+		var pt2;
+		for (i; i < rLength - 1; i++) {
+		  pt2 = ringToTest[i + 1];
+		  total += (pt2[0] - pt1[0]) * (pt2[1] + pt1[1]);
+		  pt1 = pt2;
+		}
+		return (total >= 0);
+	  }
+      
       function setStyle(d){
       	  var entity = d3.select(this);
       	  if (d.style){
@@ -47,6 +60,9 @@
       }
       
       function build(d){
+      	  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
+      	  	  d.geometry.coordinates[0] = d.geometry.coordinates[0].reverse(); 
+      	  }
       	  d3.select(this).append('path').attr("d", _path)
             .classed(name, true)
             .style('stroke', 'blue');
@@ -70,7 +86,7 @@
                drawboard.selectAll('.entity').remove();
           }
           var entities = drawboard.selectAll('.entity').data(_data, function(d){
-          	return d.id | d.properties ? d.properties.id: null;
+          	return d.id;
           });
           
           var newentity = entities.enter().append('g')
