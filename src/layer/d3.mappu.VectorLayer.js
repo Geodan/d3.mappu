@@ -70,7 +70,7 @@
                drawboard.selectAll('.entity').remove();
           }
           var entities = drawboard.selectAll('.entity').data(_data, function(d){
-          	return d.id;
+          	return d.id | d.properties ? d.properties.id: null;
           });
           
           var newentity = entities.enter().append('g')
