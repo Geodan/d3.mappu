@@ -143,6 +143,7 @@ d3_mappu_Map = function(id, config) {
           .translate(_zoombehaviour.translate())();
           
     resize();
+    zoomcenter();
     /*
     var raster = d3.geo.raster(_projection)
         .scaleExtent([0, 10])
@@ -198,7 +199,23 @@ d3_mappu_Map = function(id, config) {
         }
     }); 
     
-  
+   function zoomcenter(){
+   	   	var scale = (1 << _zoom) / 2 / Math.PI;
+		_zoombehaviour.scale(scale);
+		_projection
+		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
+		   .translate(_zoombehaviour.translate());
+		
+		//Adapt projection based on new zoomlevel
+		var pixcenter = _projection(_center);
+		var curtranslate = _zoombehaviour.translate();
+		var translate = [
+			curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+		];
+		_zoombehaviour.translate(translate);
+		_zoombehaviour.event(_svg.transition());
+   }
 // .zoom : (zoomlevel)
 //http://truongtx.me/2014/03/13/working-with-zoom-behavior-in-d3js-and-some-notes/
     Object.defineProperty(map, 'zoom', {
@@ -208,21 +225,7 @@ d3_mappu_Map = function(id, config) {
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
 				_zoom = val;
-				var scale = (1 << _zoom) / 2 / Math.PI;
-				_zoombehaviour.scale(scale);
-				_projection
-				   .scale(_zoombehaviour.scale() / 2 / Math.PI)
-				   .translate(_zoombehaviour.translate());
-				
-				//Adapt projection based on new zoomlevel
-				var pixcenter = _projection(_center);
-				var curtranslate = _zoombehaviour.translate();
-				var translate = [
-					curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-					curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-				];
-				_zoombehaviour.translate(translate);
-				_zoombehaviour.event(_svg.transition());
+				zoomcenter();
 			}
 			else {
 				console.log('Zoomlevel exceeded', _minZoom , _maxZoom);
@@ -266,17 +269,7 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	_center = val;
-        	//recenter map based on new zoomlevel
-			var pixcenter = _projection(_center);
-			var curtranslate = _zoombehaviour.translate();
-			var translate = [
-				curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-				curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-			];
-			_zoombehaviour
-				.translate(translate);
-			_zoombehaviour.event(_svg.transition());
-			//map.redraw();
+			zoomcenter();
         }
     });
 // .projection : ({projection})
