@@ -26,6 +26,7 @@
         }
       });                                                           
       
+      //Function taken from terraformer
       function ringIsClockwise(ringToTest) {
 		var total = 0,i = 0;
 		var rLength = ringToTest.length;

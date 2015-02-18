@@ -210,36 +210,34 @@ d3_mappu_Map = function(id, config) {
         }
     }); 
     
-    function zoomcenter(){
-    	
-    	_zoombehaviour.scale((1 << _zoom) / 2 / Math.PI);
-    	//Adapt projection based on new zoomlevel
-		_projection
-		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
-		   .translate(_zoombehaviour.translate());
-		   
-	   //recenter map based on new zoomlevel
-		var pixcenter = _projection(_center);
-		var curtranslate = _zoombehaviour.translate();
-		var translate = [
-			curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-		];
-		_zoombehaviour
-			.translate(translate);
-		map.redraw();
-    }
-    
+  
 // .zoom : (zoomlevel)
+//http://truongtx.me/2014/03/13/working-with-zoom-behavior-in-d3js-and-some-notes/
     Object.defineProperty(map, 'zoom', {
         get: function() {
             return _zoom;
         },
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
-        		
 				_zoom = val;
-				zoomcenter();
+				var scale = (1 << _zoom) / 2 / Math.PI;
+				_zoombehaviour.scale(scale);
+				_projection
+				   .scale(_zoombehaviour.scale() / 2 / Math.PI)
+				   .translate(_zoombehaviour.translate());
+				
+				//Adapt projection based on new zoomlevel
+				var pixcenter = _projection(_center);
+				var curtranslate = _zoombehaviour.translate();
+				var translate = [
+					curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+					curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+				];
+				 
+				_zoombehaviour.translate(translate);
+					
+				
+				_zoombehaviour.event(_svg.transition());
 			}
 			else {
 				console.log('Zoomlevel exceeded', _minZoom , _maxZoom);
@@ -283,7 +281,17 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	_center = val;
-			zoomcenter();
+        	//recenter map based on new zoomlevel
+			var pixcenter = _projection(_center);
+			var curtranslate = _zoombehaviour.translate();
+			var translate = [
+				curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+				curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+			];
+			_zoombehaviour
+				.translate(translate);
+			_zoombehaviour.event(_svg.transition());
+			//map.redraw();
         }
     });
 // .projection : ({projection})
@@ -483,6 +491,7 @@ d3_mappu_Layer = function(name, config){
         }
       });                                                           
       
+      //Function taken from terraformer
       function ringIsClockwise(ringToTest) {
 		var total = 0,i = 0;
 		var rLength = ringToTest.length;
