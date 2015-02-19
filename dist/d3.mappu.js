@@ -383,22 +383,28 @@ d3_mappu_Sketch = function(id, config) {
 	var type = null;
 	var activeFeature = null;
 	
-	function addPoint(e){
-		coords.push(map.projection.invert([e.offsetX, e.offsetY]));
+	function addPoint(){
+		d3.event.preventDefault();
+		d3.event.stopPropagation();
+		coords.push(map.projection.invert([d3.event.offsetX, d3.event.offsetY]));
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
 		layer.data = [activeFeature];
 	}
 	
 	function finishPoint(e){
-		coords = project.invert([e.offsetX, e.offsetY]);
+		d3.event.preventDefault();
+		d3.event.stopPropagation();
+		coords = project.invert([d3.event.offsetX, d3.event.offsetY]);
 		activeFeature.geometry.coordinates = coords;
 		sketch.feature = activeFeature;
-		layer.data = [activeFeature];
+		layer.data = [activeFeature]; //TODO: only replace the active feature, not the whole dataset
 		done();
 	}
 	
 	function finishLineString(e){
+		d3.event.preventDefault();
+		d3.event.stopPropagation();
 		activeFeature.geometry.coordinates = coords;
 		activeFeature.style = {fill: 'none'};
 		activeFeature.properties = {fill: 'none'};
@@ -408,6 +414,8 @@ d3_mappu_Sketch = function(id, config) {
 	}
 	
 	function finishPolygon(e){
+		d3.event.preventDefault();
+		d3.event.stopPropagation();
 		activeFeature.geometry.type = 'Polygon';
 		activeFeature.geometry.coordinates = [coords];
 		activeFeature.style = {fill: 'blue'};
@@ -419,7 +427,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	function movePointer(e){
 		var i = activeFeature.geometry.coordinates.length;
-		var newpoint = map.projection.invert([e.offsetX, e.offsetY]);
+		var newpoint = map.projection.invert([d3.event.offsetX, d3.event.offsetY]);
 		if (i >= 1){
 			if (i == 1){
 				coords[i] = newpoint;
@@ -444,24 +452,26 @@ d3_mappu_Sketch = function(id, config) {
 		};
 		type = geomtype;
 		if (type == 'Point'){
-			map.mapdiv.addEventListener('click',finishPoint);
+			map.svg.on('click',finishPoint);
 		}
 		else if (type == 'LineString'){
 			activeFeature.style.fill = 'none';
-			map.mapdiv.addEventListener('click',addPoint);
-			map.mapdiv.addEventListener('mousemove',movePointer);
-        	map.mapdiv.addEventListener('dblclick',finishLineString);
+			map.svg.on('click', addPoint);
+			map.svg.on('mousemove',movePointer);
+        	map.svg.on('dblclick',finishLineString);
 		}
 		else if (type == 'Polygon'){
 			activeFeature.style.fill = 'blue';
-			map.mapdiv.addEventListener('click',addPoint); 
-			map.mapdiv.addEventListener('mousemove',movePointer);
-        	map.mapdiv.addEventListener('dblclick',finishPolygon);
+			map.svg.on('click',addPoint); 
+			map.svg.on('mousemove',movePointer);
+        	map.svg.on('dblclick',finishPolygon);
 		}
 	};
 	var edit = function(){
+		//TODO
 	};
 	var remove = function(){
+		//TODO
 	};
 	
 	var done = function(){
@@ -472,11 +482,11 @@ d3_mappu_Sketch = function(id, config) {
 	
 	var cancel = function(){
 		activeFeature = null;
-		map.mapdiv.removeEventListener('mousemove',movePointer);
-		map.mapdiv.removeEventListener('click', addPoint);
-		map.mapdiv.removeEventListener('click', finishPoint);
-		map.mapdiv.removeEventListener('dblclick', finishLineString);
-		map.mapdiv.removeEventListener('dblclick', finishPolygon);
+		map.svg.on('mousemove',null);
+		map.svg.on('click', null);
+		map.svg.on('click', null);
+		map.svg.on('dblclick', null);
+		map.svg.on('dblclick', null);
 	};
 	
 	//Export functions
