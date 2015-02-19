@@ -14,8 +14,10 @@ d3_mappu_Sketch = function(id, config) {
 	var map = layer.map;
 	var project = map.projection;
 	var coords = [];
-	
+	var tmpcoords = [];
+	var feature = null;
 	function finishPoint(e){
+		  
 		coords = project.invert([e.offsetX, e.offsetY]);
 		var feature = {
 			type: "Feature",
@@ -26,11 +28,25 @@ d3_mappu_Sketch = function(id, config) {
 			style: {},
 			properties: {}
 		};
+		sketch.feature = feature;
 		map.mapdiv.removeEventListener('click', finishPoint);
+		var event = new Event('featureReady');
+		map.mapdiv.dispatchEvent(event);
 	}
 	
 	function addPoint(e){
 		coords.push(map.projection.invert([e.offsetX, e.offsetY]));
+		var feature = {
+			type: "Feature",
+			geometry: {
+				type: 'LineString',
+				coordinates: coords
+			},
+			style: {fill: 'none'},
+			properties: {fill: 'none'}
+		};
+		layer.data = [feature];
+		layer.refresh();
 	}
 	
 	function finishLineString(e){
@@ -43,23 +59,30 @@ d3_mappu_Sketch = function(id, config) {
 			style: {fill: 'none'},
 			properties: {fill: 'none'}
 		};
+		sketch.feature = feature;
 		map.mapdiv.removeEventListener('click', addPoint);
 		map.mapdiv.removeEventListener('dblclick', finishLineString);
+		var event = new Event('featureReady');
+		map.mapdiv.dispatchEvent(event);
 	}
 	
 	function finishPolygon(e){
+		map.svg.selectAll('.tmp').remove();
 		coords.push(coords[0]);
 		var feature = {
 			type: "Feature",
 			geometry: {
 				type: 'Polygon',
-				coordinates: coords
+				coordinates: [coords]
 			},
 			style: {opacity: 0.5},
 			properties: {opacity: 0.5}
 		};
+		sketch.feature = feature;
 		map.mapdiv.removeEventListener('click', addPoint);
 		map.mapdiv.removeEventListener('dblclick', finishPolygon);
+		var event = new Event('featureReady');
+		map.mapdiv.dispatchEvent(event);
 	}
 	
 	var draw = function(type){
@@ -67,11 +90,11 @@ d3_mappu_Sketch = function(id, config) {
 			map.mapdiv.addEventListener('click',finishPoint);
 		}
 		else if (type == 'LineString'){
-			map.mapdiv.addEventListener('click',addpoint); 
+			map.mapdiv.addEventListener('click',addPoint); 
         	map.mapdiv.addEventListener('dblclick',finishLineString);
 		}
 		else if (type == 'Polygon'){
-			map.mapdiv.addEventListener('click',addpoint); 
+			map.mapdiv.addEventListener('click',addPoint); 
         	map.mapdiv.addEventListener('dblclick',finishPolygon);
 		}
 	};
@@ -91,6 +114,8 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.draw  = draw;
 	sketch.edit = edit;
 	sketch.remove = remove;
+	
+	sketch.feature = feature;
 	
 	return sketch;
 };

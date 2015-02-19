@@ -326,7 +326,15 @@ d3_mappu_Map = function(id, config) {
             }
         });
         return map;
-    };   
+    };
+    var getLayer = function(id){
+    	_layers.forEach(function(d,i){
+            if (d.id == id){
+                return d;
+            }
+        });
+        return null;
+    };
 
 // .removeLayers([{layer}])
 

@@ -338,7 +338,15 @@ d3_mappu_Map = function(id, config) {
             }
         });
         return map;
-    };   
+    };
+    var getLayer = function(id){
+    	_layers.forEach(function(d,i){
+            if (d.id == id){
+                return d;
+            }
+        });
+        return null;
+    };
 
 // .removeLayers([{layer}])
 
@@ -370,8 +378,10 @@ d3_mappu_Sketch = function(id, config) {
 	var map = layer.map;
 	var project = map.projection;
 	var coords = [];
-	
+	var tmpcoords = [];
+	var feature = null;
 	function finishPoint(e){
+		  
 		coords = project.invert([e.offsetX, e.offsetY]);
 		var feature = {
 			type: "Feature",
@@ -382,11 +392,25 @@ d3_mappu_Sketch = function(id, config) {
 			style: {},
 			properties: {}
 		};
+		sketch.feature = feature;
 		map.mapdiv.removeEventListener('click', finishPoint);
+		var event = new Event('featureReady');
+		map.mapdiv.dispatchEvent(event);
 	}
 	
 	function addPoint(e){
 		coords.push(map.projection.invert([e.offsetX, e.offsetY]));
+		var feature = {
+			type: "Feature",
+			geometry: {
+				type: 'LineString',
+				coordinates: coords
+			},
+			style: {fill: 'none'},
+			properties: {fill: 'none'}
+		};
+		layer.data = [feature];
+		layer.refresh();
 	}
 	
 	function finishLineString(e){
@@ -399,23 +423,30 @@ d3_mappu_Sketch = function(id, config) {
 			style: {fill: 'none'},
 			properties: {fill: 'none'}
 		};
+		sketch.feature = feature;
 		map.mapdiv.removeEventListener('click', addPoint);
 		map.mapdiv.removeEventListener('dblclick', finishLineString);
+		var event = new Event('featureReady');
+		map.mapdiv.dispatchEvent(event);
 	}
 	
 	function finishPolygon(e){
+		map.svg.selectAll('.tmp').remove();
 		coords.push(coords[0]);
 		var feature = {
 			type: "Feature",
 			geometry: {
 				type: 'Polygon',
-				coordinates: coords
+				coordinates: [coords]
 			},
 			style: {opacity: 0.5},
 			properties: {opacity: 0.5}
 		};
+		sketch.feature = feature;
 		map.mapdiv.removeEventListener('click', addPoint);
 		map.mapdiv.removeEventListener('dblclick', finishPolygon);
+		var event = new Event('featureReady');
+		map.mapdiv.dispatchEvent(event);
 	}
 	
 	var draw = function(type){
@@ -423,11 +454,11 @@ d3_mappu_Sketch = function(id, config) {
 			map.mapdiv.addEventListener('click',finishPoint);
 		}
 		else if (type == 'LineString'){
-			map.mapdiv.addEventListener('click',addpoint); 
+			map.mapdiv.addEventListener('click',addPoint); 
         	map.mapdiv.addEventListener('dblclick',finishLineString);
 		}
 		else if (type == 'Polygon'){
-			map.mapdiv.addEventListener('click',addpoint); 
+			map.mapdiv.addEventListener('click',addPoint); 
         	map.mapdiv.addEventListener('dblclick',finishPolygon);
 		}
 	};
@@ -448,6 +479,8 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.edit = edit;
 	sketch.remove = remove;
 	
+	sketch.feature = feature;
+	
 	return sketch;
 };
 
@@ -463,6 +496,7 @@ d3.mappu.Layer = function(name, config) {
 };
 
 d3_mappu_Layer = function(name, config){
+	config = config || {};
     var layer = {};
     var _map;
     var _id = d3.mappu.util.createID();
@@ -559,6 +593,7 @@ d3_mappu_Layer = function(name, config){
   };
   
   d3_mappu_VectorLayer = function(name, config) {
+  	  config = config || {};
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
