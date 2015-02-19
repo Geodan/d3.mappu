@@ -355,6 +355,7 @@ d3_mappu_Map = function(id, config) {
     
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
+    map.getLayer = getLayer;
     map.redraw = redraw;
     map.resize = resize;
     
