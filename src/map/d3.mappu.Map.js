@@ -327,13 +327,14 @@ d3_mappu_Map = function(id, config) {
         });
         return map;
     };
-    var getLayer = function(id){
+    var getLayersByName = function(name){
+    	var result = [];
     	_layers.forEach(function(d,i){
-            if (d.id == id){
-                return d;
+            if (d.name == name){
+                result.push(d);
             }
         });
-        return null;
+        return result;
     };
 
 // .removeLayers([{layer}])
@@ -343,7 +344,7 @@ d3_mappu_Map = function(id, config) {
     
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
-    map.getLayer = getLayer;
+    map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
     
