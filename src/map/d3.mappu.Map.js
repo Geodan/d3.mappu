@@ -88,7 +88,7 @@ d3_mappu_Map = function(id, config) {
         _layers.forEach(function(d){
             d.refresh(0);
         });
-        
+        /* TT: Obsolete? For sure doesn't work with FF and IE (yet)
         Object.getNotifier(map).notify({
 			type: 'update',
 			name: 'zoom',
@@ -100,8 +100,7 @@ d3_mappu_Map = function(id, config) {
 			name: 'center',
 			oldValue: _center
 		});
-        
-        
+        */
     };
     
     var resize = function(){
