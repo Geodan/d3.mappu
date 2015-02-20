@@ -21,7 +21,7 @@
     "tests"
   ],
   "dependencies": {
-    "d3": ">=3.5.2",
+    "d3": ">=3.5.5",
     "topojson": "~1.6.18",
     "d3-plugins": "*"
   }
