@@ -49,6 +49,7 @@ Install
 ===
 prerequisites: node js, npm and a webserver
 
+```
 #install grunt and bower globally on your machine
 npm install -g grunt-cli
 npm install -g bower
@@ -57,3 +58,4 @@ npm install -g bower
 cd <path_to_your>/d3.mappu
 bower install
 grunt 
+```
