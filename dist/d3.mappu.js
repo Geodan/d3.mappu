@@ -89,7 +89,6 @@ d3_mappu_Map = function(id, config) {
     	//Set internal center
     	var pixcenter = [_width/2,_height/2];
         _center =  _projection.invert(pixcenter);
-        console.log(_projection.invert(pixcenter));
         
         //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
@@ -222,8 +221,7 @@ d3_mappu_Map = function(id, config) {
             return _center;
         },
         set: function(val) {
-        	console.log('Center from', _center,' to ', val);
-        	//_center = val;
+        	//zoomcenter will move to and set the center in some steps
 			zoomcenter(_zoom, val);
         }
     });   
@@ -235,12 +233,11 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
-        		console.log('Zoom from', _zoom,' to ', val);
-				//_zoom = val;
+        		//zoomcenter will move to and set the zoomlevel in some steps
 				zoomcenter(val, _center);
 			}
 			else {
-				console.log('Zoomlevel exceeded', _minZoom , _maxZoom);
+				console.log('Zoomlevel exceeded',val , 'Min:',_minZoom ,'Max:', _maxZoom);
 			}
         }
     });
@@ -303,6 +300,11 @@ d3_mappu_Map = function(id, config) {
 	
 ////singular functions
 
+	var zoomToFeature = function(d){
+		//TODO
+		console.warn('Not implemented yet');
+	};
+
     var addLayer = function(layer){
         if (!layer.id){
             console.warn('Not a valid layer. (No ID)');
@@ -343,7 +345,7 @@ d3_mappu_Map = function(id, config) {
 
 // .refresh()
     
-    
+    map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
     map.getLayersByName = getLayersByName;
@@ -368,56 +370,81 @@ d3_mappu_Sketch = function(id, config) {
 		return null;
 	}
 	var map = layer.map;
+	var svg = layer.map.svg;
+	var path = d3.geo.path()
+		.projection(layer.map.projection)
+		.pointRadius(4.5);
 	var project = map.projection;
 	var coords = [];
 	var type = null;
 	var activeFeature = null;
+	var selection = null;
+	
+	function build(){
+		svg.selectAll('.sketch').remove();
+		svg.append('path').attr("d", function(){
+				return path(activeFeature);
+		}).classed('sketch', true)
+		.style('stroke', 'blue')
+		.style('fill', function(){
+				if (type == 'LineString'){
+					return 'none';
+				}
+				else {
+					return 'blue';
+				}
+		})
+		.style('fill-opacity', 0.4)
+		.on('dblclick',function(){ //TODO: this should be working on the dblclick on the svg (see below)
+			if (type == 'LineString'){
+				finishLineString();
+			}
+			if (type == 'Polygon'){
+				finishPolygon();
+			}
+		});
+	}
 	
 	function addPoint(){
-		d3.event.preventDefault();
-		d3.event.stopPropagation();
-		coords.push(map.projection.invert([d3.event.offsetX, d3.event.offsetY]));
+		var e = d3.event;
+		var x = e.hasOwnProperty('offsetX') ? e.offsetX : e.layerX;
+		var y = e.hasOwnProperty('offsetY') ? e.offsetY : e.layerY;
+		coords.push(map.projection.invert([x, y]));
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
-		layer.data = [activeFeature];
+		build();
 	}
 	
-	function finishPoint(e){
-		d3.event.preventDefault();
-		d3.event.stopPropagation();
-		coords = project.invert([d3.event.offsetX, d3.event.offsetY]);
+	function finishPoint(){
+		var e = d3.event;
+		var x = e.hasOwnProperty('offsetX') ? e.offsetX : e.layerX;
+		var y = e.hasOwnProperty('offsetY') ? e.offsetY : e.layerY;
+		coords = project.invert([x,y]);
 		activeFeature.geometry.coordinates = coords;
-		sketch.feature = activeFeature;
-		layer.data = [activeFeature]; //TODO: only replace the active feature, not the whole dataset
+		build();
 		done();
 	}
 	
-	function finishLineString(e){
-		d3.event.preventDefault();
-		d3.event.stopPropagation();
+	function finishLineString(){
+		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
-		activeFeature.style = {fill: 'none'};
-		activeFeature.properties = {fill: 'none'};
-		sketch.feature = activeFeature;
-		layer.data = [activeFeature];
+		build();
 		done();
 	}
 	
-	function finishPolygon(e){
-		d3.event.preventDefault();
-		d3.event.stopPropagation();
+	function finishPolygon(){
 		activeFeature.geometry.type = 'Polygon';
 		activeFeature.geometry.coordinates = [coords];
-		activeFeature.style = {fill: 'blue'};
-		activeFeature.properties = {fill: 'blue', opacity: 0.5};
-		sketch.feature = activeFeature;
-		layer.data = [activeFeature];
+		build();
 		done();
 	}
 	
-	function movePointer(e){
+	function movePointer(){
 		var i = activeFeature.geometry.coordinates.length;
-		var newpoint = map.projection.invert([d3.event.offsetX, d3.event.offsetY]);
+		var e = d3.event;
+		var x = e.hasOwnProperty('offsetX') ? e.offsetX : e.layerX;
+		var y = e.hasOwnProperty('offsetY') ? e.offsetY : e.layerY;
+		var newpoint = map.projection.invert([x,y]);
 		if (i >= 1){
 			if (i == 1){
 				coords[i] = newpoint;
@@ -426,12 +453,13 @@ d3_mappu_Sketch = function(id, config) {
 				coords[i-1] = newpoint;
 			}
 			activeFeature.geometry.coordinates = coords;
-			layer.data = [activeFeature];
+			build();
 		}
 	}
 	
 	var draw = function(geomtype){
 		activeFeature = {
+			id: 1,
 			type: "Feature",
 			geometry: {
 				type: geomtype,
@@ -448,13 +476,13 @@ d3_mappu_Sketch = function(id, config) {
 			activeFeature.style.fill = 'none';
 			map.svg.on('click', addPoint);
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishLineString);
+        	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
 		}
 		else if (type == 'Polygon'){
 			activeFeature.style.fill = 'blue';
 			map.svg.on('click',addPoint); 
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishPolygon);
+        	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
 		}
 	};
 	var edit = function(){
@@ -465,12 +493,13 @@ d3_mappu_Sketch = function(id, config) {
 	};
 	
 	var done = function(){
-		var event = new Event('featureReady');
+		var event = new CustomEvent('featureReady', {detail: activeFeature});
 		map.mapdiv.dispatchEvent(event);
 		cancel();
 	};
 	
 	var cancel = function(){
+		svg.selectAll('.sketch').remove();
 		activeFeature = null;
 		map.svg.on('mousemove',null);
 		map.svg.on('click', null);
@@ -484,8 +513,6 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.edit = edit;
 	sketch.remove = remove;
 	sketch.cancel = cancel;
-	
-	sketch.feature = activeFeature;
 	
 	return sketch;
 };
@@ -607,7 +634,7 @@ d3_mappu_Layer = function(name, config){
 	  var drawboard;
 	  var _duration = config.duration || 0;
 	  var path;
-	    
+	  var _events = config.events;   
 	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
@@ -618,7 +645,18 @@ d3_mappu_Layer = function(name, config){
             _data = array;
             draw(false);
         }
-      });                                                           
+      });
+      
+      Object.defineProperty(layer, 'events', {
+        get: function() {
+            return _events;
+        },
+        set: function(array) {
+            _events = array;
+        }
+      });
+      
+      
       
       //Function taken from terraformer
       function ringIsClockwise(ringToTest) {
@@ -661,6 +699,8 @@ d3_mappu_Layer = function(name, config){
       	  d3.select(this).append('path').attr("d", _path)
             .classed(name, true)
             .style('stroke', 'blue');
+          d3.select(this).append('text');
+          
       }
       
       var draw = function(rebuild){
@@ -695,8 +735,8 @@ d3_mappu_Layer = function(name, config){
           entities.exit().remove();
           
           // Add events from config
-          if (config.events){
-              config.events.forEach(function(d){
+          if (_events){
+              _events.forEach(function(d){
                  newentity.select('path').on(d.event, d.action);
               });
           }
@@ -710,6 +750,13 @@ d3_mappu_Layer = function(name, config){
           	  var entities = drawboard.selectAll('.entity');
 			  if (config.reproject){
 				  entities.select('path').transition().duration(duration).attr("d", _path);
+				  if (config.labelfield){
+				  	  entities.each(function(d){
+				  	    var loc = _path.centroid(d);
+				  	    var text = d.properties[config.labelfield];
+				  	    entities.select('text').attr('x',loc[0]).attr('y', loc[1]).classed('vectorLabel',true).text(text);
+				  	  });
+				  }
 				  entities.each(setStyle);
 			  }
 			  else {

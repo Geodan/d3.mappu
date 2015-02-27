@@ -288,6 +288,11 @@ d3_mappu_Map = function(id, config) {
 	
 ////singular functions
 
+	var zoomToFeature = function(d){
+		//TODO
+		console.warn('Not implemented yet');
+	};
+
     var addLayer = function(layer){
         if (!layer.id){
             console.warn('Not a valid layer. (No ID)');
@@ -328,7 +333,7 @@ d3_mappu_Map = function(id, config) {
 
 // .refresh()
     
-    
+    map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
     map.getLayersByName = getLayersByName;

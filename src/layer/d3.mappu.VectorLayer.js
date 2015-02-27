@@ -14,7 +14,7 @@
 	  var drawboard;
 	  var _duration = config.duration || 0;
 	  var path;
-	    
+	  var _events = config.events;   
 	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
@@ -25,7 +25,18 @@
             _data = array;
             draw(false);
         }
-      });                                                           
+      });
+      
+      Object.defineProperty(layer, 'events', {
+        get: function() {
+            return _events;
+        },
+        set: function(array) {
+            _events = array;
+        }
+      });
+      
+      
       
       //Function taken from terraformer
       function ringIsClockwise(ringToTest) {
@@ -68,6 +79,8 @@
       	  d3.select(this).append('path').attr("d", _path)
             .classed(name, true)
             .style('stroke', 'blue');
+          d3.select(this).append('text');
+          
       }
       
       var draw = function(rebuild){
@@ -102,8 +115,8 @@
           entities.exit().remove();
           
           // Add events from config
-          if (config.events){
-              config.events.forEach(function(d){
+          if (_events){
+              _events.forEach(function(d){
                  newentity.select('path').on(d.event, d.action);
               });
           }
@@ -117,6 +130,13 @@
           	  var entities = drawboard.selectAll('.entity');
 			  if (config.reproject){
 				  entities.select('path').transition().duration(duration).attr("d", _path);
+				  if (config.labelfield){
+				  	  entities.each(function(d){
+				  	    var loc = _path.centroid(d);
+				  	    var text = d.properties[config.labelfield];
+				  	    entities.select('text').attr('x',loc[0]).attr('y', loc[1]).classed('vectorLabel',true).text(text);
+				  	  });
+				  }
 				  entities.each(setStyle);
 			  }
 			  else {
