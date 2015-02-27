@@ -74,7 +74,7 @@
       
       function build(d){
       	  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
-      	  	  d.geometry.coordinates[0] = d.geometry.coordinates[0].reverse(); 
+      	  	  d.geometry.coordinates[0].reverse(); 
       	  }
       	  d3.select(this).append('path').attr("d", _path)
             .classed(name, true)
@@ -153,9 +153,15 @@
           }
       };
       
+      var addFeature = function(feature){
+      	  _data.push(feature);
+      	  layer.draw();
+      };
+      
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
+      layer.addFeature = addFeature;
       return layer;
   };
   

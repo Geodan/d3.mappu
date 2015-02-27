@@ -426,6 +426,7 @@ d3_mappu_Sketch = function(id, config) {
 	}
 	
 	function finishLineString(){
+		addPoint();
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
 		build();
@@ -433,7 +434,9 @@ d3_mappu_Sketch = function(id, config) {
 	}
 	
 	function finishPolygon(){
+		addPoint();
 		activeFeature.geometry.type = 'Polygon';
+		coords.push(coords[0]);
 		activeFeature.geometry.coordinates = [coords];
 		build();
 		done();
@@ -459,7 +462,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	var draw = function(geomtype){
 		activeFeature = {
-			id: 1,
+			id: new Date().getTime().toString(),
 			type: "Feature",
 			geometry: {
 				type: geomtype,
@@ -694,7 +697,7 @@ d3_mappu_Layer = function(name, config){
       
       function build(d){
       	  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
-      	  	  d.geometry.coordinates[0] = d.geometry.coordinates[0].reverse(); 
+      	  	  d.geometry.coordinates[0].reverse(); 
       	  }
       	  d3.select(this).append('path').attr("d", _path)
             .classed(name, true)
@@ -773,9 +776,15 @@ d3_mappu_Layer = function(name, config){
           }
       };
       
+      var addFeature = function(feature){
+      	  _data.push(feature);
+      	  layer.draw();
+      };
+      
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
+      layer.addFeature = addFeature;
       return layer;
   };
   

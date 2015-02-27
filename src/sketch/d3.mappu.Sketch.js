@@ -68,6 +68,7 @@ d3_mappu_Sketch = function(id, config) {
 	}
 	
 	function finishLineString(){
+		addPoint();
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
 		build();
@@ -75,7 +76,9 @@ d3_mappu_Sketch = function(id, config) {
 	}
 	
 	function finishPolygon(){
+		addPoint();
 		activeFeature.geometry.type = 'Polygon';
+		coords.push(coords[0]);
 		activeFeature.geometry.coordinates = [coords];
 		build();
 		done();
@@ -101,7 +104,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	var draw = function(geomtype){
 		activeFeature = {
-			id: 1,
+			id: new Date().getTime().toString(),
 			type: "Feature",
 			geometry: {
 				type: geomtype,
