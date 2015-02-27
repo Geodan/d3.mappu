@@ -154,7 +154,15 @@
       };
       
       var addFeature = function(feature){
-      	  _data.push(feature);
+      	  var replaced = false;
+      	  _data.forEach(function(d){
+			  if (d.id == feature.id){
+				  d = feature;
+				  layer.draw();
+				  return;
+			  }
+      	  });
+    	  _data.push(feature);
       	  layer.draw();
       };
       
