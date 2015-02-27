@@ -61,5 +61,5 @@ grunt
 ```
 
 Then visit:
-visit http://yourmachine/path_to_d3.mappu/test/test1.html
+http://yourmachine/path_to_d3.mappu/test/test1.html
 in a webbrowser 
