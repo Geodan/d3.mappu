@@ -44,3 +44,22 @@ Vectorlayer object
 var layer = new d3.mappu.VectorLayer('name', {config});
 layer.data set/get the data (features)
 ```
+
+Install
+===
+prerequisites: node js, npm and a webserver
+
+```
+#install grunt and bower globally on your machine
+npm install -g grunt-cli
+npm install -g bower
+
+#download external denpendencies and build your d3.mappu project
+cd <path_to_your>/d3.mappu
+bower install
+grunt 
+```
+
+Then visit:
+http://yourmachine/path_to_d3.mappu/test/test1.html
+in a webbrowser 
