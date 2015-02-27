@@ -59,3 +59,7 @@ cd <path_to_your>/d3.mappu
 bower install
 grunt 
 ```
+
+Then visit:
+visit http://yourmachine/path_to_d3.mappu/test/test1.html
+in a webbrowser 
