@@ -166,10 +166,22 @@
       	  layer.draw();
       };
       
+      var removeFeature = function(feature){
+      	  var idx = null;
+      	  _data.forEach(function(d,i){
+			  if (d.id == feature.id){
+				  idx = i;
+			  }
+      	  });
+      	  _data.splice(idx,1);
+      	  layer.draw();
+      };
+      
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
       layer.addFeature = addFeature;
+      layer.removeFeature = removeFeature;
       return layer;
   };
   

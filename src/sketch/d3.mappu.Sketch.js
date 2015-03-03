@@ -145,7 +145,30 @@ d3_mappu_Sketch = function(id, config) {
 		}
 	};
 	
+	/* EDIT PART */
+	function dragstarted(d) {
+	  d3.event.sourceEvent.stopPropagation();
+	  d3.select(this).classed("dragging", true);
+	}
 	
+	function dragged(d) {
+	  var loc = d3.mouse(map.mapdiv);	
+	  d3.select(this).attr("cx", loc[0]).attr("cy", loc[1]);
+	  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
+	  buildEdit();
+	}
+	
+	function dragended(d) {
+	  d3.select(this).classed("dragging", false);
+	  buildEdit();
+	}
+	
+	var drag = d3.behavior.drag()
+		.origin(function(d) { return d; })
+		.on("dragstart", dragstarted)
+		.on("drag", dragged)
+		.on("dragend", dragended);
+		
 	function buildEdit(){
 		svg.selectAll('.sketch').remove();
 		svg.append('path').attr("d", function(){
@@ -164,15 +187,22 @@ d3_mappu_Sketch = function(id, config) {
 		
 		if (activeFeature.geometry.type == 'Polygon'){
 			var data = activeFeature.geometry.coordinates[0];
+			data.forEach(function(d,i){
+					d.index = i;
+					d.fid = d.id;
+			});
 		}
 		svg.selectAll('.sketchPoint').remove();
 		svg.selectAll('.sketchPoint').data(data).enter().append('circle')
+			.classed('sketchPoint',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 10)
-			.style('stroke', 'green')
-			.style('fill', 'green');
-		
+			.attr('r', 40)
+			.style('stroke', 'steelBlue')
+			.style('fill', 'steelBlue')
+			.style('fillOpacity', 0.5)
+			//kindly copied from http://bl.ocks.org/mbostock/6123708
+			.call(drag);
 	}
 	
 	function edit(feature){
@@ -184,10 +214,16 @@ d3_mappu_Sketch = function(id, config) {
 	var startEdit = function(){
 		layer.drawboard.selectAll('.entity').select('path').on('click', edit);
 	};
+	/* END OF EDIT PART */
 	
-	var remove = function(){
-		//TODO
+	var remove = function(feature){
+		layer.removeFeature(feature);
 	};
+	
+	var startRemove = function(){
+		layer.drawboard.selectAll('.entity').select('path').on('click', remove);
+	};
+	
 	
 	var done = function(){
 		var event = new CustomEvent('featureReady', {detail: activeFeature});
@@ -197,6 +233,8 @@ d3_mappu_Sketch = function(id, config) {
 	
 	var cancel = function(){
 		svg.selectAll('.sketch').remove();
+		svg.selectAll('.sketchPoint').remove();
+		layer.drawboard.selectAll('.entity').select('path').on('click', null);
 		activeFeature = null;
 		map.svg.on('mousemove',null);
 		map.svg.on('click', null);
@@ -205,12 +243,13 @@ d3_mappu_Sketch = function(id, config) {
 		map.svg.on('dblclick', null);
 		map.svg.on('touchstart',null);
 		map.svg.on('touchend',null);
+		map.redraw();
 	};
 	
 	//Export functions
 	sketch.draw  = draw;
 	sketch.startEdit = startEdit;
-	sketch.remove = remove;
+	sketch.startRemove = startRemove;
 	sketch.cancel = cancel;
 	
 	return sketch;
