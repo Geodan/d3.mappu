@@ -515,6 +515,13 @@ d3_mappu_Sketch = function(id, config) {
 	  var loc = d3.mouse(map.mapdiv);	
 	  d3.select(this).attr("cx", loc[0]).attr("cy", loc[1]);
 	  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
+	  if (d.index === 0){
+	  	  activeFeature.geometry.coordinates[0].pop();
+	  	  activeFeature.geometry.coordinates[0].push(project.invert(loc));
+	  }
+	  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
+	  	  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+	  }
 	  buildEdit();
 	}
 	
