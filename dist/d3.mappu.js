@@ -421,7 +421,7 @@ d3_mappu_Sketch = function(id, config) {
 		coords = project.invert(m);
 		activeFeature.geometry.coordinates = coords;
 		build();
-		done();
+		featureCreated();
 	}
 	
 	function finishLineString(){
@@ -431,7 +431,7 @@ d3_mappu_Sketch = function(id, config) {
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
 		build();
-		done();
+		featureCreated();
 	}
 	
 	function finishPolygon(){
@@ -442,7 +442,7 @@ d3_mappu_Sketch = function(id, config) {
 		coords.push(coords[0]);
 		activeFeature.geometry.coordinates = [coords];
 		build();
-		done();
+		featureCreated();
 	}
 	
 	function movePointer(){
@@ -497,6 +497,13 @@ d3_mappu_Sketch = function(id, config) {
 				clearTimeout(pressTimer);
 			});
 		}
+	};
+	
+	/**	featureCreated emits the newly created feature **/
+	var featureCreated = function(){
+		var event = new CustomEvent('featureCreated', {detail: activeFeature});
+		map.mapdiv.dispatchEvent(event);
+		finish();
 	};
 	
 	
@@ -641,7 +648,7 @@ d3_mappu_Sketch = function(id, config) {
 		event.stopPropagation();
 		map.svg.on('click', function(){
 				buildEdit();
-				done();
+				featureChanged();
 		});
 		activeFeature = feature;
 		type = feature.geometry.type;
@@ -655,12 +662,22 @@ d3_mappu_Sketch = function(id, config) {
 	var startEdit = function(){
 		layer.drawboard.selectAll('.entity').select('path').on('click', edit);
 	};
+	
+	/**	featureChanged emits the newly created feature **/
+	var featureChanged = function(){
+		var event = new CustomEvent('featureChanged', {detail: activeFeature});
+		map.mapdiv.dispatchEvent(event);
+		finish();
+	};
 
 	
 	
 /** REMOVE FEATURE **/
 	var remove = function(feature){
 		layer.removeFeature(feature);
+		var event = new CustomEvent('featureRemoved', {detail: feature});
+		map.mapdiv.dispatchEvent(event);
+		finish();
 	};
 	/**
 		startRemove()
@@ -669,16 +686,9 @@ d3_mappu_Sketch = function(id, config) {
 	var startRemove = function(){
 		layer.drawboard.selectAll('.entity').select('path').on('click', remove);
 	};
+
 	
-	
-	
-	/**	done emits the newly created feature **/
-	var done = function(){
-		var event = new CustomEvent('featureReady', {detail: activeFeature});
-		map.mapdiv.dispatchEvent(event);
-		finish();
-	};
-	
+/** FINISH **/	
 	/** 
 		finish()
 		finish puts an end to the drawing or editing mode and removes listeners 
@@ -690,6 +700,7 @@ d3_mappu_Sketch = function(id, config) {
 		svg.selectAll('.sketchPointInter').remove();
 		layer.drawboard.selectAll('.entity').select('path').on('click', null);
 		activeFeature = null;
+		coords = [];
 		map.svg.on('mousemove',null);
 		map.svg.on('click', null);
 		map.svg.on('click', null);
