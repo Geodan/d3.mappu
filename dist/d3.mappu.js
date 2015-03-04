@@ -440,6 +440,8 @@ d3_mappu_Sketch = function(id, config) {
 	function finishPolygon(){
 		//addPoint();
 		activeFeature.geometry.type = 'Polygon';
+		coords.pop();
+		coords.pop();//FIXME ..ugly
 		coords.push(coords[0]);
 		activeFeature.geometry.coordinates = [coords];
 		build();
@@ -529,6 +531,7 @@ d3_mappu_Sketch = function(id, config) {
 		
 	function buildEdit(){
 		svg.selectAll('.sketch').remove();
+		
 		svg.append('path').attr("d", function(){
 				return path(activeFeature);
 		}).classed('sketch', true)
@@ -549,7 +552,40 @@ d3_mappu_Sketch = function(id, config) {
 					d.index = i;
 					d.fid = d.id;
 			});
+			var interdata = data.map(function(d,i){
+				if (i+1 < data.length){
+					var obj = [];
+					obj[0] = (d[0] + data[i+1][0])/2;
+					obj[1] = (d[1] + data[i+1][1])/2;
+					obj.index = d.index;
+					return obj;
+				}
+			});
+			interdata.pop();
+			
 		}
+		
+		svg.selectAll('.sketchPointInter').remove();
+		svg.selectAll('.sketchPointInter').data(interdata).enter().append('circle')
+			.classed('sketchPointInter',true)
+			.attr('cx', function(d){return project(d)[0];})
+			.attr('cy', function(d){return project(d)[1];})
+			.attr('r', 40)
+			.style('stroke', 'steelBlue')
+			.style('fill', 'steelBlue')
+			.style('opacity', 0.5)
+			.on('click', function(d){
+				if (activeFeature.geometry.type == 'Polygon'){
+					//add extra vertice
+					if (d.index +1 == activeFeature.geometry.coordinates[0].length){
+						activeFeature.geometry.coordinates[0].splice(1,0,d);
+					}
+					else {
+						activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
+					}
+					buildEdit();
+				}
+			});
 		svg.selectAll('.sketchPoint').remove();
 		svg.selectAll('.sketchPoint').data(data).enter().append('circle')
 			.classed('sketchPoint',true)
@@ -592,6 +628,7 @@ d3_mappu_Sketch = function(id, config) {
 	var cancel = function(){
 		svg.selectAll('.sketch').remove();
 		svg.selectAll('.sketchPoint').remove();
+		svg.selectAll('.sketchPointInter').remove();
 		layer.drawboard.selectAll('.entity').select('path').on('click', null);
 		activeFeature = null;
 		map.svg.on('mousemove',null);
