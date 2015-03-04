@@ -23,6 +23,7 @@ d3_mappu_Sketch = function(id, config) {
 	var selection = null;
 	var presstimer;
 	
+	/* NEW DRAWING */
 	function build(){
 		svg.selectAll('.sketch').remove();
 		svg.append('path').attr("d", function(){
@@ -51,9 +52,6 @@ d3_mappu_Sketch = function(id, config) {
 	
 	function addPoint(){
 		var m = d3.mouse(this);
-		//var e = d3.event;
-		//var x = e.hasOwnProperty('offsetX') ? e.offsetX : e.layerX;
-		//var y = e.hasOwnProperty('offsetY') ? e.offsetY : e.layerY;
 		coords.push(map.projection.invert(m));
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
@@ -62,9 +60,6 @@ d3_mappu_Sketch = function(id, config) {
 	
 	function finishPoint(){
 		var m = d3.mouse(this);
-		//var e = d3.event;
-		//var x = e.hasOwnProperty('offsetX') ? e.offsetX : e.layerX;
-		//var y = e.hasOwnProperty('offsetY') ? e.offsetY : e.layerY;
 		coords = project.invert(m);
 		activeFeature.geometry.coordinates = coords;
 		build();
@@ -73,6 +68,8 @@ d3_mappu_Sketch = function(id, config) {
 	
 	function finishLineString(){
 		//addPoint();
+		coords.pop();
+		coords.pop();//FIXME ..ugly
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
 		build();
@@ -93,9 +90,6 @@ d3_mappu_Sketch = function(id, config) {
 	function movePointer(){
 		var i = activeFeature.geometry.coordinates.length;
 		var m = d3.mouse(this);
-		//var e = d3.event;
-		//var x = e.hasOwnProperty('offsetX') ? e.offsetX : e.layerX;
-		//var y = e.hasOwnProperty('offsetY') ? e.offsetY : e.layerY;
 		var newpoint = map.projection.invert(m);
 		if (i >= 1){          
 			if (i == 1){
@@ -147,7 +141,8 @@ d3_mappu_Sketch = function(id, config) {
 		}
 	};
 	
-	/* EDIT PART */
+	
+/** EDIT EXISTING FEATURE */
 	function dragstarted(d) {
 	  d3.event.sourceEvent.stopPropagation();
 	  d3.select(this).classed("dragging", true);
@@ -156,13 +151,22 @@ d3_mappu_Sketch = function(id, config) {
 	function dragged(d) {
 	  var loc = d3.mouse(map.mapdiv);	
 	  d3.select(this).attr("cx", loc[0]).attr("cy", loc[1]);
-	  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
-	  if (d.index === 0){
-	  	  activeFeature.geometry.coordinates[0].pop();
-	  	  activeFeature.geometry.coordinates[0].push(project.invert(loc));
+	  if (type == 'Polygon'){
+		  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
+		  //When dragging the closing point of the polygon, there's a twin point that should be dragged as well
+		  if (d.index === 0){
+			  activeFeature.geometry.coordinates[0].pop();
+			  activeFeature.geometry.coordinates[0].push(project.invert(loc));
+		  }
+		  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
+			  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+		  }
 	  }
-	  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
-	  	  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+	  else if (type == 'LineString'){
+	  	  activeFeature.geometry.coordinates[d.index] = project.invert(loc);
+	  }
+	  else if (type == 'Point'){
+	  	  activeFeature.geometry.coordinates = project.invert(loc);
 	  }
 	  buildEdit();
 	}
@@ -177,6 +181,7 @@ d3_mappu_Sketch = function(id, config) {
 		.on("dragstart", dragstarted)
 		.on("drag", dragged)
 		.on("dragend", dragended);
+	
 		
 	function buildEdit(){
 		svg.selectAll('.sketch').remove();
@@ -195,7 +200,7 @@ d3_mappu_Sketch = function(id, config) {
 		})
 		.style('fill-opacity', 0.4);
 		
-		if (activeFeature.geometry.type == 'Polygon'){
+		if (type == 'Polygon'){
 			var data = activeFeature.geometry.coordinates[0];
 			data.forEach(function(d,i){
 					d.index = i;
@@ -213,6 +218,27 @@ d3_mappu_Sketch = function(id, config) {
 			interdata.pop();
 			
 		}
+		else if (type == 'LineString'){
+			var data = activeFeature.geometry.coordinates;
+			data.forEach(function(d,i){
+					d.index = i;
+					d.fid = d.id;
+			});
+			var interdata = data.map(function(d,i){
+				if (i+1 < data.length){
+					var obj = [];
+					obj[0] = (d[0] + data[i+1][0])/2;
+					obj[1] = (d[1] + data[i+1][1])/2;
+					obj.index = d.index;
+					return obj;
+				}
+			});
+			interdata.pop();
+		}
+		else if (type == 'Point'){
+			var data = [activeFeature.geometry.coordinates];
+			var interdata = [];
+		}
 		
 		svg.selectAll('.sketchPointInter').remove();
 		svg.selectAll('.sketchPointInter').data(interdata).enter().append('circle')
@@ -224,7 +250,8 @@ d3_mappu_Sketch = function(id, config) {
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
 			.on('click', function(d){
-				if (activeFeature.geometry.type == 'Polygon'){
+				event.stopPropagation();
+				if (type == 'Polygon'){
 					//add extra vertice
 					if (d.index +1 == activeFeature.geometry.coordinates[0].length){
 						activeFeature.geometry.coordinates[0].splice(1,0,d);
@@ -232,6 +259,10 @@ d3_mappu_Sketch = function(id, config) {
 					else {
 						activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
 					}
+					buildEdit();
+				}
+				else if (type == 'LineString'){
+					activeFeature.geometry.coordinates.splice(d.index +1,0,d);
 					buildEdit();
 				}
 			});
@@ -249,32 +280,53 @@ d3_mappu_Sketch = function(id, config) {
 	}
 	
 	function edit(feature){
+		event.stopPropagation();
+		map.svg.on('click', function(){
+				buildEdit();
+				done();
+		});
 		activeFeature = feature;
+		type = feature.geometry.type;
 		buildEdit();
 	}
 	
-	
+	/**
+		startEdit()
+		adds a listener to the entities to edit them
+	**/
 	var startEdit = function(){
 		layer.drawboard.selectAll('.entity').select('path').on('click', edit);
 	};
-	/* END OF EDIT PART */
+
 	
+	
+/** REMOVE FEATURE **/
 	var remove = function(feature){
 		layer.removeFeature(feature);
 	};
-	
+	/**
+		startRemove()
+		adds a listener to the entities to remove them
+	**/
 	var startRemove = function(){
 		layer.drawboard.selectAll('.entity').select('path').on('click', remove);
 	};
 	
 	
+	
+	/**	done emits the newly created feature **/
 	var done = function(){
 		var event = new CustomEvent('featureReady', {detail: activeFeature});
 		map.mapdiv.dispatchEvent(event);
-		cancel();
+		finish();
 	};
 	
-	var cancel = function(){
+	/** 
+		finish()
+		finish puts an end to the drawing or editing mode and removes listeners 
+	**/
+	
+	var finish = function(){
 		svg.selectAll('.sketch').remove();
 		svg.selectAll('.sketchPoint').remove();
 		svg.selectAll('.sketchPointInter').remove();
@@ -294,7 +346,7 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.draw  = draw;
 	sketch.startEdit = startEdit;
 	sketch.startRemove = startRemove;
-	sketch.cancel = cancel;
+	sketch.finish = finish;
 	
 	return sketch;
 };
