@@ -319,7 +319,8 @@ d3_mappu_Map = function(id, config) {
         });
         return map;
     };
-    var getLayersByName = function(name){
+    //SMO: getLayersBy* function are generally a sign of lazyness ;)
+    /*var getLayersByName = function(name){
     	var result = [];
     	_layers.forEach(function(d,i){
             if (d.name == name){
@@ -327,7 +328,7 @@ d3_mappu_Map = function(id, config) {
             }
         });
         return result;
-    };
+    };*/
 
 // .removeLayers([{layer}])
 
@@ -336,7 +337,7 @@ d3_mappu_Map = function(id, config) {
     map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
-    map.getLayersByName = getLayersByName;
+    //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
     
