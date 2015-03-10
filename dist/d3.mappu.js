@@ -710,7 +710,7 @@ d3_mappu_Sketch = function(id, config) {
 		map.svg.on('dblclick', null);
 		map.svg.on('touchstart',null);
 		map.svg.on('touchend',null);
-		map.redraw();
+		layer.draw(true);
 	};
 	
 	//Export functions
@@ -991,7 +991,7 @@ d3_mappu_Layer = function(name, config){
       	  if (!replaced){
       	  	  _data.push(feature);
       	  }
-      	  layer.draw();
+      	  layer.draw(true);
       };
       
       var removeFeature = function(feature){

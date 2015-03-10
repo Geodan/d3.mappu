@@ -166,7 +166,7 @@
       	  if (!replaced){
       	  	  _data.push(feature);
       	  }
-      	  layer.draw();
+      	  layer.draw(true);
       };
       
       var removeFeature = function(feature){
