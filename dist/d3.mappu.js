@@ -503,6 +503,7 @@ d3_mappu_Sketch = function(id, config) {
 	var featureCreated = function(){
 		var event = new CustomEvent('featureCreated', {detail: activeFeature});
 		map.mapdiv.dispatchEvent(event);
+		layer.data.push(activeFeature);
 		finish();
 	};
 	
