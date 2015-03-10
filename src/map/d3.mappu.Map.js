@@ -66,14 +66,22 @@ d3_mappu_Map = function(id, config) {
 	
 
     var redraw = function(){
+    	//Calculate projection, so we can find out coordinates
+    	_projection
+           .scale(_zoombehaviour.scale() / 2 / Math.PI)
+           .translate(_zoombehaviour.translate());
+    	//Set internal zoom
+    	var scale = _zoombehaviour.scale();
+    	_zoom = (Math.log(scale* 2 * Math.PI)/Math.log(2));
+    	
+    	//Set internal center
+    	var pixcenter = [_width/2,_height/2];
+        _center =  _projection.invert(pixcenter);
+        
         //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-        //Calculate projection, so we can find out coordinates
-        _projection
-           .scale(_zoombehaviour.scale() / 2 / Math.PI)
-           .translate(_zoombehaviour.translate());
-
+        
         /* EXPERIMENTAL */
         //layer.call(raster);
 
@@ -92,6 +100,24 @@ d3_mappu_Map = function(id, config) {
 		redraw();
 	};
 	
+	function zoomcenter(zoomval, centerval){
+   	   	var scale = (1 << zoomval) / 2 / Math.PI;
+		_zoombehaviour.scale(scale);
+		_projection
+		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
+		   .translate(_zoombehaviour.translate());
+		
+		//Adapt projection based on new zoomlevel
+		var pixcenter = _projection(centerval);
+		var curtranslate = _zoombehaviour.translate();
+		var translate = [
+			curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+		];
+		_zoombehaviour.translate(translate);
+		_zoombehaviour.event(_svg.transition()); //Trigger zoombehaviour
+   }
+	
 	var _svg = d3.select(_mapdiv).append('svg')
 	    .style('position', 'absolute');
     
@@ -103,10 +129,6 @@ d3_mappu_Map = function(id, config) {
      
     var _projcenter = _projection(_center);     
     
-    //TODO: reset this on projection change
-    var _path = d3.geo.path()
-        .projection(_projection);    
-        
 	var _zoombehaviour = d3.behavior.zoom()
 	    .scale(_projection.scale() * 2 * Math.PI)
         .scaleExtent([1 << _minZoom, 1 << _maxZoom])
@@ -125,6 +147,7 @@ d3_mappu_Map = function(id, config) {
           .translate(_zoombehaviour.translate())();
           
     resize();
+    
     /*
     var raster = d3.geo.raster(_projection)
         .scaleExtent([0, 10])
@@ -180,37 +203,29 @@ d3_mappu_Map = function(id, config) {
         }
     }); 
     
-    function zoomcenter(){
-    	_zoombehaviour.scale((1 << _zoom) / 2 / Math.PI);
-    	//Adapt projection based on new zoomlevel
-		_projection
-		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
-		   .translate(_zoombehaviour.translate());
-		   
-	   //recenter map based on new zoomlevel
-		var pixcenter = _projection(_center);
-		var curtranslate = _zoombehaviour.translate();
-		var translate = [
-			curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-		];
-		_zoombehaviour
-			.translate(translate);
-		map.redraw();
-    }
-    
+// .center : ([long,lat])
+    Object.defineProperty(map, 'center', {
+        get: function() {
+            return _center;
+        },
+        set: function(val) {
+        	//zoomcenter will move to and set the center in some steps
+			zoomcenter(_zoom, val);
+        }
+    });   
 // .zoom : (zoomlevel)
+//http://truongtx.me/2014/03/13/working-with-zoom-behavior-in-d3js-and-some-notes/
     Object.defineProperty(map, 'zoom', {
         get: function() {
             return _zoom;
         },
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
-				_zoom = val;
-				zoomcenter();
+        		//zoomcenter will move to and set the zoomlevel in some steps
+				zoomcenter(val, _center);
 			}
 			else {
-				console.log('Zoomlevel exceeded', _minZoom , _maxZoom);
+				console.log('Zoomlevel exceeded',val , 'Min:',_minZoom ,'Max:', _maxZoom);
 			}
         }
     });
@@ -244,17 +259,6 @@ d3_mappu_Map = function(id, config) {
             _maxView = val;
         }
     });
-// .center : ([long,lat])
-    Object.defineProperty(map, 'center', {
-        get: function() {
-            var pixcenter = [_width/2,_height/2];
-            return _projection.invert(pixcenter);
-        },
-        set: function(val) {
-        	_center = val;
-			zoomcenter();
-        }
-    });
 // .projection : ({projection})
     Object.defineProperty(map, 'projection', {
         get: function() {
@@ -262,15 +266,8 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(obj) {
           _projection = obj;
-          _path = d3.geo.path()
-            .projection(_projection);
           //TODO: redraw
         }
-    });
-    
-    Object.defineProperty(map, 'path', {
-            get: function(){return _path;},
-            set: function(){console.warn('No setting allowed for path');}
     });
     
     Object.defineProperty(map, 'tiles', {
@@ -290,6 +287,11 @@ d3_mappu_Map = function(id, config) {
     
 	
 ////singular functions
+
+	var zoomToFeature = function(d){
+		//TODO
+		console.warn('Not implemented yet');
+	};
 
     var addLayer = function(layer){
         if (!layer.id){
@@ -316,16 +318,27 @@ d3_mappu_Map = function(id, config) {
             }
         });
         return map;
-    };   
+    };
+    var getLayersByName = function(name){
+    	var result = [];
+    	_layers.forEach(function(d,i){
+            if (d.name == name){
+                result.push(d);
+            }
+        });
+        return result;
+    };
 
 // .removeLayers([{layer}])
 
 // .refresh()
     
-    
+    map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
+    map.getLayersByName = getLayersByName;
     map.redraw = redraw;
+    map.resize = resize;
     
     return map;
 };

@@ -78,14 +78,22 @@ d3_mappu_Map = function(id, config) {
 	
 
     var redraw = function(){
+    	//Calculate projection, so we can find out coordinates
+    	_projection
+           .scale(_zoombehaviour.scale() / 2 / Math.PI)
+           .translate(_zoombehaviour.translate());
+    	//Set internal zoom
+    	var scale = _zoombehaviour.scale();
+    	_zoom = (Math.log(scale* 2 * Math.PI)/Math.log(2));
+    	
+    	//Set internal center
+    	var pixcenter = [_width/2,_height/2];
+        _center =  _projection.invert(pixcenter);
+        
         //Calculate tile set
         _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-        //Calculate projection, so we can find out coordinates
-        _projection
-           .scale(_zoombehaviour.scale() / 2 / Math.PI)
-           .translate(_zoombehaviour.translate());
-
+        
         /* EXPERIMENTAL */
         //layer.call(raster);
 
@@ -104,6 +112,24 @@ d3_mappu_Map = function(id, config) {
 		redraw();
 	};
 	
+	function zoomcenter(zoomval, centerval){
+   	   	var scale = (1 << zoomval) / 2 / Math.PI;
+		_zoombehaviour.scale(scale);
+		_projection
+		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
+		   .translate(_zoombehaviour.translate());
+		
+		//Adapt projection based on new zoomlevel
+		var pixcenter = _projection(centerval);
+		var curtranslate = _zoombehaviour.translate();
+		var translate = [
+			curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
+			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
+		];
+		_zoombehaviour.translate(translate);
+		_zoombehaviour.event(_svg.transition()); //Trigger zoombehaviour
+   }
+	
 	var _svg = d3.select(_mapdiv).append('svg')
 	    .style('position', 'absolute');
     
@@ -115,10 +141,6 @@ d3_mappu_Map = function(id, config) {
      
     var _projcenter = _projection(_center);     
     
-    //TODO: reset this on projection change
-    var _path = d3.geo.path()
-        .projection(_projection);    
-        
 	var _zoombehaviour = d3.behavior.zoom()
 	    .scale(_projection.scale() * 2 * Math.PI)
         .scaleExtent([1 << _minZoom, 1 << _maxZoom])
@@ -137,6 +159,7 @@ d3_mappu_Map = function(id, config) {
           .translate(_zoombehaviour.translate())();
           
     resize();
+    
     /*
     var raster = d3.geo.raster(_projection)
         .scaleExtent([0, 10])
@@ -192,37 +215,29 @@ d3_mappu_Map = function(id, config) {
         }
     }); 
     
-    function zoomcenter(){
-    	_zoombehaviour.scale((1 << _zoom) / 2 / Math.PI);
-    	//Adapt projection based on new zoomlevel
-		_projection
-		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
-		   .translate(_zoombehaviour.translate());
-		   
-	   //recenter map based on new zoomlevel
-		var pixcenter = _projection(_center);
-		var curtranslate = _zoombehaviour.translate();
-		var translate = [
-			curtranslate[0] + (_width - pixcenter[0]) - (_width/2), 
-			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
-		];
-		_zoombehaviour
-			.translate(translate);
-		map.redraw();
-    }
-    
+// .center : ([long,lat])
+    Object.defineProperty(map, 'center', {
+        get: function() {
+            return _center;
+        },
+        set: function(val) {
+        	//zoomcenter will move to and set the center in some steps
+			zoomcenter(_zoom, val);
+        }
+    });   
 // .zoom : (zoomlevel)
+//http://truongtx.me/2014/03/13/working-with-zoom-behavior-in-d3js-and-some-notes/
     Object.defineProperty(map, 'zoom', {
         get: function() {
             return _zoom;
         },
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
-				_zoom = val;
-				zoomcenter();
+        		//zoomcenter will move to and set the zoomlevel in some steps
+				zoomcenter(val, _center);
 			}
 			else {
-				console.log('Zoomlevel exceeded', _minZoom , _maxZoom);
+				console.log('Zoomlevel exceeded',val , 'Min:',_minZoom ,'Max:', _maxZoom);
 			}
         }
     });
@@ -256,17 +271,6 @@ d3_mappu_Map = function(id, config) {
             _maxView = val;
         }
     });
-// .center : ([long,lat])
-    Object.defineProperty(map, 'center', {
-        get: function() {
-            var pixcenter = [_width/2,_height/2];
-            return _projection.invert(pixcenter);
-        },
-        set: function(val) {
-        	_center = val;
-			zoomcenter();
-        }
-    });
 // .projection : ({projection})
     Object.defineProperty(map, 'projection', {
         get: function() {
@@ -274,15 +278,8 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(obj) {
           _projection = obj;
-          _path = d3.geo.path()
-            .projection(_projection);
           //TODO: redraw
         }
-    });
-    
-    Object.defineProperty(map, 'path', {
-            get: function(){return _path;},
-            set: function(){console.warn('No setting allowed for path');}
     });
     
     Object.defineProperty(map, 'tiles', {
@@ -302,6 +299,11 @@ d3_mappu_Map = function(id, config) {
     
 	
 ////singular functions
+
+	var zoomToFeature = function(d){
+		//TODO
+		console.warn('Not implemented yet');
+	};
 
     var addLayer = function(layer){
         if (!layer.id){
@@ -328,18 +330,396 @@ d3_mappu_Map = function(id, config) {
             }
         });
         return map;
-    };   
+    };
+    var getLayersByName = function(name){
+    	var result = [];
+    	_layers.forEach(function(d,i){
+            if (d.name == name){
+                result.push(d);
+            }
+        });
+        return result;
+    };
 
 // .removeLayers([{layer}])
 
 // .refresh()
     
-    
+    map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
+    map.getLayersByName = getLayersByName;
     map.redraw = redraw;
+    map.resize = resize;
     
     return map;
+};
+
+//                                                                          マップ
+;d3.mappu = d3.mappu || {};
+
+d3.mappu.Sketch = function(id, config) {
+    return d3_mappu_Sketch(id, config);
+};
+
+d3_mappu_Sketch = function(id, config) {
+	var sketch = {};
+	var layer = config.layer; //Layer to edit
+	if (layer.type != 'vector'){
+		console.warn('Can\'t edit. Not a vector layer');
+		return null;
+	}
+	var map = layer.map;
+	var svg = layer.map.svg;
+	var path = d3.geo.path()
+		.projection(layer.map.projection)
+		.pointRadius(4.5);
+	var project = map.projection;
+	var coords = [];
+	var type = null;
+	var activeFeature = null;
+	var selection = null;
+	var presstimer;
+	
+	/* NEW DRAWING */
+	function build(){
+		svg.selectAll('.sketch').remove();
+		svg.append('path').attr("d", function(){
+				return path(activeFeature);
+		}).classed('sketch', true)
+		.style('stroke', 'blue')
+		.style('fill', function(){
+				if (type == 'LineString'){
+					return 'none';
+				}
+				else {
+					return 'blue';
+				}
+		})
+		.style('fill-opacity', 0.4)
+		.on('dblclick',function(){ //TODO: this should be working on the dblclick on the svg (see below)
+			if (type == 'LineString'){
+				finishLineString();
+			}
+			if (type == 'Polygon'){
+				finishPolygon();
+			}
+		});
+		
+	}
+	
+	function addPoint(){
+		var m = d3.mouse(this);
+		coords.push(map.projection.invert(m));
+		activeFeature.geometry.type = 'LineString';
+		activeFeature.geometry.coordinates = coords;
+		build();
+	}
+	
+	function finishPoint(){
+		var m = d3.mouse(this);
+		coords = project.invert(m);
+		activeFeature.geometry.coordinates = coords;
+		build();
+		featureCreated();
+	}
+	
+	function finishLineString(){
+		//addPoint();
+		coords.pop();
+		coords.pop();//FIXME ..ugly
+		activeFeature.geometry.type = 'LineString';
+		activeFeature.geometry.coordinates = coords;
+		build();
+		featureCreated();
+	}
+	
+	function finishPolygon(){
+		//addPoint();
+		activeFeature.geometry.type = 'Polygon';
+		coords.pop();
+		coords.pop();//FIXME ..ugly
+		coords.push(coords[0]);
+		activeFeature.geometry.coordinates = [coords];
+		build();
+		featureCreated();
+	}
+	
+	function movePointer(){
+		var i = activeFeature.geometry.coordinates.length;
+		var m = d3.mouse(this);
+		var newpoint = map.projection.invert(m);
+		if (i >= 1){          
+			if (i == 1){
+				coords[i] = newpoint;
+			}
+			else {
+				coords[i-1] = newpoint;
+			}
+			activeFeature.geometry.coordinates = coords;
+			build();
+		}
+	}
+	
+	var draw = function(geomtype){
+		activeFeature = {
+			id: new Date().getTime().toString(),
+			type: "Feature",
+			geometry: {
+				type: geomtype,
+				coordinates: []
+			},
+			style: {opacity: 0.7},
+			properties: {}
+		};
+		type = geomtype;
+		if (type == 'Point'){
+			map.svg.on('click',finishPoint);
+		}
+		else if (type == 'LineString'){
+			activeFeature.style.fill = 'none';
+			map.svg.on('click', addPoint);
+			map.svg.on('mousemove',movePointer);
+        	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
+		}
+		else if (type == 'Polygon'){
+			activeFeature.style.fill = 'blue';
+			map.svg.on('click',addPoint); 
+			map.svg.on('mousemove',movePointer);
+        	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
+        	map.svg.on('touchstart', function(e){
+				pressTimer = window.setTimeout(function() {
+					alert('long press!');
+					finishPolygon();
+				},500);
+			})
+			.on('touchend', function(){
+				clearTimeout(pressTimer);
+			});
+		}
+	};
+	
+	/**	featureCreated emits the newly created feature **/
+	var featureCreated = function(){
+		layer.addFeature(activeFeature);
+		var event = new CustomEvent('featureCreated', {detail: activeFeature});
+		map.mapdiv.dispatchEvent(event);
+		finish();
+	};
+	
+	
+/** EDIT EXISTING FEATURE */
+	function dragstarted(d) {
+	  d3.event.sourceEvent.stopPropagation();
+	  d3.select(this).classed("dragging", true);
+	}
+	
+	function dragged(d) {
+	  var loc = d3.mouse(map.mapdiv);	
+	  d3.select(this).attr("cx", loc[0]).attr("cy", loc[1]);
+	  if (type == 'Polygon'){
+		  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
+		  //When dragging the closing point of the polygon, there's a twin point that should be dragged as well
+		  if (d.index === 0){
+			  activeFeature.geometry.coordinates[0].pop();
+			  activeFeature.geometry.coordinates[0].push(project.invert(loc));
+		  }
+		  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
+			  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+		  }
+	  }
+	  else if (type == 'LineString'){
+	  	  activeFeature.geometry.coordinates[d.index] = project.invert(loc);
+	  }
+	  else if (type == 'Point'){
+	  	  activeFeature.geometry.coordinates = project.invert(loc);
+	  }
+	  buildEdit();
+	}
+	
+	function dragended(d) {
+	  d3.select(this).classed("dragging", false);
+	  buildEdit();
+	}
+	
+	var drag = d3.behavior.drag()
+		.origin(function(d) { return d; })
+		.on("dragstart", dragstarted)
+		.on("drag", dragged)
+		.on("dragend", dragended);
+	
+		
+	function buildEdit(){
+		svg.selectAll('.sketch').remove();
+		
+		svg.append('path').attr("d", function(){
+				return path(activeFeature);
+		}).classed('sketch', true)
+		.style('stroke', 'red')
+		.style('fill', function(){
+				if (type == 'LineString'){
+					return 'none';
+				}
+				else {
+					return 'red';
+				}
+		})
+		.style('fill-opacity', 0.4);
+		
+		if (type == 'Polygon'){
+			var data = activeFeature.geometry.coordinates[0];
+			data.forEach(function(d,i){
+					d.index = i;
+					d.fid = d.id;
+			});
+			var interdata = data.map(function(d,i){
+				if (i+1 < data.length){
+					var obj = [];
+					obj[0] = (d[0] + data[i+1][0])/2;
+					obj[1] = (d[1] + data[i+1][1])/2;
+					obj.index = d.index;
+					return obj;
+				}
+			});
+			interdata.pop();
+			
+		}
+		else if (type == 'LineString'){
+			var data = activeFeature.geometry.coordinates;
+			data.forEach(function(d,i){
+					d.index = i;
+					d.fid = d.id;
+			});
+			var interdata = data.map(function(d,i){
+				if (i+1 < data.length){
+					var obj = [];
+					obj[0] = (d[0] + data[i+1][0])/2;
+					obj[1] = (d[1] + data[i+1][1])/2;
+					obj.index = d.index;
+					return obj;
+				}
+			});
+			interdata.pop();
+		}
+		else if (type == 'Point'){
+			var data = [activeFeature.geometry.coordinates];
+			var interdata = [];
+		}
+		
+		svg.selectAll('.sketchPointInter').remove();
+		svg.selectAll('.sketchPointInter').data(interdata).enter().append('circle')
+			.classed('sketchPointInter',true)
+			.attr('cx', function(d){return project(d)[0];})
+			.attr('cy', function(d){return project(d)[1];})
+			.attr('r', 40)
+			.style('stroke', 'steelBlue')
+			.style('fill', 'steelBlue')
+			.style('opacity', 0.5)
+			.on('click', function(d){
+				event.stopPropagation();
+				if (type == 'Polygon'){
+					//add extra vertice
+					if (d.index +1 == activeFeature.geometry.coordinates[0].length){
+						activeFeature.geometry.coordinates[0].splice(1,0,d);
+					}
+					else {
+						activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
+					}
+					buildEdit();
+				}
+				else if (type == 'LineString'){
+					activeFeature.geometry.coordinates.splice(d.index +1,0,d);
+					buildEdit();
+				}
+			});
+		svg.selectAll('.sketchPoint').remove();
+		svg.selectAll('.sketchPoint').data(data).enter().append('circle')
+			.classed('sketchPoint',true)
+			.attr('cx', function(d){return project(d)[0];})
+			.attr('cy', function(d){return project(d)[1];})
+			.attr('r', 40)
+			.style('stroke', 'steelBlue')
+			.style('fill', 'steelBlue')
+			.style('fillOpacity', 0.5)
+			//kindly copied from http://bl.ocks.org/mbostock/6123708
+			.call(drag);
+	}
+	
+	function edit(feature){
+		event.stopPropagation();
+		map.svg.on('click', function(){
+				buildEdit();
+				featureChanged();
+		});
+		activeFeature = feature;
+		type = feature.geometry.type;
+		buildEdit();
+	}
+	
+	/**
+		startEdit()
+		adds a listener to the entities to edit them
+	**/
+	var startEdit = function(){
+		layer.drawboard.selectAll('.entity').select('path').on('click', edit);
+	};
+	
+	/**	featureChanged emits the newly created feature **/
+	var featureChanged = function(){
+		layer.addFeature(activeFeature);
+		var event = new CustomEvent('featureChanged', {detail: activeFeature});
+		map.mapdiv.dispatchEvent(event);
+		finish();
+	};
+
+	
+	
+/** REMOVE FEATURE **/
+	var remove = function(feature){
+		layer.removeFeature(feature);
+		var event = new CustomEvent('featureRemoved', {detail: feature});
+		map.mapdiv.dispatchEvent(event);
+		finish();
+	};
+	/**
+		startRemove()
+		adds a listener to the entities to remove them
+	**/
+	var startRemove = function(){
+		layer.drawboard.selectAll('.entity').select('path').on('click', remove);
+	};
+
+	
+/** FINISH **/	
+	/** 
+		finish()
+		finish puts an end to the drawing or editing mode and removes listeners 
+	**/
+	
+	var finish = function(){
+		svg.selectAll('.sketch').remove();
+		svg.selectAll('.sketchPoint').remove();
+		svg.selectAll('.sketchPointInter').remove();
+		layer.drawboard.selectAll('.entity').select('path').on('click', null);
+		activeFeature = null;
+		coords = [];
+		map.svg.on('mousemove',null);
+		map.svg.on('click', null);
+		map.svg.on('click', null);
+		map.svg.on('dblclick', null);
+		map.svg.on('dblclick', null);
+		map.svg.on('touchstart',null);
+		map.svg.on('touchend',null);
+		layer.draw(true);
+	};
+	
+	//Export functions
+	sketch.draw  = draw;
+	sketch.startEdit = startEdit;
+	sketch.startRemove = startRemove;
+	sketch.finish = finish;
+	
+	return sketch;
 };
 
 //                                                                          マップ
@@ -354,6 +734,7 @@ d3.mappu.Layer = function(name, config) {
 };
 
 d3_mappu_Layer = function(name, config){
+	config = config || {};
     var layer = {};
     var _map;
     var _id = d3.mappu.util.createID();
@@ -450,34 +831,96 @@ d3_mappu_Layer = function(name, config){
   };
   
   d3_mappu_VectorLayer = function(name, config) {
+  	  config = config || {};
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
       var _data = [];                         
 	  var drawboard;
 	  var _duration = config.duration || 0;
+	  var path;
+	  var _events = config.events;   
 	  
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
             return _data;
         },
-        set: function(array) { 
+        set: function(array) {
             _data = array;
             draw(false);
         }
-      });                                                           
+      });
       
-      function addstyle(d){
+      Object.defineProperty(layer, 'events', {
+        get: function() {
+            return _events;
+        },
+        set: function(array) {
+            _events = array;
+        }
+      });
+      
+      
+      
+      //Function taken from terraformer
+      function ringIsClockwise(ringToTest) {
+		var total = 0,i = 0;
+		var rLength = ringToTest.length;
+		var pt1 = ringToTest[i];
+		var pt2;
+		for (i; i < rLength - 1; i++) {
+		  pt2 = ringToTest[i + 1];
+		  total += (pt2[0] - pt1[0]) * (pt2[1] + pt1[1]);
+		  pt1 = pt2;
+		}
+		return (total >= 0);
+	  }
+      
+      function setStyle(d){
       	  var entity = d3.select(this);
       	  if (d.style){
       	  	  for (var key in d.style) { 
-      	  	  	  entity.style(key, d.style[key]);
+      	  	  	  entity.select('path').style(key, d.style[key]);
       	  	  }
+      	  }
+      	  if (d._selected){
+      	  	  //make halo around entity to show as selected
+      	  	  entity
+      	  	  	.append('path').attr("d", _path)
+      	  	  	.style('stroke', 'none')
+      	  	  	.style('fill', 'red')
+      	  	  	.classed('halo', true);
+      	  }
+      	  else {
+      	  	  entity.selectAll('.halo').remove();
       	  }
       }
       
+      function build(d){
+      	  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
+      	  	  d.geometry.coordinates[0].reverse(); 
+      	  }
+      	  d3.select(this).append('path').attr("d", _path)
+            .classed(name, true)
+            .style('stroke', 'blue');
+          d3.select(this).append('text');
+          
+      }
+      
       var draw = function(rebuild){
+		  _path = d3.geo.path()
+			.projection(layer.map.projection)
+			.pointRadius(function(d) {
+				if (d.style && d.style.radius){
+					return d.style.radius;
+				}
+				else {
+					return 4.5;
+				}
+			});
+      	  
+      	  
           var drawboard = layer.drawboard;
           if (rebuild){
                drawboard.selectAll('.entity').remove();
@@ -486,45 +929,87 @@ d3_mappu_Layer = function(name, config){
           	return d.id;
           });
           
-          var newpaths = entities.enter().append('path').attr("d", layer.map.path)
-            .classed('entity',true).classed(name, true)
-            .style('stroke', 'blue')
-            .each(addstyle);
+          var newentity = entities.enter().append('g')
+          	.classed('entity',true)
+          	.attr('id',function(d){
+                    return 'entity'+ d.id;
+            });
+          newentity.each(build);
+          newentity.each(setStyle);
+            
+          entities.exit().remove();
+          
           // Add events from config
-          if (config.events){
-              config.events.forEach(function(d){
-                 newpaths.on(d.event, d.action);
+          if (_events){
+              _events.forEach(function(d){
+                 newentity.select('path').on(d.event, d.action);
               });
           }
           layer.refresh(rebuild?0:_duration);
       };
       
       var refresh = function(duration){
-      	  
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){
-          if (config.reproject){
-              var entities = drawboard.selectAll('.entity');
-              entities.transition().duration(duration).attr("d", layer.map.path).each(addstyle);
-          }
-          else {
-          	//based on: http://bl.ocks.org/mbostock/5914438
-          	var zoombehaviour = layer.map.zoombehaviour;
-          	//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
-          	drawboard
-              .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
-              .style("stroke-width", 1 / zoombehaviour.scale());
-          }
+          	  var entities = drawboard.selectAll('.entity');
+			  if (config.reproject){
+				  entities.select('path').transition().duration(duration).attr("d", _path);
+				  if (config.labelfield){
+				  	  entities.each(function(d){
+				  	    var loc = _path.centroid(d);
+				  	    var text = d.properties[config.labelfield];
+				  	    entities.select('text').attr('x',loc[0]).attr('y', loc[1]).classed('vectorLabel',true).text(text);
+				  	  });
+				  }
+				  entities.each(setStyle);
+			  }
+			  else {
+				//based on: http://bl.ocks.org/mbostock/5914438
+				var zoombehaviour = layer.map.zoombehaviour;
+				//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
+				drawboard
+				  .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
+				  .style("stroke-width", 1 / zoombehaviour.scale());
+			  }
           }
           else {
           	  drawboard.selectAll('.entity').remove();
           }
       };
       
+      var addFeature = function(feature){
+      	  var replaced = false;
+      	  _data.forEach(function(d){
+			  if (d.id == feature.id){
+				  d = feature;
+				  layer.draw();
+				  replaced = true;
+				  return;
+			  }
+      	  });
+      	  if (!replaced){
+      	  	  _data.push(feature);
+      	  }
+      	  layer.draw(true);
+      };
+      
+      var removeFeature = function(feature){
+      	  var idx = null;
+      	  _data.forEach(function(d,i){
+			  if (d.id == feature.id){
+				  idx = i;
+			  }
+      	  });
+      	  _data.splice(idx,1);
+      	  layer.draw();
+      };
+      
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
+      layer.addFeature = addFeature;
+      layer.removeFeature = removeFeature;
       return layer;
   };
   
