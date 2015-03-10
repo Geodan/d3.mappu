@@ -159,10 +159,13 @@
 			  if (d.id == feature.id){
 				  d = feature;
 				  layer.draw();
+				  replaced = true;
 				  return;
 			  }
       	  });
-    	  _data.push(feature);
+      	  if (!replaced){
+      	  	  _data.push(feature);
+      	  }
       	  layer.draw();
       };
       

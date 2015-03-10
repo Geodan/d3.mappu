@@ -143,9 +143,9 @@ d3_mappu_Sketch = function(id, config) {
 	
 	/**	featureCreated emits the newly created feature **/
 	var featureCreated = function(){
+		layer.addFeature(activeFeature);
 		var event = new CustomEvent('featureCreated', {detail: activeFeature});
 		map.mapdiv.dispatchEvent(event);
-		layer.data.push(activeFeature);
 		finish();
 	};
 	
@@ -308,6 +308,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	/**	featureChanged emits the newly created feature **/
 	var featureChanged = function(){
+		layer.addFeature(activeFeature);
 		var event = new CustomEvent('featureChanged', {detail: activeFeature});
 		map.mapdiv.dispatchEvent(event);
 		finish();
