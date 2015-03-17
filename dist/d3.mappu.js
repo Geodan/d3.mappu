@@ -331,7 +331,8 @@ d3_mappu_Map = function(id, config) {
         });
         return map;
     };
-    var getLayersByName = function(name){
+    //SMO: getLayersBy* function are generally a sign of lazyness ;)
+    /*var getLayersByName = function(name){
     	var result = [];
     	_layers.forEach(function(d,i){
             if (d.name == name){
@@ -339,7 +340,7 @@ d3_mappu_Map = function(id, config) {
             }
         });
         return result;
-    };
+    };*/
 
 // .removeLayers([{layer}])
 
@@ -348,7 +349,7 @@ d3_mappu_Map = function(id, config) {
     map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
-    map.getLayersByName = getLayersByName;
+    //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
     
@@ -898,13 +899,28 @@ d3_mappu_Layer = function(name, config){
       }
       
       function build(d){
-      	  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
-      	  	  d.geometry.coordinates[0].reverse(); 
+      	  var project = layer.map.projection;
+      	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
+      	  	  var x = project(d.geometry.coordinates)[0];
+              var y = project(d.geometry.coordinates)[1];
+              var img = d3.select(this).append("image")
+              	.attr("width", 32)
+                .attr("height", 37)
+              	.attr("x",x-12.5)
+				.attr("y",y-25)
+				.attr("xlink:href", function(d){
+					return d.style['marker-url'];
+				});
       	  }
-      	  d3.select(this).append('path').attr("d", _path)
-            .classed(name, true)
-            .style('stroke', 'blue');
-          d3.select(this).append('text');
+      	  else {
+			  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
+				  d.geometry.coordinates[0].reverse(); 
+			  }
+			  d3.select(this).append('path').attr("d", _path)
+				.classed(name, true)
+				.style('stroke', 'blue');
+			  d3.select(this).append('text');
+		  }
           
       }
       
@@ -954,12 +970,19 @@ d3_mappu_Layer = function(name, config){
           if (layer.visible){
           	  var entities = drawboard.selectAll('.entity');
 			  if (config.reproject){
+			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
+				  entities.select('image').transition().duration(duration)
+				  	.attr('x',function(d){return project(d.geometry.coordinates)[0];})
+				  	.attr('y',function(d){return project(d.geometry.coordinates)[1];});
 				  if (config.labelfield){
 				  	  entities.each(function(d){
 				  	    var loc = _path.centroid(d);
 				  	    var text = d.properties[config.labelfield];
-				  	    entities.select('text').attr('x',loc[0]).attr('y', loc[1]).classed('vectorLabel',true).text(text);
+				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1])
+				  	    	.classed('vectorLabel',true)
+				  	    	.style('fill','steelBlue')
+				  	    	.text(text);
 				  	  });
 				  }
 				  entities.each(setStyle);
