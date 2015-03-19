@@ -14,6 +14,7 @@
 	  var drawboard;
 	  var _duration = config.duration || 0;
 	  var path;
+	  var style = config.style || {};
 	  var _events = config.events;   
 	  
       /* exposed properties*/
@@ -54,6 +55,14 @@
       
       function setStyle(d){
       	  var entity = d3.select(this);
+      	  //Do generic layer style
+      	  if (style){
+      	  	  for (var key in style) { 
+      	  	  	  entity.select('path').style(key, style[key]);
+      	  	  }
+      	  }
+      	  
+      	  //Now use per-feature styling
       	  if (d.style){
       	  	  for (var key in d.style) { 
       	  	  	  entity.select('path').style(key, d.style[key]);
@@ -93,8 +102,8 @@
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true)
 				.style('stroke', 'blue');
-			  d3.select(this).append('text');
 		  }
+		  d3.select(this).append('text');
           
       }
       
@@ -133,6 +142,7 @@
           if (_events){
               _events.forEach(function(d){
                  newentity.select('path').on(d.event, d.action);
+                 newentity.select('image').on(d.event, d.action);
               });
           }
           layer.refresh(rebuild?0:_duration);
