@@ -991,7 +991,7 @@ d3_mappu_Layer = function(name, config){
 				  	    var text = d.properties[config.labelfield];
 				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1])
 				  	    	.classed('vectorLabel',true)
-				  	    	.style('fill','steelBlue')
+				  	    	.attr('text-anchor',"middle")
 				  	    	.text(text);
 				  	  });
 				  }
