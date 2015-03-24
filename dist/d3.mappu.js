@@ -926,8 +926,7 @@ d3_mappu_Layer = function(name, config){
 				  d.geometry.coordinates[0].reverse(); 
 			  }
 			  d3.select(this).append('path').attr("d", _path)
-				.classed(name, true)
-				.style('stroke', 'blue');
+				.classed(name, true);
 		  }
 		  d3.select(this).append('text');
           
