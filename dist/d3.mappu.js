@@ -313,7 +313,13 @@ d3_mappu_Map = function(id, config) {
     
     Object.defineProperty(map, 'layers', {
 		get: function(){return _layers;},
-		set: function(){console.warn('No setting allowed for layers');}
+		set: function(data){
+			//console.warn('No setting allowed for layers');
+			_layers = [];
+			data.forEach(function(d){
+				d.addTo(map);	
+			});
+		}
     });
     
     
@@ -1084,8 +1090,12 @@ d3_mappu_Layer = function(name, config){
       var drawboard;
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
+      var _options = config; //Te be leaflet compatible in g-layercatalogus
+      layer.options = _options;
+      layer.visibility = layer.visible; //leaflet compat
       var _layers = config.layers;
       var _duration = 0;
+      
       
       Object.defineProperty(layer, 'url', {
         get: function() {

@@ -13,8 +13,12 @@
       var drawboard;
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
+      var _options = config; //Te be leaflet compatible in g-layercatalogus
+      layer.options = _options;
+      layer.visibility = layer.visible; //leaflet compat
       var _layers = config.layers;
       var _duration = 0;
+      
       
       Object.defineProperty(layer, 'url', {
         get: function() {

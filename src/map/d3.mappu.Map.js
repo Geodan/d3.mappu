@@ -321,7 +321,7 @@ d3_mappu_Map = function(id, config) {
         }
         //Replace existing ID
         _layers.forEach(function(d){
-            if (d.id == layer.id){
+            if (d.name == layer.name){
                 d = layer; //TODO: can you replace an array item like this?
                 return map;
             }
