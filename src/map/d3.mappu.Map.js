@@ -333,7 +333,10 @@ d3_mappu_Map = function(id, config) {
     var removeLayer = function(layer){
     	var idx = _layers.indexOf(layer);
     	if (idx > -1){
+    		//remove layer
     		_layers.splice(idx,1);
+    		//remove old tiles
+    		_svg.selectAll('#'+layer.id).transition().style('opacity',0).remove();
     	}
     	/*
         _layers.forEach(function(d,i){

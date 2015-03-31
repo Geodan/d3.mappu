@@ -345,7 +345,10 @@ d3_mappu_Map = function(id, config) {
     var removeLayer = function(layer){
     	var idx = _layers.indexOf(layer);
     	if (idx > -1){
+    		//remove layer
     		_layers.splice(idx,1);
+    		//remove old tiles
+    		_svg.selectAll('#'+layer.id).transition().style('opacity',0).remove();
     	}
     	/*
         _layers.forEach(function(d,i){
@@ -783,7 +786,7 @@ d3_mappu_Layer = function(name, config){
     /*SMO: what does this do?*/
     var addTo = function(map){
         _map = map;
-        layer.drawboard = _map.svg.append('g');
+        layer.drawboard = _map.svg.append('g').attr('id',_id);
         _map.addLayer(layer);
         layer.draw();
         return layer;
@@ -842,7 +845,7 @@ d3_mappu_Layer = function(name, config){
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        layer.drawboard = _map.svg.append('g');
+        layer.drawboard = _map.svg.append('g').attr('id', layer.id);
         layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
