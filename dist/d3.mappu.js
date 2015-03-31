@@ -67,7 +67,7 @@ d3_mappu_Map = function(id, config) {
 	*/
 	
 	
-	
+	var _extent = [[0,0],[1,1]];
 	var _center = config.center || [0,0];
 	var _projection = config.projection || d3.geo.mercator();
 	var _zoom = config.zoom || 22;
@@ -100,6 +100,11 @@ d3_mappu_Map = function(id, config) {
         _layers.forEach(function(d){
             d.refresh(0);
         });
+        
+        //Update extent value
+    	var lb = _projection.invert([0, _mapdiv.clientHeight]);
+		var rt = _projection.invert([_mapdiv.clientWidth, 0]);
+		map.extent = [lb, rt];
     };
     
     var resize = function(){
@@ -281,21 +286,37 @@ d3_mappu_Map = function(id, config) {
           //TODO: redraw
         }
     });
+// .extent : returns current map extent in latlon    
+    Object.defineProperty(map, 'extent', {
+		get: function(){
+			return _extent;
+		},
+		set: function(value){
+			_extent = value;
+			Object.getNotifier(this).notify({
+				type: 'update',
+				name: 'extent',
+				oldValue: _extent
+			});
+		}
+    });
     
     Object.defineProperty(map, 'tiles', {
-            get: function(){return _tiles;},
-            set: function(){console.warn('No setting allowed for tile');}
+		get: function(){return _tiles;},
+		set: function(){console.warn('No setting allowed for tile');}
     });
     
     Object.defineProperty(map, 'zoombehaviour', {
-            get: function(){return _zoombehaviour;},
-            set: function(){console.warn('No setting allowed for zoombehaviour');}
+		get: function(){return _zoombehaviour;},
+		set: function(){console.warn('No setting allowed for zoombehaviour');}
     });
     
     Object.defineProperty(map, 'layers', {
-            get: function(){return _layers;},
-            set: function(){console.warn('No setting allowed for layers');}
+		get: function(){return _layers;},
+		set: function(){console.warn('No setting allowed for layers');}
     });
+    
+    
     
 	
 ////singular functions
