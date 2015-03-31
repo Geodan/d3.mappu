@@ -345,7 +345,7 @@ d3_mappu_Map = function(id, config) {
     var removeLayer = function(layer){
     	var idx = _layers.indexOf(layer);
     	if (idx > -1){
-    		_layers.splce(idx,1);
+    		_layers.splice(idx,1);
     	}
     	/*
         _layers.forEach(function(d,i){
