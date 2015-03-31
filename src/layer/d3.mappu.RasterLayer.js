@@ -71,7 +71,7 @@
           else if (_ogc_type == 'wms'){
                 //This calculation only works for tiles that are square and always the same size
                 var bbox = getbbox(d);
-                url =  _url + 
+                url =  _url + '?' +  
                      "&bbox=" + bbox + 
                      "&layers=" + _layers + 
                      "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";

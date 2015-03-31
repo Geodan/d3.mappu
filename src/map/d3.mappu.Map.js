@@ -330,7 +330,12 @@ d3_mappu_Map = function(id, config) {
         layer._onAdd(map);
         return map;
     };
-    var removeLayer = function(id){
+    var removeLayer = function(layer){
+    	var idx = _layers.indexOf(layer);
+    	if (idx > -1){
+    		_layers.splce(idx,1);
+    	}
+    	/*
         _layers.forEach(function(d,i){
             if (d.id == id){
                 // ?? d.onRemove(self);
@@ -338,6 +343,7 @@ d3_mappu_Map = function(id, config) {
                 return map;
             }
         });
+        */
         return map;
     };
     //SMO: getLayersBy* function are generally a sign of lazyness ;)

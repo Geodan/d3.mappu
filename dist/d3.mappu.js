@@ -313,13 +313,7 @@ d3_mappu_Map = function(id, config) {
     
     Object.defineProperty(map, 'layers', {
 		get: function(){return _layers;},
-		set: function(data){
-			//console.warn('No setting allowed for layers');
-			_layers = [];
-			data.forEach(function(d){
-				d.addTo(map);	
-			});
-		}
+		set: function(){console.warn('No setting allowed for layers');}
     });
     
     
@@ -339,7 +333,7 @@ d3_mappu_Map = function(id, config) {
         }
         //Replace existing ID
         _layers.forEach(function(d){
-            if (d.id == layer.id){
+            if (d.name == layer.name){
                 d = layer; //TODO: can you replace an array item like this?
                 return map;
             }
@@ -348,7 +342,12 @@ d3_mappu_Map = function(id, config) {
         layer._onAdd(map);
         return map;
     };
-    var removeLayer = function(id){
+    var removeLayer = function(layer){
+    	var idx = _layers.indexOf(layer);
+    	if (idx > -1){
+    		_layers.splce(idx,1);
+    	}
+    	/*
         _layers.forEach(function(d,i){
             if (d.id == id){
                 // ?? d.onRemove(self);
@@ -356,6 +355,7 @@ d3_mappu_Map = function(id, config) {
                 return map;
             }
         });
+        */
         return map;
     };
     //SMO: getLayersBy* function are generally a sign of lazyness ;)
@@ -770,7 +770,7 @@ d3_mappu_Layer = function(name, config){
     //TODO: parse config
     var _opacity = 1;
     var _visible = true;
-    if (typeof(config.visible) == 'boolean'){
+    if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
     }
 	var _display = 'block';
@@ -1148,7 +1148,7 @@ d3_mappu_Layer = function(name, config){
           else if (_ogc_type == 'wms'){
                 //This calculation only works for tiles that are square and always the same size
                 var bbox = getbbox(d);
-                url =  _url + 
+                url =  _url + '?' +  
                      "&bbox=" + bbox + 
                      "&layers=" + _layers + 
                      "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
