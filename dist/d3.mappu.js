@@ -293,11 +293,6 @@ d3_mappu_Map = function(id, config) {
 		},
 		set: function(value){
 			_extent = value;
-			Object.getNotifier(this).notify({
-				type: 'update',
-				name: 'extent',
-				oldValue: _extent
-			});
 		}
     });
     
@@ -845,7 +840,9 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _zindex = val;
-            layer.map.orderLayers();
+            if (layer.map){
+            	layer.map.orderLayers();
+            }
         }
     });
     
@@ -882,7 +879,7 @@ d3_mappu_Layer = function(name, config){
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
       var _data = [];                         
-	  
+	  layer.zindex = 100; //vectors always on top
 	  var _duration = config.duration || 0;
 	  var path;
 	  var style = config.style || {};

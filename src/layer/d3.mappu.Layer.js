@@ -92,7 +92,9 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _zindex = val;
-            layer.map.orderLayers();
+            if (layer.map){
+            	layer.map.orderLayers();
+            }
         }
     });
     

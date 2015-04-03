@@ -281,11 +281,6 @@ d3_mappu_Map = function(id, config) {
 		},
 		set: function(value){
 			_extent = value;
-			Object.getNotifier(this).notify({
-				type: 'update',
-				name: 'extent',
-				oldValue: _extent
-			});
 		}
     });
     

@@ -11,7 +11,7 @@
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
       var _data = [];                         
-	  
+	  layer.zindex = 100; //vectors always on top
 	  var _duration = config.duration || 0;
 	  var path;
 	  var style = config.style || {};
