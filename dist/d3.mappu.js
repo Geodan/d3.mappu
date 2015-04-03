@@ -74,9 +74,9 @@ d3_mappu_Map = function(id, config) {
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
-	
-	
 
+	
+	
     var redraw = function(){
     	//Calculate projection, so we can find out coordinates
     	_projection
@@ -96,7 +96,7 @@ d3_mappu_Map = function(id, config) {
         
         /* EXPERIMENTAL */
         //layer.call(raster);
-
+        
         _layers.forEach(function(d){
             d.refresh(0);
         });
@@ -332,45 +332,41 @@ d3_mappu_Map = function(id, config) {
             return false;
         }
         //Replace existing ID
+        /*
         _layers.forEach(function(d){
-            if (d.name == layer.name){
+            if (d.id == layer.id){
+            	console.log('Replacing ',d.id);
                 d = layer; //TODO: can you replace an array item like this?
                 return map;
             }
-        });
+        });*/
+        var idx = _layers.indexOf(layer);
+        if (idx > -1){
+        	_layers.splice(idx,1);
+        }
         _layers.push(layer);
         layer._onAdd(map);
         return map;
     };
     var removeLayer = function(layer){
     	var idx = _layers.indexOf(layer);
-    	if (idx > -1){
-    		//remove layer
-    		_layers.splice(idx,1);
-    		//remove old tiles
-    		_svg.selectAll('#'+layer.id).transition().style('opacity',0).remove();
-    	}
-    	/*
-        _layers.forEach(function(d,i){
-            if (d.id == id){
-                // ?? d.onRemove(self);
-                _layers.splice(i,1);
-                return map;
-            }
-        });
-        */
+   		//remove layer
+   		_layers.splice(idx,1);
+   		orderLayers();
         return map;
     };
-    //SMO: getLayersBy* function are generally a sign of lazyness ;)
-    /*var getLayersByName = function(name){
-    	var result = [];
-    	_layers.forEach(function(d,i){
-            if (d.name == name){
-                result.push(d);
-            }
-        });
-        return result;
-    };*/
+    //Arrange the drawboards
+	var orderLayers = function(){
+		var drawboards = _svg.selectAll('.drawboard').data(_layers, function(d){return d.id;});
+		drawboards.enter().append('g').attr('id', function(d){return d.id;}).classed('drawboard',true)
+			.each(function(d){
+				d.drawboard = d3.select(this);
+			});
+		drawboards.exit().remove();
+		drawboards.sort(function (a, b) {
+		  return a.zindex - b.zindex;
+		});
+	};
 
 // .removeLayers([{layer}])
 
@@ -379,6 +375,7 @@ d3_mappu_Map = function(id, config) {
     map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
+    map.orderLayers = orderLayers;
     //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
@@ -776,17 +773,23 @@ d3_mappu_Layer = function(name, config){
     if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
     }
+    
 	var _display = 'block';
+	var _zindex = 0;
     var refresh = function(){
     };
     var moveUp = function(){
     };
     var moveDown = function(){
     };
+    
+    var setZIndex = function(i){
+    	layer.zindex = i;
+    };
+    
     /*SMO: what does this do?*/
     var addTo = function(map){
         _map = map;
-        layer.drawboard = _map.svg.append('g').attr('id',_id);
         _map.addLayer(layer);
         layer.draw();
         return layer;
@@ -836,16 +839,28 @@ d3_mappu_Layer = function(name, config){
         }
     });
     
+    Object.defineProperty(layer, 'zindex', {
+        get: function() {
+            return _zindex;
+        },
+        set: function(val) {
+            _zindex = val;
+            layer.map.orderLayers();
+        }
+    });
+    
     /* exposed: */
     layer.refresh = refresh;  
     layer.moveUp = moveUp;
     layer.moveDown = moveDown;
     layer.addTo = addTo;
+    layer.setZIndex = setZIndex;
 
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        layer.drawboard = _map.svg.append('g').attr('id', layer.id);
+        //layer.drawboard = _map.svg.append('g').attr('id', layer.id).classed('drawboard',true);
+        map.orderLayers();
         layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
@@ -867,7 +882,7 @@ d3_mappu_Layer = function(name, config){
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
       var _data = [];                         
-	  var drawboard;
+	  
 	  var _duration = config.duration || 0;
 	  var path;
 	  var style = config.style || {};
@@ -1090,7 +1105,7 @@ d3_mappu_Layer = function(name, config){
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'raster';
-      var drawboard;
+      
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _options = config; //Te be leaflet compatible in g-layercatalogus

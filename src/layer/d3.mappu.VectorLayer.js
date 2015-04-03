@@ -11,7 +11,7 @@
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
       var _data = [];                         
-	  var drawboard;
+	  
 	  var _duration = config.duration || 0;
 	  var path;
 	  var style = config.style || {};

@@ -10,7 +10,7 @@
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'raster';
-      var drawboard;
+      
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _options = config; //Te be leaflet compatible in g-layercatalogus

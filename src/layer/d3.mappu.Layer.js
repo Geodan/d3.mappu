@@ -20,17 +20,23 @@ d3_mappu_Layer = function(name, config){
     if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
     }
+    
 	var _display = 'block';
+	var _zindex = 0;
     var refresh = function(){
     };
     var moveUp = function(){
     };
     var moveDown = function(){
     };
+    
+    var setZIndex = function(i){
+    	layer.zindex = i;
+    };
+    
     /*SMO: what does this do?*/
     var addTo = function(map){
         _map = map;
-        layer.drawboard = _map.svg.append('g').attr('id',_id);
         _map.addLayer(layer);
         layer.draw();
         return layer;
@@ -80,16 +86,28 @@ d3_mappu_Layer = function(name, config){
         }
     });
     
+    Object.defineProperty(layer, 'zindex', {
+        get: function() {
+            return _zindex;
+        },
+        set: function(val) {
+            _zindex = val;
+            layer.map.orderLayers();
+        }
+    });
+    
     /* exposed: */
     layer.refresh = refresh;  
     layer.moveUp = moveUp;
     layer.moveDown = moveDown;
     layer.addTo = addTo;
+    layer.setZIndex = setZIndex;
 
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        layer.drawboard = _map.svg.append('g').attr('id', layer.id);
+        //layer.drawboard = _map.svg.append('g').attr('id', layer.id).classed('drawboard',true);
+        map.orderLayers();
         layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
