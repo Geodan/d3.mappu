@@ -878,7 +878,8 @@ d3_mappu_Layer = function(name, config){
       var _data = [];                         
 	  layer.zindex = 100; //vectors always on top
 	  var _duration = config.duration || 0;
-	  var path;
+	  var _path;
+	  var _projection;
 	  var style = config.style || {};
 	  var _events = config.events;   
 	  
@@ -947,7 +948,7 @@ d3_mappu_Layer = function(name, config){
       }
       
       function build(d){
-      	  var project = layer.map.projection;
+      	  var project = _projection;
       	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
       	  	  var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
@@ -972,19 +973,26 @@ d3_mappu_Layer = function(name, config){
       }
       
       var draw = function(rebuild){
-       	  console.log('drawing', layer.name);
-		  _path = d3.geo.path()
-			.projection(layer.map.projection)
-			.pointRadius(function(d) {
-				if (d.style && d.style.radius){
-					return d.style.radius;
-				}
-				else {
-					return 4.5;
-				}
-			});
-      	  
-      	  
+      	  if (config.reproject){
+				_projection = layer.map.projection;
+				_path = d3.geo.path()
+				.projection(_projection)
+				.pointRadius(function(d) {
+					if (d.style && d.style.radius){
+						return d.style.radius;
+					}
+					else {
+						return 4.5;
+					}
+				});
+		  }
+		  else {
+				_projection = d3.geo.mercator()
+					.scale(1 / 2 / Math.PI)
+					.translate([0, 0]);
+				_path = d3.geo.path()
+					.projection(_projection);
+		  }
           var drawboard = layer.drawboard;
           if (rebuild){
                drawboard.selectAll('.entity').remove();
