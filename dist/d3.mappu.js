@@ -782,11 +782,8 @@ d3_mappu_Layer = function(name, config){
     	layer.zindex = i;
     };
     
-    /*SMO: what does this do?*/
     var addTo = function(map){
-        _map = map;
-        _map.addLayer(layer);
-        layer.draw();
+        map.addLayer(layer);
         return layer;
     };
     
@@ -856,12 +853,12 @@ d3_mappu_Layer = function(name, config){
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        //layer.drawboard = _map.svg.append('g').attr('id', layer.id).classed('drawboard',true);
         map.orderLayers();
         layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     };
+    
     
     return layer;
 };
@@ -975,6 +972,7 @@ d3_mappu_Layer = function(name, config){
       }
       
       var draw = function(rebuild){
+       	  console.log('drawing', layer.name);
 		  _path = d3.geo.path()
 			.projection(layer.map.projection)
 			.pointRadius(function(d) {
@@ -1016,6 +1014,7 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(duration){
+      	  console.log('refreshing', layer.name);
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){
@@ -1150,23 +1149,40 @@ d3_mappu_Layer = function(name, config){
           var url;
           if (_ogc_type == 'tms') {
               url = _url    
-                    .replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-                    .replace('{z}',d[2])
-                    .replace('{x}',d[0])
-                    .replace('{y}',d[1])
-                    //FIXME: why are these curly brackets killed when used with polymer?                    
-                    .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-                    .replace('%7Bz%7D',d[2])
-                    .replace('%7Bx%7D',d[0])
-                    .replace('%7By%7D',d[1]);
+				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('{z}',d[2])
+				.replace('{x}',d[0])
+				.replace('{y}',d[1])
+				//FIXME: why are these curly brackets killed when used with polymer?                    
+				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('%7Bz%7D',d[2])
+				.replace('%7Bx%7D',d[0])
+				.replace('%7By%7D',d[1]);
           }
+          else if (_ogc_type == 'wmts'){
+          	  //TODO: working on this
+          	  /*
+          	http://services.geodan.nl/wmts?UID=99c2ec22c262
+          		&SERVICE=WMTS
+          		&REQUEST=GetTile
+          		&VERSION=1.0.0
+          		&LAYER=buurtkaart
+          		&STYLE=default
+          		&TILEMATRIXSET=nltilingschema
+          		&TILEMATRIX=04&TILEROW=10&TILECOL=10
+          		&FORMAT=image%2Fpng
+          	*/
+          	url = _url + '?' + 
+          		"&layer=" + _layers + 
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
+      	  }
           else if (_ogc_type == 'wms'){
-                //This calculation only works for tiles that are square and always the same size
-                var bbox = getbbox(d);
-                url =  _url + '?' +  
-                     "&bbox=" + bbox + 
-                     "&layers=" + _layers + 
-                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+			//This calculation only works for tiles that are square and always the same size
+			var bbox = getbbox(d);
+			url =  _url + '?' +  
+				 "&bbox=" + bbox + 
+				 "&layers=" + _layers + 
+				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
           }
           return url;
       };

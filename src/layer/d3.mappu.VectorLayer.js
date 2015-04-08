@@ -107,6 +107,7 @@
       }
       
       var draw = function(rebuild){
+       	  console.log('drawing', layer.name);
 		  _path = d3.geo.path()
 			.projection(layer.map.projection)
 			.pointRadius(function(d) {
@@ -148,6 +149,7 @@
       };
       
       var refresh = function(duration){
+      	  console.log('refreshing', layer.name);
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){

@@ -34,11 +34,8 @@ d3_mappu_Layer = function(name, config){
     	layer.zindex = i;
     };
     
-    /*SMO: what does this do?*/
     var addTo = function(map){
-        _map = map;
-        _map.addLayer(layer);
-        layer.draw();
+        map.addLayer(layer);
         return layer;
     };
     
@@ -108,12 +105,12 @@ d3_mappu_Layer = function(name, config){
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        //layer.drawboard = _map.svg.append('g').attr('id', layer.id).classed('drawboard',true);
         map.orderLayers();
         layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     };
+    
     
     return layer;
 };
