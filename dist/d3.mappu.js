@@ -83,14 +83,8 @@ d3_mappu_Map = function(id, config) {
            .scale(_zoombehaviour.scale() / 2 / Math.PI)
            .translate(_zoombehaviour.translate());
     	//Set internal zoom
-    	console.log('zoom 1:', _zoom);
-    	_zoom = (
-    		Math.log(_zoombehaviour.scale())
-    		/
-    		Math.log(2)
-    	);
+    	_zoom = Math.log(_zoombehaviour.scale())/Math.log(2);
     	
-    	console.log('zoom 2:', _zoom);
     	//Set internal center
     	var pixcenter = [_width/2,_height/2];
         _center =  _projection.invert(pixcenter);
@@ -102,7 +96,6 @@ d3_mappu_Map = function(id, config) {
         /* EXPERIMENTAL */
         //layer.call(raster);
         
-        console.log('scale: ',_zoombehaviour.scale());
         _layers.forEach(function(d){
             d.refresh(0);
         });
@@ -195,21 +188,7 @@ d3_mappu_Map = function(id, config) {
             console.log("do not touch the svg");
         }
     });
-    /* TT: Obsolete? 
-    Object.defineProperty(map, 'size', {
-            get: function(){return [_height, _width];},
-            set: function(val){
-                _height = val[0];
-                _width = val[1];
-                _tile = d3.geo.tile()
-                    .size([_width,_height]);
-                d3.select(_mapdiv).select('svg')
-                    .attr("width", _width)
-                    .attr("height", _height);
-                map.redraw();
-            }
-    });
-    */
+    
     Object.defineProperty(map, 'mapdiv', {
         get: function() {
             return _mapdiv;
