@@ -124,7 +124,7 @@ d3_mappu_Map = function(id, config) {
 	};
 	
 	function zoomcenter(zoomval, centerval){
-   	   	var scale = (1 << zoomval) / 2 / Math.PI;
+   	   	var scale = (1 << zoomval);
 		_zoombehaviour.scale(scale);
 		_projection
 		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
@@ -170,7 +170,7 @@ d3_mappu_Map = function(id, config) {
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
     //Do an initial zoomcenter
-    //zoomcenter(_zoom, _center);
+    zoomcenter(_zoom, _center);
     resize();
     
     /*
