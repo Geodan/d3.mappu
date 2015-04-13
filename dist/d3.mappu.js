@@ -83,9 +83,14 @@ d3_mappu_Map = function(id, config) {
            .scale(_zoombehaviour.scale() / 2 / Math.PI)
            .translate(_zoombehaviour.translate());
     	//Set internal zoom
-    	var scale = _zoombehaviour.scale();
-    	_zoom = (Math.log(scale* 2 * Math.PI)/Math.log(2));
+    	console.log('zoom 1:', _zoom);
+    	_zoom = (
+    		Math.log(_zoombehaviour.scale())
+    		/
+    		Math.log(2)
+    	);
     	
+    	console.log('zoom 2:', _zoom);
     	//Set internal center
     	var pixcenter = [_width/2,_height/2];
         _center =  _projection.invert(pixcenter);
@@ -97,6 +102,7 @@ d3_mappu_Map = function(id, config) {
         /* EXPERIMENTAL */
         //layer.call(raster);
         
+        console.log('scale: ',_zoombehaviour.scale());
         _layers.forEach(function(d){
             d.refresh(0);
         });
@@ -139,7 +145,8 @@ d3_mappu_Map = function(id, config) {
 	    .style('position', 'absolute');
     
     //var p = .5 * _ratio;
-	_projection.scale(( _zoom << 12 || 1 << 12) / 2 / Math.PI)
+	_projection
+		.scale(( 1 << _zoom || 1 << 12) / 2 / Math.PI)
         .translate([_width / 2, _height / 2]);
 	    //.center(_center)
         //.clipExtent([[p, p], [_width - p, _height - p]]);
@@ -152,17 +159,18 @@ d3_mappu_Map = function(id, config) {
         .translate([_width - _projcenter[0], _height - _projcenter[1]])
         .on("zoom", redraw);
 	d3.select(_mapdiv).call(_zoombehaviour);
-	
+	/*Obs?
     _projection
         .scale(1 / 2 / Math.PI)
         .translate([0, 0]);
-    
+    */
     var _tile = d3.geo.tile()
         .size([_width,_height]);
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-          
+    //Do an initial zoomcenter
+    //zoomcenter(_zoom, _center);
     resize();
     
     /*
