@@ -55,24 +55,23 @@ d3_mappu_Map = function(id, config) {
 	*/
 	
 	
-	
+	var _extent = [[0,0],[1,1]];
 	var _center = config.center || [0,0];
 	var _projection = config.projection || d3.geo.mercator();
 	var _zoom = config.zoom || 22;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
-	
-	
 
+	
+	
     var redraw = function(){
     	//Calculate projection, so we can find out coordinates
     	_projection
            .scale(_zoombehaviour.scale() / 2 / Math.PI)
            .translate(_zoombehaviour.translate());
     	//Set internal zoom
-    	var scale = _zoombehaviour.scale();
-    	_zoom = (Math.log(scale* 2 * Math.PI)/Math.log(2));
+    	_zoom = Math.log(_zoombehaviour.scale())/Math.log(2);
     	
     	//Set internal center
     	var pixcenter = [_width/2,_height/2];
@@ -84,10 +83,15 @@ d3_mappu_Map = function(id, config) {
         
         /* EXPERIMENTAL */
         //layer.call(raster);
-
+        
         _layers.forEach(function(d){
             d.refresh(0);
         });
+        
+        //Update extent value
+    	var lb = _projection.invert([0, _mapdiv.clientHeight]);
+		var rt = _projection.invert([_mapdiv.clientWidth, 0]);
+		map.extent = [lb, rt];
     };
     
     var resize = function(){
@@ -101,7 +105,7 @@ d3_mappu_Map = function(id, config) {
 	};
 	
 	function zoomcenter(zoomval, centerval){
-   	   	var scale = (1 << zoomval) / 2 / Math.PI;
+   	   	var scale = (1 << zoomval);
 		_zoombehaviour.scale(scale);
 		_projection
 		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
@@ -122,7 +126,8 @@ d3_mappu_Map = function(id, config) {
 	    .style('position', 'absolute');
     
     //var p = .5 * _ratio;
-	_projection.scale(( _zoom << 12 || 1 << 12) / 2 / Math.PI)
+	_projection
+		.scale(( 1 << _zoom || 1 << 12) / 2 / Math.PI)
         .translate([_width / 2, _height / 2]);
 	    //.center(_center)
         //.clipExtent([[p, p], [_width - p, _height - p]]);
@@ -135,17 +140,18 @@ d3_mappu_Map = function(id, config) {
         .translate([_width - _projcenter[0], _height - _projcenter[1]])
         .on("zoom", redraw);
 	d3.select(_mapdiv).call(_zoombehaviour);
-	
+	/*Obs?
     _projection
         .scale(1 / 2 / Math.PI)
         .translate([0, 0]);
-    
+    */
     var _tile = d3.geo.tile()
         .size([_width,_height]);
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-          
+    //Do an initial zoomcenter
+    zoomcenter(_zoom, _center);
     resize();
     
     /*
@@ -170,21 +176,7 @@ d3_mappu_Map = function(id, config) {
             console.log("do not touch the svg");
         }
     });
-    /* TT: Obsolete? 
-    Object.defineProperty(map, 'size', {
-            get: function(){return [_height, _width];},
-            set: function(val){
-                _height = val[0];
-                _width = val[1];
-                _tile = d3.geo.tile()
-                    .size([_width,_height]);
-                d3.select(_mapdiv).select('svg')
-                    .attr("width", _width)
-                    .attr("height", _height);
-                map.redraw();
-            }
-    });
-    */
+    
     Object.defineProperty(map, 'mapdiv', {
         get: function() {
             return _mapdiv;
@@ -269,21 +261,32 @@ d3_mappu_Map = function(id, config) {
           //TODO: redraw
         }
     });
+// .extent : returns current map extent in latlon    
+    Object.defineProperty(map, 'extent', {
+		get: function(){
+			return _extent;
+		},
+		set: function(value){
+			_extent = value;
+		}
+    });
     
     Object.defineProperty(map, 'tiles', {
-            get: function(){return _tiles;},
-            set: function(){console.warn('No setting allowed for tile');}
+		get: function(){return _tiles;},
+		set: function(){console.warn('No setting allowed for tile');}
     });
     
     Object.defineProperty(map, 'zoombehaviour', {
-            get: function(){return _zoombehaviour;},
-            set: function(){console.warn('No setting allowed for zoombehaviour');}
+		get: function(){return _zoombehaviour;},
+		set: function(){console.warn('No setting allowed for zoombehaviour');}
     });
     
     Object.defineProperty(map, 'layers', {
-            get: function(){return _layers;},
-            set: function(){console.warn('No setting allowed for layers');}
+		get: function(){return _layers;},
+		set: function(){console.warn('No setting allowed for layers');}
     });
+    
+    
     
 	
 ////singular functions
@@ -299,36 +302,41 @@ d3_mappu_Map = function(id, config) {
             return false;
         }
         //Replace existing ID
+        /*
         _layers.forEach(function(d){
             if (d.id == layer.id){
+            	console.log('Replacing ',d.id);
                 d = layer; //TODO: can you replace an array item like this?
                 return map;
             }
-        });
+        });*/
+        var idx = _layers.indexOf(layer);
+        if (idx > -1){
+        	_layers.splice(idx,1);
+        }
         _layers.push(layer);
         layer._onAdd(map);
         return map;
     };
-    var removeLayer = function(id){
-        _layers.forEach(function(d,i){
-            if (d.id == id){
-                // ?? d.onRemove(self);
-                _layers.splice(i,1);
-                return map;
-            }
-        });
+    var removeLayer = function(layer){
+    	var idx = _layers.indexOf(layer);
+   		//remove layer
+   		_layers.splice(idx,1);
+   		orderLayers();
         return map;
     };
-    //SMO: getLayersBy* function are generally a sign of lazyness ;)
-    /*var getLayersByName = function(name){
-    	var result = [];
-    	_layers.forEach(function(d,i){
-            if (d.name == name){
-                result.push(d);
-            }
-        });
-        return result;
-    };*/
+    //Arrange the drawboards
+	var orderLayers = function(){
+		var drawboards = _svg.selectAll('.drawboard').data(_layers, function(d){return d.id;});
+		drawboards.enter().append('g').attr('id', function(d){return d.id;}).classed('drawboard',true)
+			.each(function(d){
+				d.drawboard = d3.select(this);
+			});
+		drawboards.exit().remove();
+		drawboards.sort(function (a, b) {
+		  return a.zindex - b.zindex;
+		});
+	};
 
 // .removeLayers([{layer}])
 
@@ -337,6 +345,7 @@ d3_mappu_Map = function(id, config) {
     map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
+    map.orderLayers = orderLayers;
     //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;

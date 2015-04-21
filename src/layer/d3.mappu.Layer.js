@@ -17,22 +17,25 @@ d3_mappu_Layer = function(name, config){
     //TODO: parse config
     var _opacity = 1;
     var _visible = true;
-    if (typeof(config.visible) == 'boolean'){
+    if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
     }
+    
 	var _display = 'block';
+	var _zindex = 0;
     var refresh = function(){
     };
     var moveUp = function(){
     };
     var moveDown = function(){
     };
-    /*SMO: what does this do?*/
+    
+    var setZIndex = function(i){
+    	layer.zindex = i;
+    };
+    
     var addTo = function(map){
-        _map = map;
-        layer.drawboard = _map.svg.append('g');
-        _map.addLayer(layer);
-        layer.draw();
+        map.addLayer(layer);
         return layer;
     };
     
@@ -80,20 +83,34 @@ d3_mappu_Layer = function(name, config){
         }
     });
     
+    Object.defineProperty(layer, 'zindex', {
+        get: function() {
+            return _zindex;
+        },
+        set: function(val) {
+            _zindex = val;
+            if (layer.map){
+            	layer.map.orderLayers();
+            }
+        }
+    });
+    
     /* exposed: */
     layer.refresh = refresh;  
     layer.moveUp = moveUp;
     layer.moveDown = moveDown;
     layer.addTo = addTo;
+    layer.setZIndex = setZIndex;
 
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        layer.drawboard = _map.svg.append('g');
+        map.orderLayers();
         layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     };
+    
     
     return layer;
 };

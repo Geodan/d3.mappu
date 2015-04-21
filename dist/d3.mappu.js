@@ -67,24 +67,23 @@ d3_mappu_Map = function(id, config) {
 	*/
 	
 	
-	
+	var _extent = [[0,0],[1,1]];
 	var _center = config.center || [0,0];
 	var _projection = config.projection || d3.geo.mercator();
 	var _zoom = config.zoom || 22;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
-	
-	
 
+	
+	
     var redraw = function(){
     	//Calculate projection, so we can find out coordinates
     	_projection
            .scale(_zoombehaviour.scale() / 2 / Math.PI)
            .translate(_zoombehaviour.translate());
     	//Set internal zoom
-    	var scale = _zoombehaviour.scale();
-    	_zoom = (Math.log(scale* 2 * Math.PI)/Math.log(2));
+    	_zoom = Math.log(_zoombehaviour.scale())/Math.log(2);
     	
     	//Set internal center
     	var pixcenter = [_width/2,_height/2];
@@ -96,10 +95,15 @@ d3_mappu_Map = function(id, config) {
         
         /* EXPERIMENTAL */
         //layer.call(raster);
-
+        
         _layers.forEach(function(d){
             d.refresh(0);
         });
+        
+        //Update extent value
+    	var lb = _projection.invert([0, _mapdiv.clientHeight]);
+		var rt = _projection.invert([_mapdiv.clientWidth, 0]);
+		map.extent = [lb, rt];
     };
     
     var resize = function(){
@@ -113,7 +117,7 @@ d3_mappu_Map = function(id, config) {
 	};
 	
 	function zoomcenter(zoomval, centerval){
-   	   	var scale = (1 << zoomval) / 2 / Math.PI;
+   	   	var scale = (1 << zoomval);
 		_zoombehaviour.scale(scale);
 		_projection
 		   .scale(_zoombehaviour.scale() / 2 / Math.PI)
@@ -134,7 +138,8 @@ d3_mappu_Map = function(id, config) {
 	    .style('position', 'absolute');
     
     //var p = .5 * _ratio;
-	_projection.scale(( _zoom << 12 || 1 << 12) / 2 / Math.PI)
+	_projection
+		.scale(( 1 << _zoom || 1 << 12) / 2 / Math.PI)
         .translate([_width / 2, _height / 2]);
 	    //.center(_center)
         //.clipExtent([[p, p], [_width - p, _height - p]]);
@@ -147,17 +152,18 @@ d3_mappu_Map = function(id, config) {
         .translate([_width - _projcenter[0], _height - _projcenter[1]])
         .on("zoom", redraw);
 	d3.select(_mapdiv).call(_zoombehaviour);
-	
+	/*Obs?
     _projection
         .scale(1 / 2 / Math.PI)
         .translate([0, 0]);
-    
+    */
     var _tile = d3.geo.tile()
         .size([_width,_height]);
 
     var _tiles = _tile.scale(_zoombehaviour.scale())
           .translate(_zoombehaviour.translate())();
-          
+    //Do an initial zoomcenter
+    zoomcenter(_zoom, _center);
     resize();
     
     /*
@@ -182,21 +188,7 @@ d3_mappu_Map = function(id, config) {
             console.log("do not touch the svg");
         }
     });
-    /* TT: Obsolete? 
-    Object.defineProperty(map, 'size', {
-            get: function(){return [_height, _width];},
-            set: function(val){
-                _height = val[0];
-                _width = val[1];
-                _tile = d3.geo.tile()
-                    .size([_width,_height]);
-                d3.select(_mapdiv).select('svg')
-                    .attr("width", _width)
-                    .attr("height", _height);
-                map.redraw();
-            }
-    });
-    */
+    
     Object.defineProperty(map, 'mapdiv', {
         get: function() {
             return _mapdiv;
@@ -281,21 +273,32 @@ d3_mappu_Map = function(id, config) {
           //TODO: redraw
         }
     });
+// .extent : returns current map extent in latlon    
+    Object.defineProperty(map, 'extent', {
+		get: function(){
+			return _extent;
+		},
+		set: function(value){
+			_extent = value;
+		}
+    });
     
     Object.defineProperty(map, 'tiles', {
-            get: function(){return _tiles;},
-            set: function(){console.warn('No setting allowed for tile');}
+		get: function(){return _tiles;},
+		set: function(){console.warn('No setting allowed for tile');}
     });
     
     Object.defineProperty(map, 'zoombehaviour', {
-            get: function(){return _zoombehaviour;},
-            set: function(){console.warn('No setting allowed for zoombehaviour');}
+		get: function(){return _zoombehaviour;},
+		set: function(){console.warn('No setting allowed for zoombehaviour');}
     });
     
     Object.defineProperty(map, 'layers', {
-            get: function(){return _layers;},
-            set: function(){console.warn('No setting allowed for layers');}
+		get: function(){return _layers;},
+		set: function(){console.warn('No setting allowed for layers');}
     });
+    
+    
     
 	
 ////singular functions
@@ -311,36 +314,41 @@ d3_mappu_Map = function(id, config) {
             return false;
         }
         //Replace existing ID
+        /*
         _layers.forEach(function(d){
             if (d.id == layer.id){
+            	console.log('Replacing ',d.id);
                 d = layer; //TODO: can you replace an array item like this?
                 return map;
             }
-        });
+        });*/
+        var idx = _layers.indexOf(layer);
+        if (idx > -1){
+        	_layers.splice(idx,1);
+        }
         _layers.push(layer);
         layer._onAdd(map);
         return map;
     };
-    var removeLayer = function(id){
-        _layers.forEach(function(d,i){
-            if (d.id == id){
-                // ?? d.onRemove(self);
-                _layers.splice(i,1);
-                return map;
-            }
-        });
+    var removeLayer = function(layer){
+    	var idx = _layers.indexOf(layer);
+   		//remove layer
+   		_layers.splice(idx,1);
+   		orderLayers();
         return map;
     };
-    //SMO: getLayersBy* function are generally a sign of lazyness ;)
-    /*var getLayersByName = function(name){
-    	var result = [];
-    	_layers.forEach(function(d,i){
-            if (d.name == name){
-                result.push(d);
-            }
-        });
-        return result;
-    };*/
+    //Arrange the drawboards
+	var orderLayers = function(){
+		var drawboards = _svg.selectAll('.drawboard').data(_layers, function(d){return d.id;});
+		drawboards.enter().append('g').attr('id', function(d){return d.id;}).classed('drawboard',true)
+			.each(function(d){
+				d.drawboard = d3.select(this);
+			});
+		drawboards.exit().remove();
+		drawboards.sort(function (a, b) {
+		  return a.zindex - b.zindex;
+		});
+	};
 
 // .removeLayers([{layer}])
 
@@ -349,6 +357,7 @@ d3_mappu_Map = function(id, config) {
     map.zoomToFeature = zoomToFeature;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
+    map.orderLayers = orderLayers;
     //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
@@ -743,22 +752,25 @@ d3_mappu_Layer = function(name, config){
     //TODO: parse config
     var _opacity = 1;
     var _visible = true;
-    if (typeof(config.visible) == 'boolean'){
+    if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
     }
+    
 	var _display = 'block';
+	var _zindex = 0;
     var refresh = function(){
     };
     var moveUp = function(){
     };
     var moveDown = function(){
     };
-    /*SMO: what does this do?*/
+    
+    var setZIndex = function(i){
+    	layer.zindex = i;
+    };
+    
     var addTo = function(map){
-        _map = map;
-        layer.drawboard = _map.svg.append('g');
-        _map.addLayer(layer);
-        layer.draw();
+        map.addLayer(layer);
         return layer;
     };
     
@@ -806,20 +818,34 @@ d3_mappu_Layer = function(name, config){
         }
     });
     
+    Object.defineProperty(layer, 'zindex', {
+        get: function() {
+            return _zindex;
+        },
+        set: function(val) {
+            _zindex = val;
+            if (layer.map){
+            	layer.map.orderLayers();
+            }
+        }
+    });
+    
     /* exposed: */
     layer.refresh = refresh;  
     layer.moveUp = moveUp;
     layer.moveDown = moveDown;
     layer.addTo = addTo;
+    layer.setZIndex = setZIndex;
 
     /* private: */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
-        layer.drawboard = _map.svg.append('g');
+        map.orderLayers();
         layer.draw();
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     };
+    
     
     return layer;
 };
@@ -837,9 +863,10 @@ d3_mappu_Layer = function(name, config){
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
       var _data = [];                         
-	  var drawboard;
+	  layer.zindex = 100; //vectors always on top
 	  var _duration = config.duration || 0;
-	  var path;
+	  var _path;
+	  var _projection;
 	  var style = config.style || {};
 	  var _events = config.events;   
 	  
@@ -908,7 +935,7 @@ d3_mappu_Layer = function(name, config){
       }
       
       function build(d){
-      	  var project = layer.map.projection;
+      	  var project = _projection;
       	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
       	  	  var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
@@ -933,18 +960,26 @@ d3_mappu_Layer = function(name, config){
       }
       
       var draw = function(rebuild){
-		  _path = d3.geo.path()
-			.projection(layer.map.projection)
-			.pointRadius(function(d) {
-				if (d.style && d.style.radius){
-					return d.style.radius;
-				}
-				else {
-					return 4.5;
-				}
-			});
-      	  
-      	  
+      	  if (config.reproject){
+				_projection = layer.map.projection;
+				_path = d3.geo.path()
+				.projection(_projection)
+				.pointRadius(function(d) {
+					if (d.style && d.style.radius){
+						return d.style.radius;
+					}
+					else {
+						return 4.5;
+					}
+				});
+		  }
+		  else {
+				_projection = d3.geo.mercator()
+					.scale(1 / 2 / Math.PI)
+					.translate([0, 0]);
+				_path = d3.geo.path()
+					.projection(_projection);
+		  }
           var drawboard = layer.drawboard;
           if (rebuild){
                drawboard.selectAll('.entity').remove();
@@ -974,6 +1009,7 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(duration){
+      	  console.log('refreshing', layer.name);
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){
@@ -1060,11 +1096,15 @@ d3_mappu_Layer = function(name, config){
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'raster';
-      var drawboard;
+      
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
+      var _options = config; //Te be leaflet compatible in g-layercatalogus
+      layer.options = _options;
+      layer.visibility = layer.visible; //leaflet compat
       var _layers = config.layers;
       var _duration = 0;
+      
       
       Object.defineProperty(layer, 'url', {
         get: function() {
@@ -1104,23 +1144,40 @@ d3_mappu_Layer = function(name, config){
           var url;
           if (_ogc_type == 'tms') {
               url = _url    
-                    .replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-                    .replace('{z}',d[2])
-                    .replace('{x}',d[0])
-                    .replace('{y}',d[1])
-                    //FIXME: why are these curly brackets killed when used with polymer?                    
-                    .replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-                    .replace('%7Bz%7D',d[2])
-                    .replace('%7Bx%7D',d[0])
-                    .replace('%7By%7D',d[1]);
+				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('{z}',d[2])
+				.replace('{x}',d[0])
+				.replace('{y}',d[1])
+				//FIXME: why are these curly brackets killed when used with polymer?                    
+				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('%7Bz%7D',d[2])
+				.replace('%7Bx%7D',d[0])
+				.replace('%7By%7D',d[1]);
           }
+          else if (_ogc_type == 'wmts'){
+          	  //TODO: working on this
+          	  /*
+          	http://services.geodan.nl/wmts?UID=99c2ec22c262
+          		&SERVICE=WMTS
+          		&REQUEST=GetTile
+          		&VERSION=1.0.0
+          		&LAYER=buurtkaart
+          		&STYLE=default
+          		&TILEMATRIXSET=nltilingschema
+          		&TILEMATRIX=04&TILEROW=10&TILECOL=10
+          		&FORMAT=image%2Fpng
+          	*/
+          	url = _url + '?' + 
+          		"&layer=" + _layers + 
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
+      	  }
           else if (_ogc_type == 'wms'){
-                //This calculation only works for tiles that are square and always the same size
-                var bbox = getbbox(d);
-                url =  _url + 
-                     "&bbox=" + bbox + 
-                     "&layers=" + _layers + 
-                     "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+			//This calculation only works for tiles that are square and always the same size
+			var bbox = getbbox(d);
+			url =  _url + '?' +  
+				 "&bbox=" + bbox + 
+				 "&layers=" + _layers + 
+				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
           }
           return url;
       };
