@@ -119,13 +119,19 @@ d3_mappu_Sketch = function(id, config) {
 			map.svg.on('click',finishPoint);
 		}
 		else if (type == 'LineString'){
+			//some defaults
 			activeFeature.style.fill = 'none';
+			activeFeature.style.stroke = 'blue';
+			activeFeature.style['stroke-width'] = 4;
+			activeFeature.style['stroke-linecap'] = "round";
 			map.svg.on('click', addPoint);
 			map.svg.on('mousemove',movePointer);
         	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
 		}
 		else if (type == 'Polygon'){
+			//some defaults
 			activeFeature.style.fill = 'blue';
+			activeFeature.style.stroke = 'blue';
 			map.svg.on('click',addPoint); 
 			map.svg.on('mousemove',movePointer);
         	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught

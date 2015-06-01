@@ -63,7 +63,7 @@ d3_mappu_Map = function(id, config) {
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
 
-	
+	var dispatch = d3.dispatch("loaded","zoomend");
 	
     var redraw = function(){
     	//Calculate projection, so we can find out coordinates
@@ -92,6 +92,8 @@ d3_mappu_Map = function(id, config) {
     	var lb = _projection.invert([0, _mapdiv.clientHeight]);
 		var rt = _projection.invert([_mapdiv.clientWidth, 0]);
 		map.extent = [lb, rt];
+		
+		dispatch.zoomend();
     };
     
     var resize = function(){
@@ -349,7 +351,7 @@ d3_mappu_Map = function(id, config) {
     //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
-    
+    map.dispatch = dispatch;
     return map;
 };
 

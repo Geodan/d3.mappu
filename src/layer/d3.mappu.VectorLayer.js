@@ -6,6 +6,15 @@
   };
   
   d3_mappu_VectorLayer = function(name, config) {
+  	  /*Work in progress for webworker
+  	  var builder = new Worker("../src/layer/builder.js");
+  	  builder.onmessage = function(e) {
+		  console.log('Message received from worker', e.data.aap);
+	  };
+	  var obj = {project:'noot'}; 
+  	  builder.postMessage(obj);
+  	  console.log('Message posted to worker');
+  	  */
   	  config = config || {};
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
@@ -16,6 +25,7 @@
 	  var _path;
 	  var _projection;
 	  var style = config.style || {};
+	  var labelStyle = config.labelStyle || {};
 	  var _events = config.events;   
 	  
       /* exposed properties*/
@@ -111,15 +121,15 @@
       	  if (config.reproject){
 				_projection = layer.map.projection;
 				_path = d3.geo.path()
-				.projection(_projection)
-				.pointRadius(function(d) {
-					if (d.style && d.style.radius){
-						return d.style.radius;
-					}
-					else {
-						return 4.5;
-					}
-				});
+					.projection(_projection)
+					.pointRadius(function(d) {
+						if (d.style && d.style.radius){
+							return d.style.radius;
+						}
+						else {
+							return 4.5;
+						}
+					});
 		  }
 		  else {
 				_projection = d3.geo.mercator()
@@ -157,12 +167,11 @@
       };
       
       var refresh = function(duration){
-      	  console.log('refreshing', layer.name);
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){
           	  var entities = drawboard.selectAll('.entity');
-			  if (config.reproject){
+			  if (config.reproject){//the slow way
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration)
@@ -172,10 +181,14 @@
 				  	  entities.each(function(d){
 				  	    var loc = _path.centroid(d);
 				  	    var text = d.properties[config.labelfield];
-				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1])
+				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1] +25)
 				  	    	.classed('vectorLabel',true)
 				  	    	.attr('text-anchor',"middle")
 				  	    	.text(text);
+				  	    //Style text
+				  	    for (var key in labelStyle) { 
+							  d3.select(this).select('text').style(key, labelStyle[key]);
+						}
 				  	  });
 				  }
 				  entities.each(setStyle);
@@ -196,6 +209,13 @@
       
       var addFeature = function(feature){
       	  var replaced = false;
+		  //Testing with d3.map to make it faster      	  
+      	  var _datamap = d3.map(_data, function(d) { return d.id; });
+      	  _datamap.set(feature.id, feature);
+      	  _data = _datamap.values();
+      	  //TODO: this is an expensive iteration when the amount of data increases
+      	  //Make it cheaper.
+      	  /*
       	  _data.forEach(function(d){
 			  if (d.id == feature.id){
 				  d = feature;
@@ -206,7 +226,7 @@
       	  });
       	  if (!replaced){
       	  	  _data.push(feature);
-      	  }
+      	  }*/
       	  layer.draw(true);
       };
       

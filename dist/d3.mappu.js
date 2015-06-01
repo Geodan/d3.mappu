@@ -75,7 +75,7 @@ d3_mappu_Map = function(id, config) {
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
 
-	
+	var dispatch = d3.dispatch("loaded","zoomend");
 	
     var redraw = function(){
     	//Calculate projection, so we can find out coordinates
@@ -104,6 +104,8 @@ d3_mappu_Map = function(id, config) {
     	var lb = _projection.invert([0, _mapdiv.clientHeight]);
 		var rt = _projection.invert([_mapdiv.clientWidth, 0]);
 		map.extent = [lb, rt];
+		
+		dispatch.zoomend();
     };
     
     var resize = function(){
@@ -361,7 +363,7 @@ d3_mappu_Map = function(id, config) {
     //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
-    
+    map.dispatch = dispatch;
     return map;
 };
 
@@ -487,13 +489,19 @@ d3_mappu_Sketch = function(id, config) {
 			map.svg.on('click',finishPoint);
 		}
 		else if (type == 'LineString'){
+			//some defaults
 			activeFeature.style.fill = 'none';
+			activeFeature.style.stroke = 'blue';
+			activeFeature.style['stroke-width'] = 4;
+			activeFeature.style['stroke-linecap'] = "round";
 			map.svg.on('click', addPoint);
 			map.svg.on('mousemove',movePointer);
         	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
 		}
 		else if (type == 'Polygon'){
+			//some defaults
 			activeFeature.style.fill = 'blue';
+			activeFeature.style.stroke = 'blue';
 			map.svg.on('click',addPoint); 
 			map.svg.on('mousemove',movePointer);
         	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
@@ -858,6 +866,15 @@ d3_mappu_Layer = function(name, config){
   };
   
   d3_mappu_VectorLayer = function(name, config) {
+  	  /*Work in progress for webworker
+  	  var builder = new Worker("../src/layer/builder.js");
+  	  builder.onmessage = function(e) {
+		  console.log('Message received from worker', e.data.aap);
+	  };
+	  var obj = {project:'noot'}; 
+  	  builder.postMessage(obj);
+  	  console.log('Message posted to worker');
+  	  */
   	  config = config || {};
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
@@ -868,6 +885,7 @@ d3_mappu_Layer = function(name, config){
 	  var _path;
 	  var _projection;
 	  var style = config.style || {};
+	  var labelStyle = config.labelStyle || {};
 	  var _events = config.events;   
 	  
       /* exposed properties*/
@@ -963,15 +981,15 @@ d3_mappu_Layer = function(name, config){
       	  if (config.reproject){
 				_projection = layer.map.projection;
 				_path = d3.geo.path()
-				.projection(_projection)
-				.pointRadius(function(d) {
-					if (d.style && d.style.radius){
-						return d.style.radius;
-					}
-					else {
-						return 4.5;
-					}
-				});
+					.projection(_projection)
+					.pointRadius(function(d) {
+						if (d.style && d.style.radius){
+							return d.style.radius;
+						}
+						else {
+							return 4.5;
+						}
+					});
 		  }
 		  else {
 				_projection = d3.geo.mercator()
@@ -1009,12 +1027,11 @@ d3_mappu_Layer = function(name, config){
       };
       
       var refresh = function(duration){
-      	  console.log('refreshing', layer.name);
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){
           	  var entities = drawboard.selectAll('.entity');
-			  if (config.reproject){
+			  if (config.reproject){//the slow way
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration)
@@ -1024,10 +1041,14 @@ d3_mappu_Layer = function(name, config){
 				  	  entities.each(function(d){
 				  	    var loc = _path.centroid(d);
 				  	    var text = d.properties[config.labelfield];
-				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1])
+				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1] +25)
 				  	    	.classed('vectorLabel',true)
 				  	    	.attr('text-anchor',"middle")
 				  	    	.text(text);
+				  	    //Style text
+				  	    for (var key in labelStyle) { 
+							  d3.select(this).select('text').style(key, labelStyle[key]);
+						}
 				  	  });
 				  }
 				  entities.each(setStyle);
@@ -1048,6 +1069,13 @@ d3_mappu_Layer = function(name, config){
       
       var addFeature = function(feature){
       	  var replaced = false;
+		  //Testing with d3.map to make it faster      	  
+      	  var _datamap = d3.map(_data, function(d) { return d.id; });
+      	  _datamap.set(feature.id, feature);
+      	  _data = _datamap.values();
+      	  //TODO: this is an expensive iteration when the amount of data increases
+      	  //Make it cheaper.
+      	  /*
       	  _data.forEach(function(d){
 			  if (d.id == feature.id){
 				  d = feature;
@@ -1058,7 +1086,7 @@ d3_mappu_Layer = function(name, config){
       	  });
       	  if (!replaced){
       	  	  _data.push(feature);
-      	  }
+      	  }*/
       	  layer.draw(true);
       };
       
