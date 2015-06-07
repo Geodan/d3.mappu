@@ -334,9 +334,11 @@ d3_mappu_Map = function(id, config) {
     };
     var removeLayer = function(layer){
     	var idx = _layers.indexOf(layer);
-   		//remove layer
-   		_layers.splice(idx,1);
-   		orderLayers();
+    	if (id > -1){
+    		//remove layer
+    		_layers.splice(idx,1);
+   		}
+    	orderLayers();
         return map;
     };
     //Arrange the drawboards
@@ -431,6 +433,8 @@ d3_mappu_Sketch = function(id, config) {
 	function finishPoint(){
 		var m = d3.mouse(this);
 		coords = project.invert(m);
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		activeFeature.geometry.coordinates = coords;
 		build();
 		featureCreated();
@@ -442,6 +446,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords.pop();//FIXME ..ugly
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		build();
 		featureCreated();
 	}
@@ -453,6 +459,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords.pop();//FIXME ..ugly
 		coords.push(coords[0]);
 		activeFeature.geometry.coordinates = [coords];
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		build();
 		featureCreated();
 	}
@@ -475,7 +483,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	var draw = function(geomtype){
 		activeFeature = {
-			id: new Date().getTime().toString(),
+			id: null,
 			type: "Feature",
 			geometry: {
 				type: geomtype,
@@ -492,7 +500,7 @@ d3_mappu_Sketch = function(id, config) {
 			//some defaults
 			activeFeature.style.fill = 'none';
 			activeFeature.style.stroke = 'blue';
-			activeFeature.style['stroke-width'] = 4;
+			activeFeature.style['stroke-width'] = "4";
 			activeFeature.style['stroke-linecap'] = "round";
 			map.svg.on('click', addPoint);
 			map.svg.on('mousemove',movePointer);
