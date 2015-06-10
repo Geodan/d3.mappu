@@ -100,8 +100,8 @@
               var img = d3.select(this).append("image")
               	.attr("width", 32)
                 .attr("height", 37)
-              	.attr("x",x-12.5)
-				.attr("y",y-25)
+              	//.attr("x",x-12.5) //No need setting x and y, since it's reset later
+				//.attr("y",y-25)
 				.attr("xlink:href", function(d){
 					return d.style['marker-url'];
 				});
@@ -113,8 +113,13 @@
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true);
 		  }
-		  d3.select(this).append('text');
-          
+		  d3.select(this).append('text')
+		  	.classed('shadowtext',true)
+		  	.attr('text-anchor',"middle");
+		  d3.select(this).append('text')
+		  	.classed('vectorLabel',true)
+		  	.attr('text-anchor',"middle");
+		  
       }
       
       var draw = function(rebuild){
@@ -175,21 +180,32 @@
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration)
-				  	.attr('x',function(d){return project(d.geometry.coordinates)[0];})
-				  	.attr('y',function(d){return project(d.geometry.coordinates)[1];});
+				  	.attr('x',function(d){return project(d.geometry.coordinates)[0] - 12.5;})
+				  	.attr('y',function(d){return project(d.geometry.coordinates)[1] - 15;});
 				  if (config.labelfield){
-				  	  entities.each(function(d){
-				  	    var loc = _path.centroid(d);
-				  	    var text = d.properties[config.labelfield];
-				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1] +25)
-				  	    	.classed('vectorLabel',true)
-				  	    	.attr('text-anchor',"middle")
-				  	    	.text(text);
-				  	    //Style text
-				  	    for (var key in labelStyle) { 
-							  d3.select(this).select('text').style(key, labelStyle[key]);
-						}
-				  	  });
+				  	  //no text beyond zoom 22
+				  	  if (layer.map.zoom < 22){
+				  	  	  entities.selectAll('text').text('');
+				  	  }
+				  	  else {
+						  entities.each(function(d){
+							var loc = _path.centroid(d);
+							var text = d.properties[config.labelfield];
+							d3.select(this).selectAll('text')
+								.attr('x',loc[0])
+								.attr('y', loc[1] +30)
+								.text(text);
+							//Style text
+							for (var key in labelStyle) { 
+								  d3.select(this).selectAll('text').style(key, labelStyle[key]);
+							}
+							//Add shadow text for halo
+							d3.select(this).select('.shadowtext')
+								.style('stroke-width','2.5px')
+								.style('stroke','white')
+								.style('opacity', 0.8);
+						  });
+				  	  }
 				  }
 				  entities.each(setStyle);
 			  }

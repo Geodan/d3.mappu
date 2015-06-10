@@ -265,7 +265,7 @@ d3_mappu_Sketch = function(id, config) {
 			.classed('sketchPointInter',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 40)
+			.attr('r', 10)
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
@@ -291,7 +291,7 @@ d3_mappu_Sketch = function(id, config) {
 			.classed('sketchPoint',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 40)
+			.attr('r', 10)
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('fillOpacity', 0.5)
@@ -299,7 +299,11 @@ d3_mappu_Sketch = function(id, config) {
 			.call(drag);
 	}
 	
-	function edit(feature){
+	/**
+		edit()
+		Start editing a specific feature
+	**/
+	var edit = function(feature){
 		event.stopPropagation();
 		map.svg.on('click', function(){
 				buildEdit();
@@ -308,7 +312,7 @@ d3_mappu_Sketch = function(id, config) {
 		activeFeature = feature;
 		type = feature.geometry.type;
 		buildEdit();
-	}
+	};
 	
 	/**
 		startEdit()
@@ -372,6 +376,7 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.startEdit = startEdit;
 	sketch.startRemove = startRemove;
 	sketch.finish = finish;
+	sketch.edit = edit;
 	
 	return sketch;
 };

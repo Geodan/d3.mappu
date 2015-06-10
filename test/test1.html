@@ -105,14 +105,10 @@ var map = new d3.mappu.Map('map', {
 
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
-    url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
+    url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png",
+    opacity: 0.2
 }).addTo(map);
 
-var laag1 = new d3.mappu.RasterLayer('pico:pc6_gas_sjv_verwacht', {
-    ogc_type: 'wms',
-    url: "http://geodata.nationaalgeoregister.nl/kadastralekaart/wms?",
-    layers: 'grens'
-})//.addTo(map);
 /*
 var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
     ogc_type: 'wms',

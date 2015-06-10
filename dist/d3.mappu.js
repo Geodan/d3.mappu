@@ -637,7 +637,7 @@ d3_mappu_Sketch = function(id, config) {
 			.classed('sketchPointInter',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 40)
+			.attr('r', 10)
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
@@ -663,7 +663,7 @@ d3_mappu_Sketch = function(id, config) {
 			.classed('sketchPoint',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 40)
+			.attr('r', 10)
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('fillOpacity', 0.5)
@@ -671,7 +671,11 @@ d3_mappu_Sketch = function(id, config) {
 			.call(drag);
 	}
 	
-	function edit(feature){
+	/**
+		edit()
+		Start editing a specific feature
+	**/
+	var edit = function(feature){
 		event.stopPropagation();
 		map.svg.on('click', function(){
 				buildEdit();
@@ -680,7 +684,7 @@ d3_mappu_Sketch = function(id, config) {
 		activeFeature = feature;
 		type = feature.geometry.type;
 		buildEdit();
-	}
+	};
 	
 	/**
 		startEdit()
@@ -744,6 +748,7 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.startEdit = startEdit;
 	sketch.startRemove = startRemove;
 	sketch.finish = finish;
+	sketch.edit = edit;
 	
 	return sketch;
 };
@@ -767,6 +772,8 @@ d3_mappu_Layer = function(name, config){
     var _name = name;
     //TODO: parse config
     var _opacity = 1;
+    _opacity = config.opacity || 1;
+    
     var _visible = true;
     if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
@@ -968,8 +975,8 @@ d3_mappu_Layer = function(name, config){
               var img = d3.select(this).append("image")
               	.attr("width", 32)
                 .attr("height", 37)
-              	.attr("x",x-12.5)
-				.attr("y",y-25)
+              	//.attr("x",x-12.5) //No need setting x and y, since it's reset later
+				//.attr("y",y-25)
 				.attr("xlink:href", function(d){
 					return d.style['marker-url'];
 				});
@@ -981,8 +988,13 @@ d3_mappu_Layer = function(name, config){
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true);
 		  }
-		  d3.select(this).append('text');
-          
+		  d3.select(this).append('text')
+		  	.classed('shadowtext',true)
+		  	.attr('text-anchor',"middle");
+		  d3.select(this).append('text')
+		  	.classed('vectorLabel',true)
+		  	.attr('text-anchor',"middle");
+		  
       }
       
       var draw = function(rebuild){
@@ -1043,21 +1055,32 @@ d3_mappu_Layer = function(name, config){
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration)
-				  	.attr('x',function(d){return project(d.geometry.coordinates)[0];})
-				  	.attr('y',function(d){return project(d.geometry.coordinates)[1];});
+				  	.attr('x',function(d){return project(d.geometry.coordinates)[0] - 12.5;})
+				  	.attr('y',function(d){return project(d.geometry.coordinates)[1] - 15;});
 				  if (config.labelfield){
-				  	  entities.each(function(d){
-				  	    var loc = _path.centroid(d);
-				  	    var text = d.properties[config.labelfield];
-				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1] +25)
-				  	    	.classed('vectorLabel',true)
-				  	    	.attr('text-anchor',"middle")
-				  	    	.text(text);
-				  	    //Style text
-				  	    for (var key in labelStyle) { 
-							  d3.select(this).select('text').style(key, labelStyle[key]);
-						}
-				  	  });
+				  	  //no text beyond zoom 22
+				  	  if (layer.map.zoom < 22){
+				  	  	  entities.selectAll('text').text('');
+				  	  }
+				  	  else {
+						  entities.each(function(d){
+							var loc = _path.centroid(d);
+							var text = d.properties[config.labelfield];
+							d3.select(this).selectAll('text')
+								.attr('x',loc[0])
+								.attr('y', loc[1] +5)
+								.text(text);
+							//Style text
+							for (var key in labelStyle) { 
+								  d3.select(this).selectAll('text').style(key, labelStyle[key]);
+							}
+							//Add shadow text for halo
+							d3.select(this).select('.shadowtext')
+								.style('stroke-width','2.5px')
+								.style('stroke','white')
+								.style('opacity', 0.8);
+						  });
+				  	  }
 				  }
 				  entities.each(setStyle);
 			  }
