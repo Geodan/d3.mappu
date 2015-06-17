@@ -322,7 +322,7 @@ d3_mappu_Map = function(id, config) {
     };
     var removeLayer = function(layer){
     	var idx = _layers.indexOf(layer);
-    	if (id > -1){
+    	if (idx > -1){
     		//remove layer
     		_layers.splice(idx,1);
    		}

@@ -193,7 +193,7 @@
 							var text = d.properties[config.labelfield];
 							d3.select(this).selectAll('text')
 								.attr('x',loc[0])
-								.attr('y', loc[1] +30)
+								.attr('y', loc[1] -20)
 								.text(text);
 							//Style text
 							for (var key in labelStyle) { 
