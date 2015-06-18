@@ -1046,6 +1046,9 @@ d3_mappu_Layer = function(name, config){
           layer.refresh(rebuild?0:_duration);
       };
       
+      var calcwidth = d3.scale.linear().range([5,5,32,32]).domain([0,21,24,30]);
+      var calcheight = d3.scale.linear().range([5,5,37,37]).domain([0,21,24,30]);
+      
       var refresh = function(duration){
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
@@ -1056,7 +1059,10 @@ d3_mappu_Layer = function(name, config){
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration)
 				  	.attr('x',function(d){return project(d.geometry.coordinates)[0] - 12.5;})
-				  	.attr('y',function(d){return project(d.geometry.coordinates)[1] - 15;});
+				  	.attr('y',function(d){return project(d.geometry.coordinates)[1] - 15;})
+				  	//Smaller markers when zooming out
+				  	.attr("width", calcwidth(layer.map.zoom))
+				  	.attr("height", calcheight(layer.map.zoom));
 				  if (config.labelfield){
 				  	  //no text beyond zoom 22
 				  	  if (layer.map.zoom < 22){
