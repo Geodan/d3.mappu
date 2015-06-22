@@ -377,7 +377,7 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.startRemove = startRemove;
 	sketch.finish = finish;
 	sketch.edit = edit;
-	
+	sketch.layer = layer;
 	return sketch;
 };
 

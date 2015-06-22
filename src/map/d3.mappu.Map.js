@@ -335,6 +335,14 @@ d3_mappu_Map = function(id, config) {
 		drawboards.enter().append('g').attr('id', function(d){return d.id;}).classed('drawboard',true)
 			.each(function(d){
 				d.drawboard = d3.select(this);
+				//Experimental!!
+				var filter = d.drawboard.append('defs')
+					.append('filter').attr('id','glow');
+				filter.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','coloredBlur');
+				var merge = filter.append('feMerge');
+				merge.append('feMergeNode').attr('in', 'coloredBlur');
+				merge.append('feMergeNode').attr('in', 'SourceGraphic');
+				//End of experiment
 			});
 		drawboards.exit().remove();
 		drawboards.sort(function (a, b) {
