@@ -63,7 +63,7 @@ d3_mappu_Map = function(id, config) {
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
 
-	
+	var dispatch = d3.dispatch("loaded","zoomend");
 	
     var redraw = function(){
     	//Calculate projection, so we can find out coordinates
@@ -92,6 +92,8 @@ d3_mappu_Map = function(id, config) {
     	var lb = _projection.invert([0, _mapdiv.clientHeight]);
 		var rt = _projection.invert([_mapdiv.clientWidth, 0]);
 		map.extent = [lb, rt];
+		
+		dispatch.zoomend();
     };
     
     var resize = function(){
@@ -320,9 +322,11 @@ d3_mappu_Map = function(id, config) {
     };
     var removeLayer = function(layer){
     	var idx = _layers.indexOf(layer);
-   		//remove layer
-   		_layers.splice(idx,1);
-   		orderLayers();
+    	if (idx > -1){
+    		//remove layer
+    		_layers.splice(idx,1);
+   		}
+    	orderLayers();
         return map;
     };
     //Arrange the drawboards
@@ -331,6 +335,14 @@ d3_mappu_Map = function(id, config) {
 		drawboards.enter().append('g').attr('id', function(d){return d.id;}).classed('drawboard',true)
 			.each(function(d){
 				d.drawboard = d3.select(this);
+				//Experimental!!
+				var filter = d.drawboard.append('defs')
+					.append('filter').attr('id','glow');
+				filter.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','coloredBlur');
+				var merge = filter.append('feMerge');
+				merge.append('feMergeNode').attr('in', 'coloredBlur');
+				merge.append('feMergeNode').attr('in', 'SourceGraphic');
+				//End of experiment
 			});
 		drawboards.exit().remove();
 		drawboards.sort(function (a, b) {
@@ -349,7 +361,7 @@ d3_mappu_Map = function(id, config) {
     //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
-    
+    map.dispatch = dispatch;
     return map;
 };
 

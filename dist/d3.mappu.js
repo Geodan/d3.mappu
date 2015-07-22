@@ -75,7 +75,7 @@ d3_mappu_Map = function(id, config) {
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [[-180,90],[180,-90]];
 
-	
+	var dispatch = d3.dispatch("loaded","zoomend");
 	
     var redraw = function(){
     	//Calculate projection, so we can find out coordinates
@@ -104,6 +104,8 @@ d3_mappu_Map = function(id, config) {
     	var lb = _projection.invert([0, _mapdiv.clientHeight]);
 		var rt = _projection.invert([_mapdiv.clientWidth, 0]);
 		map.extent = [lb, rt];
+		
+		dispatch.zoomend();
     };
     
     var resize = function(){
@@ -332,9 +334,11 @@ d3_mappu_Map = function(id, config) {
     };
     var removeLayer = function(layer){
     	var idx = _layers.indexOf(layer);
-   		//remove layer
-   		_layers.splice(idx,1);
-   		orderLayers();
+    	if (idx > -1){
+    		//remove layer
+    		_layers.splice(idx,1);
+   		}
+    	orderLayers();
         return map;
     };
     //Arrange the drawboards
@@ -343,6 +347,14 @@ d3_mappu_Map = function(id, config) {
 		drawboards.enter().append('g').attr('id', function(d){return d.id;}).classed('drawboard',true)
 			.each(function(d){
 				d.drawboard = d3.select(this);
+				//Experimental!!
+				var filter = d.drawboard.append('defs')
+					.append('filter').attr('id','glow');
+				filter.append('feGaussianBlur').attr('stdDeviation','2.5').attr('result','coloredBlur');
+				var merge = filter.append('feMerge');
+				merge.append('feMergeNode').attr('in', 'coloredBlur');
+				merge.append('feMergeNode').attr('in', 'SourceGraphic');
+				//End of experiment
 			});
 		drawboards.exit().remove();
 		drawboards.sort(function (a, b) {
@@ -361,7 +373,7 @@ d3_mappu_Map = function(id, config) {
     //map.getLayersByName = getLayersByName;
     map.redraw = redraw;
     map.resize = resize;
-    
+    map.dispatch = dispatch;
     return map;
 };
 
@@ -429,6 +441,8 @@ d3_mappu_Sketch = function(id, config) {
 	function finishPoint(){
 		var m = d3.mouse(this);
 		coords = project.invert(m);
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		activeFeature.geometry.coordinates = coords;
 		build();
 		featureCreated();
@@ -440,6 +454,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords.pop();//FIXME ..ugly
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		build();
 		featureCreated();
 	}
@@ -451,6 +467,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords.pop();//FIXME ..ugly
 		coords.push(coords[0]);
 		activeFeature.geometry.coordinates = [coords];
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		build();
 		featureCreated();
 	}
@@ -473,7 +491,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	var draw = function(geomtype){
 		activeFeature = {
-			id: new Date().getTime().toString(),
+			id: null,
 			type: "Feature",
 			geometry: {
 				type: geomtype,
@@ -487,13 +505,19 @@ d3_mappu_Sketch = function(id, config) {
 			map.svg.on('click',finishPoint);
 		}
 		else if (type == 'LineString'){
+			//some defaults
 			activeFeature.style.fill = 'none';
+			activeFeature.style.stroke = 'blue';
+			activeFeature.style['stroke-width'] = "4";
+			activeFeature.style['stroke-linecap'] = "round";
 			map.svg.on('click', addPoint);
 			map.svg.on('mousemove',movePointer);
         	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
 		}
 		else if (type == 'Polygon'){
+			//some defaults
 			activeFeature.style.fill = 'blue';
+			activeFeature.style.stroke = 'blue';
 			map.svg.on('click',addPoint); 
 			map.svg.on('mousemove',movePointer);
         	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
@@ -621,7 +645,7 @@ d3_mappu_Sketch = function(id, config) {
 			.classed('sketchPointInter',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 40)
+			.attr('r', 10)
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
@@ -647,7 +671,7 @@ d3_mappu_Sketch = function(id, config) {
 			.classed('sketchPoint',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 40)
+			.attr('r', 10)
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('fillOpacity', 0.5)
@@ -655,7 +679,11 @@ d3_mappu_Sketch = function(id, config) {
 			.call(drag);
 	}
 	
-	function edit(feature){
+	/**
+		edit()
+		Start editing a specific feature
+	**/
+	var edit = function(feature){
 		event.stopPropagation();
 		map.svg.on('click', function(){
 				buildEdit();
@@ -664,7 +692,7 @@ d3_mappu_Sketch = function(id, config) {
 		activeFeature = feature;
 		type = feature.geometry.type;
 		buildEdit();
-	}
+	};
 	
 	/**
 		startEdit()
@@ -728,7 +756,8 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.startEdit = startEdit;
 	sketch.startRemove = startRemove;
 	sketch.finish = finish;
-	
+	sketch.edit = edit;
+	sketch.layer = layer;
 	return sketch;
 };
 
@@ -751,6 +780,8 @@ d3_mappu_Layer = function(name, config){
     var _name = name;
     //TODO: parse config
     var _opacity = 1;
+    _opacity = config.opacity || 1;
+    
     var _visible = true;
     if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
@@ -858,6 +889,15 @@ d3_mappu_Layer = function(name, config){
   };
   
   d3_mappu_VectorLayer = function(name, config) {
+  	  /*Work in progress for webworker
+  	  var builder = new Worker("../src/layer/builder.js");
+  	  builder.onmessage = function(e) {
+		  console.log('Message received from worker', e.data.aap);
+	  };
+	  var obj = {project:'noot'}; 
+  	  builder.postMessage(obj);
+  	  console.log('Message posted to worker');
+  	  */
   	  config = config || {};
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
@@ -868,6 +908,7 @@ d3_mappu_Layer = function(name, config){
 	  var _path;
 	  var _projection;
 	  var style = config.style || {};
+	  var labelStyle = config.labelStyle || {};
 	  var _events = config.events;   
 	  
       /* exposed properties*/
@@ -942,8 +983,8 @@ d3_mappu_Layer = function(name, config){
               var img = d3.select(this).append("image")
               	.attr("width", 32)
                 .attr("height", 37)
-              	.attr("x",x-12.5)
-				.attr("y",y-25)
+              	//.attr("x",x-12.5) //No need setting x and y, since it's reset later
+				//.attr("y",y-25)
 				.attr("xlink:href", function(d){
 					return d.style['marker-url'];
 				});
@@ -955,23 +996,28 @@ d3_mappu_Layer = function(name, config){
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true);
 		  }
-		  d3.select(this).append('text');
-          
+		  d3.select(this).append('text')
+		  	.classed('shadowtext',true)
+		  	.attr('text-anchor',"middle");
+		  d3.select(this).append('text')
+		  	.classed('vectorLabel',true)
+		  	.attr('text-anchor',"middle");
+		  
       }
       
       var draw = function(rebuild){
       	  if (config.reproject){
 				_projection = layer.map.projection;
 				_path = d3.geo.path()
-				.projection(_projection)
-				.pointRadius(function(d) {
-					if (d.style && d.style.radius){
-						return d.style.radius;
-					}
-					else {
-						return 4.5;
-					}
-				});
+					.projection(_projection)
+					.pointRadius(function(d) {
+						if (d.style && d.style.radius){
+							return d.style.radius;
+						}
+						else {
+							return 4.5;
+						}
+					});
 		  }
 		  else {
 				_projection = d3.geo.mercator()
@@ -1008,27 +1054,47 @@ d3_mappu_Layer = function(name, config){
           layer.refresh(rebuild?0:_duration);
       };
       
+      var calcwidth = d3.scale.linear().range([5,5,32,32]).domain([0,21,24,30]);
+      var calcheight = d3.scale.linear().range([5,5,37,37]).domain([0,21,24,30]);
+      
       var refresh = function(duration){
-      	  console.log('refreshing', layer.name);
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){
           	  var entities = drawboard.selectAll('.entity');
-			  if (config.reproject){
+			  if (config.reproject){//the slow way
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration)
-				  	.attr('x',function(d){return project(d.geometry.coordinates)[0];})
-				  	.attr('y',function(d){return project(d.geometry.coordinates)[1];});
+				  	.attr('x',function(d){return project(d.geometry.coordinates)[0] - 12.5;})
+				  	.attr('y',function(d){return project(d.geometry.coordinates)[1] - 15;})
+				  	//Smaller markers when zooming out
+				  	.attr("width", calcwidth(layer.map.zoom))
+				  	.attr("height", calcheight(layer.map.zoom));
 				  if (config.labelfield){
-				  	  entities.each(function(d){
-				  	    var loc = _path.centroid(d);
-				  	    var text = d.properties[config.labelfield];
-				  	    d3.select(this).select('text').attr('x',loc[0]).attr('y', loc[1])
-				  	    	.classed('vectorLabel',true)
-				  	    	.attr('text-anchor',"middle")
-				  	    	.text(text);
-				  	  });
+				  	  //no text beyond zoom 22
+				  	  if (layer.map.zoom < 22){
+				  	  	  entities.selectAll('text').text('');
+				  	  }
+				  	  else {
+						  entities.each(function(d){
+							var loc = _path.centroid(d);
+							var text = d.properties[config.labelfield];
+							d3.select(this).selectAll('text')
+								.attr('x',loc[0])
+								.attr('y', loc[1] -20)
+								.text(text);
+							//Style text
+							for (var key in labelStyle) { 
+								  d3.select(this).selectAll('text').style(key, labelStyle[key]);
+							}
+							//Add shadow text for halo
+							d3.select(this).select('.shadowtext')
+								.style('stroke-width','2.5px')
+								.style('stroke','white')
+								.style('opacity', 0.8);
+						  });
+				  	  }
 				  }
 				  entities.each(setStyle);
 			  }
@@ -1048,6 +1114,13 @@ d3_mappu_Layer = function(name, config){
       
       var addFeature = function(feature){
       	  var replaced = false;
+		  //Testing with d3.map to make it faster      	  
+      	  var _datamap = d3.map(_data, function(d) { return d.id; });
+      	  _datamap.set(feature.id, feature);
+      	  _data = _datamap.values();
+      	  //TODO: this is an expensive iteration when the amount of data increases
+      	  //Make it cheaper.
+      	  /*
       	  _data.forEach(function(d){
 			  if (d.id == feature.id){
 				  d = feature;
@@ -1058,7 +1131,7 @@ d3_mappu_Layer = function(name, config){
       	  });
       	  if (!replaced){
       	  	  _data.push(feature);
-      	  }
+      	  }*/
       	  layer.draw(true);
       };
       

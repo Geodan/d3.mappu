@@ -61,6 +61,8 @@ d3_mappu_Sketch = function(id, config) {
 	function finishPoint(){
 		var m = d3.mouse(this);
 		coords = project.invert(m);
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		activeFeature.geometry.coordinates = coords;
 		build();
 		featureCreated();
@@ -72,6 +74,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords.pop();//FIXME ..ugly
 		activeFeature.geometry.type = 'LineString';
 		activeFeature.geometry.coordinates = coords;
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		build();
 		featureCreated();
 	}
@@ -83,6 +87,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords.pop();//FIXME ..ugly
 		coords.push(coords[0]);
 		activeFeature.geometry.coordinates = [coords];
+		//stamp out new id for feature
+		activeFeature.id = new Date().getTime().toString();
 		build();
 		featureCreated();
 	}
@@ -105,7 +111,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	var draw = function(geomtype){
 		activeFeature = {
-			id: new Date().getTime().toString(),
+			id: null,
 			type: "Feature",
 			geometry: {
 				type: geomtype,
@@ -119,13 +125,19 @@ d3_mappu_Sketch = function(id, config) {
 			map.svg.on('click',finishPoint);
 		}
 		else if (type == 'LineString'){
+			//some defaults
 			activeFeature.style.fill = 'none';
+			activeFeature.style.stroke = 'blue';
+			activeFeature.style['stroke-width'] = "4";
+			activeFeature.style['stroke-linecap'] = "round";
 			map.svg.on('click', addPoint);
 			map.svg.on('mousemove',movePointer);
         	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
 		}
 		else if (type == 'Polygon'){
+			//some defaults
 			activeFeature.style.fill = 'blue';
+			activeFeature.style.stroke = 'blue';
 			map.svg.on('click',addPoint); 
 			map.svg.on('mousemove',movePointer);
         	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
@@ -253,7 +265,7 @@ d3_mappu_Sketch = function(id, config) {
 			.classed('sketchPointInter',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 40)
+			.attr('r', 10)
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
@@ -279,7 +291,7 @@ d3_mappu_Sketch = function(id, config) {
 			.classed('sketchPoint',true)
 			.attr('cx', function(d){return project(d)[0];})
 			.attr('cy', function(d){return project(d)[1];})
-			.attr('r', 40)
+			.attr('r', 10)
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('fillOpacity', 0.5)
@@ -287,7 +299,11 @@ d3_mappu_Sketch = function(id, config) {
 			.call(drag);
 	}
 	
-	function edit(feature){
+	/**
+		edit()
+		Start editing a specific feature
+	**/
+	var edit = function(feature){
 		event.stopPropagation();
 		map.svg.on('click', function(){
 				buildEdit();
@@ -296,7 +312,7 @@ d3_mappu_Sketch = function(id, config) {
 		activeFeature = feature;
 		type = feature.geometry.type;
 		buildEdit();
-	}
+	};
 	
 	/**
 		startEdit()
@@ -360,7 +376,8 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.startEdit = startEdit;
 	sketch.startRemove = startRemove;
 	sketch.finish = finish;
-	
+	sketch.edit = edit;
+	sketch.layer = layer;
 	return sketch;
 };
 
