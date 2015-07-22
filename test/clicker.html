@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<script src="../bower_components/d3/d3.js" charset="utf-8"></script>
+<script src="../bower_components/topojson/topojson.js"></script>
+<script src="../bower_components/d3-plugins/geo/tile/tile.js"></script>
+<script src="../dist/d3.mappu.js"></script>
+
+<style>
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+path {
+  fill: none;
+  stroke: red;
+  stroke-linejoin: round;
+  
+}
+
+#header {
+	position: relative;
+	height: 10%;
+	width: 100%;
+	background: green;
+}
+
+#content {
+	position: relative;
+	height: 90%;
+	width: 100%;
+}
+#leftbar {
+	position: absolute;
+	height: 100%;
+	width: 100px;
+	background: red;
+}
+
+#map {
+  position: absolute;
+  margin: 0 auto;
+  overflow: hidden;
+  left: 100px;
+  height: 100%;
+  right: 0px;
+}
+
+.tile {
+  position: absolute;
+}
+
+.tile.loading {
+  display: none;
+}
+
+/**
+Layer styling happens in CSS, or in a per-feature function
+**/
+.mylayer {
+    fill: steelBlue;
+    fill-opacity: 0.4;
+    stroke: steelBlue;
+}
+
+.coordinates {
+    font-size: 8pt;
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+}
+
+.popover {
+    position: absolute;
+    background: white;
+}
+
+</style>
+
+</head>
+<body>
+<div id="header">Header</div>
+<div id="content">
+	<div id="leftbar">
+	<div id="heading"></div>
+	</div>
+	<div id='map'></div>
+</div>
+<!--
+<script src="../src/d3.dev/d3.geo.raster.js"></script>
+<script src="../src/d3.dev/d3.quadtiles.js"></script>
+-->
+<script>
+
+//Audio scripting from: http://www.html5rocks.com/en/tutorials/webaudio/positional_audio/
+window.AudioContext = (
+  window.AudioContext ||
+  window.webkitAudioContext ||
+  null
+);
+// Create a new audio context.
+var ctx = new AudioContext();
+
+// Create a AudioGainNode to control the main volume.
+var mainVolume = ctx.createGain();
+// Connect the main volume node to the context destination.
+mainVolume.connect(ctx.destination);
+// Create an object with a sound source and a volume control.
+var sound = {};
+sound.source = ctx.createBufferSource();
+sound.volume = ctx.createGain();
+
+// Connect the sound source to the volume control.
+sound.source.connect(sound.volume);
+// Hook up the sound volume control to the main volume.
+//sound.volume.connect(mainVolume);
+sound.panner = ctx.createPanner();
+// Instead of hooking up the volume to the main volume, hook it up to the panner.
+sound.volume.connect(sound.panner);
+// And hook up the panner to the main volume.
+sound.panner.connect(mainVolume);
+// Make the sound source loop.
+sound.source.loop = true;
+
+// Load a sound file using an ArrayBuffer XMLHttpRequest.
+var request = new XMLHttpRequest();
+request.open("GET", 'ticker.wav', true);
+request.responseType = "arraybuffer";
+request.onload = function(e) {
+
+  // Create a buffer from the response ArrayBuffer.
+  ctx.decodeAudioData(this.response, function onSuccess(buffer) {
+    sound.buffer = buffer;
+
+    // Make the sound source use the buffer and start playing it.
+    sound.source.buffer = sound.buffer;
+    sound.source.start(ctx.currentTime);
+  }, function onFailure() {
+    alert("Decoding the audio buffer failed");
+  });
+};
+request.send();
+
+
+var myLoc = [0,0];
+var oldLoc = [1,1];
+
+var map = new d3.mappu.Map('map', {
+        center: [4.4917969,52.1584798],
+        zoom: 28,
+        minZoom: 8,
+        maxZoom: 28,
+        projection: d3.geo.mercator()
+});
+
+var coords = new d3.mappu.Coordinates().addTo(map);
+  
+//var controllers = d3.mappu.Controllers(map);
+var layer = new d3.mappu.RasterLayer('layer1', {
+    ogc_type: 'tms',
+    url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png"
+}).addTo(map);
+var objectsLayer = new d3.mappu.VectorLayer('objects',{
+    reproject: true,
+    events: [{
+    	event:'mouseout',
+    	action: function(d){
+    		//d3.select(this).remove();
+    	}
+    }],
+    style: {
+    	fill: 'red',
+    	stroke: 'blue'
+    }
+}).addTo(map);
+var locationLayer = new d3.mappu.VectorLayer('location',{
+    reproject: true,
+    style: {
+    	fill: 'red',
+    	stroke: 'red'
+    }
+}).addTo(map);
+
+
+function showPosition(position){
+	var coords = [position.coords.longitude,position.coords.latitude];
+	var heading = position.coords.heading || 0;
+	var feat = {
+		id:'myloc',
+		type: 'Feature',
+		geometry:{
+			type: 'Point',
+			coordinates: coords
+		}
+	};
+	d3.select('#heading').html('Heading: <br>'+heading);
+	locationLayer.data = [feat];
+	window.setTimeout(function(){
+		map.center = coords;
+	},500);
+	getObjects(coords, heading);
+}
+
+function geolocationError(e){
+	console.warn(e);
+}
+
+
+
+/*
+var querystring = function(x,y,heading){
+	return ""
+	+"SELECT ogc_fid id, function as type, St_AsGeoJson(ST_Transform(wkb_geometry,4326)) geojson "
+	+"FROM ( "
+	+"SELECT ogc_fid, function, wkb_geometry, ST_Transform(ST_SetSrid(St_MakePoint("+x+","+y+"),4326),28992) point FROM bgt_import.paal WHERE plus_type = 'afsluitpaal' ORDER BY wkb_geometry <#> ST_Transform(ST_SetSrid(St_MakePoint("+x+","+y+"),4326),28992) LIMIT 100"
+	+") foo "
+	+"WHERE (degrees(ST_Azimuth(point,wkb_geometry)) > "+(heading -30) + " "
+	+" AND degrees(ST_Azimuth(point,wkb_geometry)) < "+(heading+30) + ") "
+	+"OR ST_DWithin(point,wkb_geometry,5) "
+	+"LIMIT 10;";
+}
+*/
+var querystring = function(x,y,heading){
+	return ""
+	+"SELECT ogc_fid id, ST_Distance(wkb_geometry, point) as type, St_AsGeoJson(ST_Transform((wkb_geometry),4326)) geojson "
+	+"FROM ( "
+	+"SELECT identificatie ogc_fid, bouwjaar as function, geometrie_28992 wkb_geometry, ST_Transform(ST_SetSrid(St_MakePoint("+x+","+y+"),4326),28992) point FROM bagimproved_201405.pand ORDER BY geometrie_28992 <#> ST_Transform(ST_SetSrid(St_MakePoint("+x+","+y+"),4326),28992) LIMIT 100"
+	+") foo "
+	+"WHERE (degrees(ST_Azimuth(point,St_Centroid(wkb_geometry))) > "+(heading -30) + " "
+	+" AND degrees(ST_Azimuth(point,ST_Centroid(wkb_geometry))) < "+(heading+30) + ") "
+	+"OR ST_DWithin(point,wkb_geometry,5) "
+	+"LIMIT 20;";
+}
+
+
+var websocket = new WebSocket('ws://192.168.24.15:9999',['connect']);
+
+websocket.onopen = function(){
+	navigator.geolocation.watchPosition(showPosition,
+		// Optional settings below
+		 geolocationError,
+		 {
+			 timeout: 5,
+			 enableHighAccuracy: true,
+			 maximumAge: Infinity
+	});
+};
+
+var color = d3.scale.category20();
+var color = d3.scale.linear()
+    .domain([0, 50,200])
+    .range(["red", "orange","yellow"]);
+var counter = 0;
+websocket.onmessage = function(message){
+		var data = JSON.parse(message.data);
+		if (data.geojson){
+			var geom = JSON.parse(data.geojson);
+			var feat = {
+				id: counter++,//data.id, 
+				type: "Feature",
+				geometry: geom,
+				style: {
+					fill: color(data.type),
+					stroke: color(data.type)
+				}
+			};
+			if (objectsLayer.data.length > 20){
+				objectsLayer.data.shift();
+			}
+			objectsLayer.addFeature(feat);
+		}
+		if (data.rows){
+			data.rows.forEach(function(d){
+				var geom = JSON.parse(d.geojson);
+				var feat = {
+					id: counter++, //d.id, 
+					type: "Feature",
+					geometry: geom,
+					style: {
+						fill: color(d.type),
+						stroke: color(d.type)
+					}
+				};
+				if (objectsLayer.data.length > 20){
+					objectsLayer.data.shift();
+				}
+				objectsLayer.addFeature(feat);
+			});
+		}
+		//calculateSound();
+};
+
+function calculateSound(){
+	//Calculate sound based on your postion and 
+	var objloc = objectsLayer.data[0].geometry.coordinates;
+	var dx = (myLoc[0] - objloc[0]) * -100000;
+	var dy = (myLoc[1] - objloc[1]) * 100000;
+	var dist = Math.sqrt(Math.pow(dx,2) + Math.pow(dy,2));
+	sound.panner.setPosition(dx,dy ,1);
+}
+
+function getObjects(myLoc, heading){
+	//Get objects based on new position
+	websocket.send('{"sql":"'+querystring(myLoc[0],myLoc[1], heading)+'"}');
+}
+var dirArray = [0,1,2,3,4,5];
+function mousemove(e,d){
+	var mousePos = [d3.event.offsetX,d3.event.offsetY];
+	myLoc = map.projection.invert(mousePos);
+	if (oldLoc[0] != myLoc[0] || oldLoc[1] != myLoc[1]){
+		var dX = mousePos[0] - oldLoc[0];
+		var dY = mousePos[1] - oldLoc[1];
+		var dir = (Math.atan2(dX,-dY) / Math.PI * 180);
+		if (dir < 0) dir = dir+360;
+		dirArray.splice(0,1);
+		dirArray.push(dir);
+		var sum = dirArray.reduce(function(a, b) { return a + b; });
+		var avg = sum / dirArray.length;
+		oldLoc = mousePos;
+		getObjects(myLoc,avg);
+		calculateSound();
+	}
+}
+
+var w = d3.select('#map')
+      .on("mousemove", mousemove)
+
+</script>
+
+</body>
+</html>
