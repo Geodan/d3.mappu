@@ -1212,7 +1212,7 @@ d3_mappu_Layer = function(name, config){
         var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
         return bbox;
       };
-      
+     
       var tileurl = function(d){
           var url;
           if (_ogc_type == 'tms') {
@@ -1251,6 +1251,18 @@ d3_mappu_Layer = function(name, config){
 				 "&bbox=" + bbox + 
 				 "&layers=" + _layers + 
 				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+          }
+          else if(_ogc_type == 'esri'){
+          	  var bbox = getbbox(d);
+          	  url = _url + '?' + 
+          	  	"f=image" +
+          	  	"&transparent=true"+
+          	  	"&format=png8" +
+          	  	//"&layers=show:1,3" +
+          	  	"&bbox=" + bbox +
+          	  	"&bboxSR=102100" +
+          	  	"&imageSR=102100" +
+          	  	"&size=256,256";
           }
           return url;
       };
