@@ -580,6 +580,7 @@ d3_mappu_Sketch = function(id, config) {
 		  }
 	  }
 	  else if (type == 'LineString'){
+	  	  //Check if we have to add this point to the geometry
 	  	  if (d3.select(this).classed('sketchPointInter')){
 	  	  	  d3.select(this).classed('sketchPointInter',false).classed('sketchPoint',true);
 	  	  	  activeFeature.geometry.coordinates.splice(d.index +1,0,d);
@@ -605,11 +606,6 @@ d3_mappu_Sketch = function(id, config) {
 		.on("drag", dragged)
 		.on("dragend", dragended);
 	
-	var newdrag = d3.behavior.drag()
-		.origin(function(d) { return d; })
-		.on("dragstart", dragstarted)
-		.on("drag", dragged)
-		.on("dragend", dragended);
 		
 	function buildEdit(){
 		//Remove existing sketch features
@@ -629,11 +625,24 @@ d3_mappu_Sketch = function(id, config) {
 		})
 		.style('fill-opacity', 0.4);
 		//Prepare points to add vertices (interdata)
-		if (type == 'Polygon'){
-			var data = activeFeature.geometry.coordinates[0];
+		if (type == 'Point'){
+				var data = [activeFeature.geometry.coordinates];
+				var interdata = [];
+		}
+		else {
+			switch (type){
+			case 'Polygon':
+				var data = activeFeature.geometry.coordinates[0];
+				break;
+			case 'LineString':
+				var data = activeFeature.geometry.coordinates;
+				break;
+			default:
+				console.warn(type,' not supported');
+			}
 			data.forEach(function(d,i){
-					d.index = i;
-					d.fid = d.id;
+						d.index = i;
+						d.fid = d.id;
 			});
 			var interdata = data.map(function(d,i){
 				if (i+1 < data.length){
@@ -646,27 +655,7 @@ d3_mappu_Sketch = function(id, config) {
 			});
 			interdata.pop();
 		}
-		else if (type == 'LineString'){
-			var data = activeFeature.geometry.coordinates;
-			data.forEach(function(d,i){
-					d.index = i;
-					d.fid = d.id;
-			});
-			var interdata = data.map(function(d,i){
-				if (i+1 < data.length){
-					var obj = [];
-					obj[0] = (d[0] + data[i+1][0])/2;
-					obj[1] = (d[1] + data[i+1][1])/2;
-					obj.index = d.index;
-					return obj;
-				}
-			});
-			interdata.pop();
-		}
-		else if (type == 'Point'){
-			var data = [activeFeature.geometry.coordinates];
-			var interdata = [];
-		}
+		
 		
 		svg.selectAll('.sketchPointInter').remove();
 		svg.selectAll('.sketchPointInter').data(interdata).enter().append('circle')
@@ -677,26 +666,8 @@ d3_mappu_Sketch = function(id, config) {
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
-			.call(newdrag);
-			/*
-			.on('mousedown', function(d){
-				event.stopPropagation();
-				if (type == 'Polygon'){
-					//add extra vertice
-					if (d.index +1 == activeFeature.geometry.coordinates[0].length){
-						activeFeature.geometry.coordinates[0].splice(1,0,d);
-					}
-					else {
-						activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
-					}
-					buildEdit();
-				}
-				else if (type == 'LineString'){
-					activeFeature.geometry.coordinates.splice(d.index +1,0,d);
-					buildEdit();
-				}
-			});
-			*/
+			.call(drag);
+
 		svg.selectAll('.sketchPoint').remove();
 		svg.selectAll('.sketchPoint').data(data).enter().append('circle')
 			.classed('sketchPoint',true)
