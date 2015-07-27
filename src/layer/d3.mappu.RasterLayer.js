@@ -192,10 +192,11 @@
               .attr('opacity', this.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
-              .on('click', getFeatureInfo);
+              //TODO: working on this
+              //.on('click', getFeatureInfo);
          }
          image.exit()
-         	//First set the link emty to trigger a load stop in the browser 
+         	//First set the link emty to trigger a load stop in the browser
          	.attr("xlink:href", '')
          	.remove();
       };

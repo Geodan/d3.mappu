@@ -431,7 +431,7 @@ d3_mappu_Sketch = function(id, config) {
 		
 	}
 	
-	function addPoint(){
+	function addPoint(e){
 		var m = d3.mouse(this);
 		coords.push(map.projection.invert(m));
 		activeFeature.geometry.type = 'LineString';
@@ -524,9 +524,12 @@ d3_mappu_Sketch = function(id, config) {
         	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
         	map.svg.on('touchstart', function(e){
 				pressTimer = window.setTimeout(function() {
-					alert('long press!');
+					console.log('long press!');
 					finishPolygon();
 				},500);
+			})
+			.on('touchmove',function(e,d){
+				console.log(e,d);
 			})
 			.on('touchend', function(){
 				clearTimeout(pressTimer);
@@ -553,18 +556,37 @@ d3_mappu_Sketch = function(id, config) {
 	  var loc = d3.mouse(map.mapdiv);	
 	  d3.select(this).attr("cx", loc[0]).attr("cy", loc[1]);
 	  if (type == 'Polygon'){
-		  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
-		  //When dragging the closing point of the polygon, there's a twin point that should be dragged as well
-		  if (d.index === 0){
-			  activeFeature.geometry.coordinates[0].pop();
-			  activeFeature.geometry.coordinates[0].push(project.invert(loc));
-		  }
-		  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
-			  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+	  	  //Check if we have to add this point to the geometry
+	  	  if (d3.select(this).classed('sketchPointInter')){
+	  	  	  	d3.select(this).classed('sketchPointInter',false).classed('sketchPoint',true);
+	  	  	  	//add extra vertice
+				if (d.index +1 == activeFeature.geometry.coordinates[0].length){
+					activeFeature.geometry.coordinates[0].splice(1,0,d);
+				}
+				else {
+					activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
+				}
+	  	  }
+	  	  else {
+			  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
+			  //When dragging the closing point of the polygon, there's a twin point that should be dragged as well
+			  if (d.index === 0){
+				  activeFeature.geometry.coordinates[0].pop();
+				  activeFeature.geometry.coordinates[0].push(project.invert(loc));
+			  }
+			  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
+				  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+			  }
 		  }
 	  }
 	  else if (type == 'LineString'){
-	  	  activeFeature.geometry.coordinates[d.index] = project.invert(loc);
+	  	  if (d3.select(this).classed('sketchPointInter')){
+	  	  	  d3.select(this).classed('sketchPointInter',false).classed('sketchPoint',true);
+	  	  	  activeFeature.geometry.coordinates.splice(d.index +1,0,d);
+	  	  }
+	  	  else {
+	  	  	  activeFeature.geometry.coordinates[d.index] = project.invert(loc);
+	  	  }
 	  }
 	  else if (type == 'Point'){
 	  	  activeFeature.geometry.coordinates = project.invert(loc);
@@ -583,10 +605,16 @@ d3_mappu_Sketch = function(id, config) {
 		.on("drag", dragged)
 		.on("dragend", dragended);
 	
+	var newdrag = d3.behavior.drag()
+		.origin(function(d) { return d; })
+		.on("dragstart", dragstarted)
+		.on("drag", dragged)
+		.on("dragend", dragended);
 		
 	function buildEdit(){
+		//Remove existing sketch features
 		svg.selectAll('.sketch').remove();
-		
+		//Build feature in sketch
 		svg.append('path').attr("d", function(){
 				return path(activeFeature);
 		}).classed('sketch', true)
@@ -600,7 +628,7 @@ d3_mappu_Sketch = function(id, config) {
 				}
 		})
 		.style('fill-opacity', 0.4);
-		
+		//Prepare points to add vertices (interdata)
 		if (type == 'Polygon'){
 			var data = activeFeature.geometry.coordinates[0];
 			data.forEach(function(d,i){
@@ -617,7 +645,6 @@ d3_mappu_Sketch = function(id, config) {
 				}
 			});
 			interdata.pop();
-			
 		}
 		else if (type == 'LineString'){
 			var data = activeFeature.geometry.coordinates;
@@ -650,7 +677,9 @@ d3_mappu_Sketch = function(id, config) {
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
-			.on('click', function(d){
+			.call(newdrag);
+			/*
+			.on('mousedown', function(d){
 				event.stopPropagation();
 				if (type == 'Polygon'){
 					//add extra vertice
@@ -667,6 +696,7 @@ d3_mappu_Sketch = function(id, config) {
 					buildEdit();
 				}
 			});
+			*/
 		svg.selectAll('.sketchPoint').remove();
 		svg.selectAll('.sketchPoint').data(data).enter().append('circle')
 			.classed('sketchPoint',true)
@@ -744,8 +774,6 @@ d3_mappu_Sketch = function(id, config) {
 		coords = [];
 		map.svg.on('mousemove',null);
 		map.svg.on('click', null);
-		map.svg.on('click', null);
-		map.svg.on('dblclick', null);
 		map.svg.on('dblclick', null);
 		map.svg.on('touchstart',null);
 		map.svg.on('touchend',null);
@@ -1352,9 +1380,11 @@ d3_mappu_Layer = function(name, config){
               .attr('opacity', this.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
-              .on('click', getFeatureInfo);
+              //TODO: working on this
+              //.on('click', getFeatureInfo);
          }
          image.exit()
+         	//First set the link emty to trigger a load stop in the browser
          	.attr("xlink:href", '')
          	.remove();
       };
