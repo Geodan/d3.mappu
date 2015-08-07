@@ -78,6 +78,10 @@ Layer styling happens in CSS, or in a per-feature function
     background: white;
 }
 
+.minor_road{
+	stroke: yellow;
+}
+
 </style>
 
 </head>
@@ -106,7 +110,7 @@ var map = new d3.mappu.Map('map', {
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
     url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png",
-    opacity: 0.2
+    opacity: 1
 }).addTo(map);
 
 //var wmslayer = new d3.mappu.RasterLayer('wms1',{
@@ -162,6 +166,10 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         }
     }]
 }).addTo(map);
+
+var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
+}).addTo(map);
+
 /*
 d3.json('us.json', function(error, data){
 		mylayer.data = data;

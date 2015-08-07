@@ -260,9 +260,10 @@ d3_mappu_Sketch = function(id, config) {
 				console.warn(type,' not supported');
 			}
 			data.forEach(function(d,i){
-						d.index = i;
-						d.fid = d.id;
+				d.index = i;
+				d.fid = d.id;
 			});
+			//TODO: this may be written shorter, interdata can be part of data and d3 can draw every even point as an interPoint
 			var interdata = data.map(function(d,i){
 				if (i+1 < data.length){
 					var obj = [];
@@ -274,7 +275,6 @@ d3_mappu_Sketch = function(id, config) {
 			});
 			interdata.pop();
 		}
-		
 		
 		svg.selectAll('.sketchPointInter').remove();
 		svg.selectAll('.sketchPointInter').data(interdata).enter().append('circle')

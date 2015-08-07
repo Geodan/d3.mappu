@@ -14,6 +14,7 @@ module.exports = function(grunt){
             'src/sketch/d3.mappu.Sketch.js',
             'src/layer/d3.mappu.Layer.js',
             'src/layer/d3.mappu.VectorLayer.js',
+	    'src/layer/d3.mappu.VectorTileLayer.js',
             'src/layer/d3.mappu.RasterLayer.js',
             'src/core/d3.mappu.Controllers.js',
             'src/core/d3.mappu.Coordinates.js'
