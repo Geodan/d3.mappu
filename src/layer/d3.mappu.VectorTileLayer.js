@@ -28,16 +28,43 @@
         }
       });
       	
+      function setStyle(d){
+      	  var entity = d3.select(this);
+      	  //Do generic layer style
+      	  if (style){
+      	  	  for (var key in style) { 
+      	  	  	  entity.style(key, style[key]);
+      	  	  }
+      	  }
+      	  
+      	  //Now use per-feature styling
+      	  if (d.style){
+      	  	  for (var key in d.style) { 
+      	  	  	  entity.style(key, d.style[key]);
+      	  	  }
+      	  }
+      }
+      
+      function tileurl(d){
+          return _url    
+				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('{z}',d[2])
+				.replace('{x}',d[0])
+				.replace('{y}',d[1])
+				//FIXME: why are these curly brackets killed when used with polymer?                    
+				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('%7Bz%7D',d[2])
+				.replace('%7Bx%7D',d[0])
+				.replace('%7By%7D',d[1]);
+      }
+      
       //each tile can be considered it's own drawboard, on which we build
       function build(d){
       	var tile = d3.select(this);
-		var url = "http://" + ["a", "b", "c"][(d[0] * 31 + d[1]) % 3] + ".tile.openstreetmap.us/vectiles-highroad/" + d[2] + "/" + d[0] + "/" + d[1] + ".json";
+		var url = tileurl(d);
 		_projection = d3.geo.mercator();
 		_path = d3.geo.path().projection(_projection);
 		this._xhr = d3.json(url, function(error, json) {
-			
-			//TODO: okay... now how to get this geometry aligned correctly in the tile....
-			//all coordinates have to end up between 0 and 1
 			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
 			_path.projection()
 			  	.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
@@ -51,10 +78,7 @@
 				.attr('id',function(d){
 						return 'entity'+ d.id;
 				})
-				.attr('class',function(d){return d.properties.kind;})
-				.style('stroke-width',1)
-				.style('fill','none')
-				.style('fill-opacity',0.5)
+				//.attr('class',function(d){return d.properties.kind;})
 				.attr("d", _path);
 			entities.exit().remove();
 		});
@@ -84,6 +108,7 @@
 		 			return "translate(" + d[0] + " " +d[1]+")scale("+scale+")"
 		 		  });
 			 tile.each(build);
+			 tile.each(setStyle);
          }
          image.exit()
          	.remove();

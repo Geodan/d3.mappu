@@ -403,7 +403,19 @@ d3_mappu_Sketch = function(id, config) {
 	var activeFeature = null;
 	var selection = null;
 	var presstimer;
-	
+	var clickCount = 0;
+	//Add sketchlayer object to map
+	//Beware: this function does not SET a sketchlayer
+	map._sketchlayer = this.layer;
+	map.sketchlayer = function(layer){
+		if (layer){
+			map._sketchlayer = layer;
+			return true;
+		}
+		else{
+			return map._sketchlayer;
+		}
+	}
 	/* NEW DRAWING */
 	function build(){
 		svg.selectAll('.sketch').remove();
@@ -419,15 +431,7 @@ d3_mappu_Sketch = function(id, config) {
 					return 'blue';
 				}
 		})
-		.style('fill-opacity', 0.4)
-		.on('dblclick',function(){ //TODO: this should be working on the dblclick on the svg (see below)
-			if (type == 'LineString'){
-				finishLineString();
-			}
-			if (type == 'Polygon'){
-				finishPolygon();
-			}
-		});
+		.style('fill-opacity', 0.4);
 		
 	}
 	
@@ -511,20 +515,35 @@ d3_mappu_Sketch = function(id, config) {
 			activeFeature.style.stroke = 'blue';
 			activeFeature.style['stroke-width'] = "4";
 			activeFeature.style['stroke-linecap'] = "round";
-			map.svg.on('click', addPoint);
+			map.svg.on('mousedown', addPoint);
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
+        	map.svg.on('mousedown.doublemousedown',function(e){
+        		clickCount++;
+        		if (clickCount >1){
+        			finishLineString(e);
+        		}
+        		window.setTimeout(function() {
+					clickCount = 0;
+				},300);
+        	});
 		}
 		else if (type == 'Polygon'){
 			//some defaults
 			activeFeature.style.fill = 'blue';
 			activeFeature.style.stroke = 'blue';
-			map.svg.on('click',addPoint); 
+			map.svg.on('mousedown',addPoint); 
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
+        	map.svg.on('mousedown.doublemousedown',function(e){
+        		clickCount++;
+        		if (clickCount >1){
+        			finishPolygon(e);
+        		}
+        		window.setTimeout(function() {
+					clickCount = 0;
+				},300);
+        	});
         	map.svg.on('touchstart', function(e){
 				pressTimer = window.setTimeout(function() {
-					console.log('long press!');
 					finishPolygon();
 				},500);
 			})
@@ -745,7 +764,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords = [];
 		map.svg.on('mousemove',null);
 		map.svg.on('click', null);
-		map.svg.on('dblclick', null);
+		map.svg.on('mousedown',null);
+		map.svg.on('doublemousedown',null);
 		map.svg.on('touchstart',null);
 		map.svg.on('touchend',null);
 		layer.draw(true);
@@ -1187,16 +1207,43 @@ d3_mappu_Layer = function(name, config){
         }
       });
       	
+      function setStyle(d){
+      	  var entity = d3.select(this);
+      	  //Do generic layer style
+      	  if (style){
+      	  	  for (var key in style) { 
+      	  	  	  entity.style(key, style[key]);
+      	  	  }
+      	  }
+      	  
+      	  //Now use per-feature styling
+      	  if (d.style){
+      	  	  for (var key in d.style) { 
+      	  	  	  entity.style(key, d.style[key]);
+      	  	  }
+      	  }
+      }
+      
+      function tileurl(d){
+          return _url    
+				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('{z}',d[2])
+				.replace('{x}',d[0])
+				.replace('{y}',d[1])
+				//FIXME: why are these curly brackets killed when used with polymer?                    
+				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('%7Bz%7D',d[2])
+				.replace('%7Bx%7D',d[0])
+				.replace('%7By%7D',d[1]);
+      }
+      
       //each tile can be considered it's own drawboard, on which we build
       function build(d){
       	var tile = d3.select(this);
-		var url = "http://" + ["a", "b", "c"][(d[0] * 31 + d[1]) % 3] + ".tile.openstreetmap.us/vectiles-highroad/" + d[2] + "/" + d[0] + "/" + d[1] + ".json";
+		var url = tileurl(d);
 		_projection = d3.geo.mercator();
 		_path = d3.geo.path().projection(_projection);
 		this._xhr = d3.json(url, function(error, json) {
-			
-			//TODO: okay... now how to get this geometry aligned correctly in the tile....
-			//all coordinates have to end up between 0 and 1
 			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
 			_path.projection()
 			  	.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
@@ -1210,10 +1257,7 @@ d3_mappu_Layer = function(name, config){
 				.attr('id',function(d){
 						return 'entity'+ d.id;
 				})
-				.attr('class',function(d){return d.properties.kind;})
-				.style('stroke-width',1)
-				.style('fill','none')
-				.style('fill-opacity',0.5)
+				//.attr('class',function(d){return d.properties.kind;})
 				.attr("d", _path);
 			entities.exit().remove();
 		});
@@ -1243,6 +1287,7 @@ d3_mappu_Layer = function(name, config){
 		 			return "translate(" + d[0] + " " +d[1]+")scale("+scale+")"
 		 		  });
 			 tile.each(build);
+			 tile.each(setStyle);
          }
          image.exit()
          	.remove();

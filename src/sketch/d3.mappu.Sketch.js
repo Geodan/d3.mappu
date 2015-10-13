@@ -22,7 +22,19 @@ d3_mappu_Sketch = function(id, config) {
 	var activeFeature = null;
 	var selection = null;
 	var presstimer;
-	
+	var clickCount = 0;
+	//Add sketchlayer object to map
+	//Beware: this function does not SET a sketchlayer
+	map._sketchlayer = this.layer;
+	map.sketchlayer = function(layer){
+		if (layer){
+			map._sketchlayer = layer;
+			return true;
+		}
+		else{
+			return map._sketchlayer;
+		}
+	}
 	/* NEW DRAWING */
 	function build(){
 		svg.selectAll('.sketch').remove();
@@ -38,15 +50,7 @@ d3_mappu_Sketch = function(id, config) {
 					return 'blue';
 				}
 		})
-		.style('fill-opacity', 0.4)
-		.on('dblclick',function(){ //TODO: this should be working on the dblclick on the svg (see below)
-			if (type == 'LineString'){
-				finishLineString();
-			}
-			if (type == 'Polygon'){
-				finishPolygon();
-			}
-		});
+		.style('fill-opacity', 0.4);
 		
 	}
 	
@@ -130,20 +134,35 @@ d3_mappu_Sketch = function(id, config) {
 			activeFeature.style.stroke = 'blue';
 			activeFeature.style['stroke-width'] = "4";
 			activeFeature.style['stroke-linecap'] = "round";
-			map.svg.on('click', addPoint);
+			map.svg.on('mousedown', addPoint);
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
+        	map.svg.on('mousedown.doublemousedown',function(e){
+        		clickCount++;
+        		if (clickCount >1){
+        			finishLineString(e);
+        		}
+        		window.setTimeout(function() {
+					clickCount = 0;
+				},300);
+        	});
 		}
 		else if (type == 'Polygon'){
 			//some defaults
 			activeFeature.style.fill = 'blue';
 			activeFeature.style.stroke = 'blue';
-			map.svg.on('click',addPoint); 
+			map.svg.on('mousedown',addPoint); 
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
+        	map.svg.on('mousedown.doublemousedown',function(e){
+        		clickCount++;
+        		if (clickCount >1){
+        			finishPolygon(e);
+        		}
+        		window.setTimeout(function() {
+					clickCount = 0;
+				},300);
+        	});
         	map.svg.on('touchstart', function(e){
 				pressTimer = window.setTimeout(function() {
-					console.log('long press!');
 					finishPolygon();
 				},500);
 			})
@@ -364,7 +383,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords = [];
 		map.svg.on('mousemove',null);
 		map.svg.on('click', null);
-		map.svg.on('dblclick', null);
+		map.svg.on('mousedown',null);
+		map.svg.on('doublemousedown',null);
 		map.svg.on('touchstart',null);
 		map.svg.on('touchend',null);
 		layer.draw(true);
