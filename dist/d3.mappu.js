@@ -764,6 +764,7 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.draw  = draw;
 	sketch.startEdit = startEdit;
 	sketch.startRemove = startRemove;
+	sketch.remove = remove;
 	sketch.finish = finish;
 	sketch.edit = edit;
 	sketch.layer = layer;
