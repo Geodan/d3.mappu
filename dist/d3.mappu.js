@@ -404,18 +404,7 @@ d3_mappu_Sketch = function(id, config) {
 	var selection = null;
 	var presstimer;
 	var clickCount = 0;
-	//Add sketchlayer object to map
-	//Beware: this function does not SET a sketchlayer
-	map._sketchlayer = this.layer;
-	map.sketchlayer = function(layer){
-		if (layer){
-			map._sketchlayer = layer;
-			return true;
-		}
-		else{
-			return map._sketchlayer;
-		}
-	}
+	
 	/* NEW DRAWING */
 	function build(){
 		svg.selectAll('.sketch').remove();
@@ -778,6 +767,7 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.finish = finish;
 	sketch.edit = edit;
 	sketch.layer = layer;
+	map.sketch = sketch;
 	return sketch;
 };
 
@@ -1067,8 +1057,10 @@ d3_mappu_Layer = function(name, config){
           // Add events from config
           if (_events){
               _events.forEach(function(d){
-                 newentity.select('path').on(d.event, d.action);
-                 newentity.select('image').on(d.event, d.action);
+                 entities.each(function(){
+                 	d3.select(this).select('path').on(d.event, d.action);
+                 	d3.select(this).select('image').on(d.event, d.action);
+                 });
               });
           }
           layer.refresh(rebuild?0:_duration);

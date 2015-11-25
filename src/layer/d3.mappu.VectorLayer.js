@@ -164,8 +164,10 @@
           // Add events from config
           if (_events){
               _events.forEach(function(d){
-                 newentity.select('path').on(d.event, d.action);
-                 newentity.select('image').on(d.event, d.action);
+                 entities.each(function(){
+                 	d3.select(this).select('path').on(d.event, d.action);
+                 	d3.select(this).select('image').on(d.event, d.action);
+                 });
               });
           }
           layer.refresh(rebuild?0:_duration);

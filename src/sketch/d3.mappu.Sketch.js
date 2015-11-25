@@ -23,18 +23,7 @@ d3_mappu_Sketch = function(id, config) {
 	var selection = null;
 	var presstimer;
 	var clickCount = 0;
-	//Add sketchlayer object to map
-	//Beware: this function does not SET a sketchlayer
-	map._sketchlayer = this.layer;
-	map.sketchlayer = function(layer){
-		if (layer){
-			map._sketchlayer = layer;
-			return true;
-		}
-		else{
-			return map._sketchlayer;
-		}
-	}
+	
 	/* NEW DRAWING */
 	function build(){
 		svg.selectAll('.sketch').remove();
@@ -397,6 +386,7 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.finish = finish;
 	sketch.edit = edit;
 	sketch.layer = layer;
+	map.sketch = sketch;
 	return sketch;
 };
 
