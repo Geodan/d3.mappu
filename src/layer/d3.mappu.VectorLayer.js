@@ -265,11 +265,17 @@
       	  layer.draw();
       };
       
+      var zoomToFeature = function(feature){
+      	  var loc = _projection.invert(_path.centroid(feature));
+      	  layer.map.center = loc;
+      }
+      
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
       layer.addFeature = addFeature;
       layer.removeFeature = removeFeature;
+      layer.zoomToFeature = zoomToFeature;
       return layer;
   };
   

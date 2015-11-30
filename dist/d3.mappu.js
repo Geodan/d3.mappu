@@ -1159,11 +1159,17 @@ d3_mappu_Layer = function(name, config){
       	  layer.draw();
       };
       
+      var zoomToFeature = function(feature){
+      	  var loc = _projection.invert(_path.centroid(feature));
+      	  layer.map.center = loc;
+      }
+      
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
       layer.addFeature = addFeature;
       layer.removeFeature = removeFeature;
+      layer.zoomToFeature = zoomToFeature;
       return layer;
   };
   
@@ -1384,21 +1390,30 @@ d3_mappu_Layer = function(name, config){
           		&TILEMATRIX=04&TILEROW=10&TILECOL=10
           		&FORMAT=image%2Fpng
           	*/
-          	url = _url + '?' + 
+          	if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	}
+          	url = _url + 
           		"&layer=" + _layers + 
           		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
+          	if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	}
 			//This calculation only works for tiles that are square and always the same size
 			var bbox = getbbox(d);
-			url =  _url + '?' +  
+			url =  _url +  
 				 "&bbox=" + bbox + 
 				 "&layers=" + _layers + 
 				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
           }
           else if(_ogc_type == 'esri'){
+          	  if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	  }
           	  var bbox = getbbox(d);
-          	  url = _url + '?' + 
+          	  url = _url + 
           	  	"f=image" +
           	  	"&transparent=true"+
           	  	"&format=png8" +
