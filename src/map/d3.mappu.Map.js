@@ -328,6 +328,7 @@ d3_mappu_Map = function(id, config) {
     		_layers.splice(idx,1);
    		}
     	orderLayers();
+    	layer._onRemove(map);
         return map;
     };
     //Arrange the drawboards

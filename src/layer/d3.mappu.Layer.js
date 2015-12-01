@@ -109,8 +109,12 @@ d3_mappu_Layer = function(name, config){
         _map = map;
         map.orderLayers();
         layer.draw();
+		var event = new CustomEvent("layeradded", { "detail": layer});
+		layer.map.mapdiv.dispatchEvent(event);
     };
     layer._onRemove = function(){ //Removes the layer from the map object
+    	var event = new CustomEvent("layerremoved");
+		layer.map.mapdiv.dispatchEvent(event);
     };
     
     
