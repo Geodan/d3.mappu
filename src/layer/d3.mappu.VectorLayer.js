@@ -173,8 +173,8 @@
           layer.refresh(rebuild?0:_duration);
       };
       
-      var calcwidth = d3.scale.linear().range([5,5,32,32]).domain([0,21,24,30]);
-      var calcheight = d3.scale.linear().range([5,5,37,37]).domain([0,21,24,30]);
+      var calcwidth = d3.scale.linear().range([20,20,32,32]).domain([0,21,24,30]);
+      var calcheight = d3.scale.linear().range([20,20,37,37]).domain([0,21,24,30]);
       
       var refresh = function(duration){
           var drawboard = layer.drawboard;
