@@ -164,15 +164,17 @@
           // Add events from config
           if (_events){
               _events.forEach(function(d){
-                 newentity.select('path').on(d.event, d.action);
-                 newentity.select('image').on(d.event, d.action);
+                 entities.each(function(){
+                 	d3.select(this).select('path').on(d.event, d.action);
+                 	d3.select(this).select('image').on(d.event, d.action);
+                 });
               });
           }
           layer.refresh(rebuild?0:_duration);
       };
       
-      var calcwidth = d3.scale.linear().range([5,5,32,32]).domain([0,21,24,30]);
-      var calcheight = d3.scale.linear().range([5,5,37,37]).domain([0,21,24,30]);
+      var calcwidth = d3.scale.linear().range([20,20,32,32]).domain([0,21,24,30]);
+      var calcheight = d3.scale.linear().range([20,20,37,37]).domain([0,21,24,30]);
       
       var refresh = function(duration){
           var drawboard = layer.drawboard;
@@ -263,11 +265,17 @@
       	  layer.draw();
       };
       
+      var zoomToFeature = function(feature){
+      	  var loc = _projection.invert(_path.centroid(feature));
+      	  layer.map.center = loc;
+      }
+      
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
       layer.addFeature = addFeature;
       layer.removeFeature = removeFeature;
+      layer.zoomToFeature = zoomToFeature;
       return layer;
   };
   

@@ -78,6 +78,19 @@ Layer styling happens in CSS, or in a per-feature function
     background: white;
 }
 
+.minor_road{
+	stroke: gray;
+	stroke-width: 1px;
+}
+.major_road{
+	stroke: orange;
+	stroke-width: 2px;
+}
+.highway {
+	stroke: yellow;
+	stroke-width: 4px;
+}
+
 </style>
 
 </head>
@@ -94,7 +107,7 @@ Layer styling happens in CSS, or in a per-feature function
 <script>
   
 var map = new d3.mappu.Map('map', {
-        center: [6,52],
+        center: [-118.184051,33.999622],
         zoom: 18,
         minZoom: 10,
         maxZoom: 24,
@@ -106,8 +119,28 @@ var map = new d3.mappu.Map('map', {
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
     url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png",
-    opacity: 0.2
+    
+    opacity: 1
 }).addTo(map);
+
+//var wmslayer = new d3.mappu.RasterLayer('wms1',{
+//	ogc_type: 'wms',
+//	url: "http://worldmap.harvard.edu/geoserver/wms",
+//	layers: "geonode:_census_2zo",
+//	opacity:1
+//}).addTo(map);
+
+//var esrilayer = new d3.mappu.RasterLayer('esrilayer1', {
+//    ogc_type: 'esri',
+//    url: "http://gis-server-01.usc.edu:6080/arcgis/rest/services/Los_Angeles_Region_Contours/MapServer/export",
+//    opacity: 1
+//}).addTo(map);
+//
+//var esrilayer = new d3.mappu.RasterLayer('esrilayer2', {
+//    ogc_type: 'esri',
+//    url: "http://egis3.lacounty.gov/arcgis/rest/services/Geography/simpleGeo/MapServer/export",
+//    opacity: 1
+//}).addTo(map);
 
 /*
 var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
@@ -143,6 +176,16 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         }
     }]
 }).addTo(map);
+
+var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
+		//url: "http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json",
+		url: "http://vector.mapzen.com/osm/roads/{z}/{x}/{y}.json?api_key=vector-tiles--R28NDY",
+		style:{
+			stroke: 'blue',
+			'stroke-width': '1px'
+		}
+}).addTo(map);
+
 /*
 d3.json('us.json', function(error, data){
 		mylayer.data = data;

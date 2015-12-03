@@ -1,5 +1,5 @@
 /**
- Generic layer object, to be extended.
+ //TODO: write doc
 **/
 
 

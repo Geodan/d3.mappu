@@ -294,7 +294,8 @@ d3_mappu_Map = function(id, config) {
 ////singular functions
 
 	var zoomToFeature = function(d){
-		//TODO
+		//TODO 
+		//see: http://stackoverflow.com/questions/14492284/center-a-map-in-d3-given-a-geojson-object
 		console.warn('Not implemented yet');
 	};
 
@@ -327,6 +328,7 @@ d3_mappu_Map = function(id, config) {
     		_layers.splice(idx,1);
    		}
     	orderLayers();
+    	layer._onRemove(map);
         return map;
     };
     //Arrange the drawboards

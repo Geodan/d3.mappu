@@ -53,7 +53,7 @@
         var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
         return bbox;
       };
-      
+     
       var tileurl = function(d){
           var url;
           if (_ogc_type == 'tms') {
@@ -81,26 +81,47 @@
           		&TILEMATRIX=04&TILEROW=10&TILECOL=10
           		&FORMAT=image%2Fpng
           	*/
-          	url = _url + '?' + 
+          	if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	}
+          	url = _url + 
           		"&layer=" + _layers + 
           		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
+          	if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	}
 			//This calculation only works for tiles that are square and always the same size
 			var bbox = getbbox(d);
-			url =  _url + '?' +  
+			url =  _url +  
 				 "&bbox=" + bbox + 
 				 "&layers=" + _layers + 
 				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+          }
+          else if(_ogc_type == 'esri'){
+          	  if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	  }
+          	  var bbox = getbbox(d);
+          	  url = _url + 
+          	  	"f=image" +
+          	  	"&transparent=true"+
+          	  	"&format=png8" +
+          	  	//"&layers=show:1,3" +
+          	  	"&bbox=" + bbox +
+          	  	"&bboxSR=102100" +
+          	  	"&imageSR=102100" +
+          	  	"&size=256,256";
           }
           return url;
       };
       
       var getFeatureInfo = function(d){
-          return; /* WORK IN PROGRESS */
+          //return; /* WORK IN PROGRESS */
+          var loc = d3.mouse(this);
+          var loc2 = d3.mouse(map.mapdiv);
           if (_ogc_type == 'wms'){
-            var loc = d3.mouse(this);
-            var loc2 = d3.mouse(map.mapdiv);
             //http://pico.geodan.nl/geoserver/pico/wms?
             //REQUEST=GetFeatureInfo
             //&EXCEPTIONS=application%2Fvnd.ogc.se_xml
@@ -109,7 +130,7 @@
             //&WIDTH=442&HEIGHT=512&format=image%2Fpng&styles=&srs=EPSG%3A28992&version=1.1.1&x=243&y=190
             //TODO: make this more flexible
             var url = _url +
-                "&SRS=EPSG:900913" + 
+                "?SRS=EPSG:900913" + 
                 "&QUERY_LAYERS=" + _layers +
                 "&LAYERS=" + _layers + 
                 "&INFO_FORMAT=application/json" + 
@@ -133,6 +154,34 @@
             });
             
           }
+          if (_ogc_type == 'esri'){
+          	  //TODO: work in progress
+          	  /* Example:
+          	  http://myserver/rest/services/StateCityHighway/MapServer/identify?
+				geometryType=esriGeometryPoint&geometry={“x”: -
+				120,”y”:40}&tolerance=10&mapExtent=-119,38,-
+				121,41&imageDisplay=400,300,96&f=json
+			  */
+			  var url = _url.replace('export','identify') +
+			  	"?geometryType=esriGeometryPoint" +
+			  	"&geometry={'x': " + Math.round(loc[0]) + ",'y':" + Math.round(loc[1]) + "}" +
+			  	"&tolerance=10" + 
+			  	"&mapExtent=-119,38,-121,41" +
+			  	"&imageDisplay=256,256,96&f=json";
+			  d3.json(url, function(error,response){
+			  	if (error || response.error){
+			  		console.warn(error || response.error); 
+			  	}
+			  	console.log(response);
+                var feat = response.results[0];
+                //TODO: check if there is a response
+                //TODO: show more than 1 response
+                d3.select('#map').append('div').classed('popover', true)
+                    .style('left', loc2[0]+'px')
+                    .style('top', loc2[1]+'px')
+                    .html(feat.id); 
+              });
+          }
       };
       
       //Draw the tiles (based on data-update)
@@ -152,9 +201,13 @@
               .attr('opacity', this.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
-              .on('click', getFeatureInfo);
+              //TODO: working on this
+              //.on('click', getFeatureInfo);
          }
-         image.exit().remove();
+         image.exit()
+         	//First set the link emty to trigger a load stop in the browser
+         	.attr("xlink:href", '')
+         	.remove();
       };
       
       var refresh = function(){

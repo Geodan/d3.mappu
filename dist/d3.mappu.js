@@ -306,7 +306,8 @@ d3_mappu_Map = function(id, config) {
 ////singular functions
 
 	var zoomToFeature = function(d){
-		//TODO
+		//TODO 
+		//see: http://stackoverflow.com/questions/14492284/center-a-map-in-d3-given-a-geojson-object
 		console.warn('Not implemented yet');
 	};
 
@@ -339,6 +340,7 @@ d3_mappu_Map = function(id, config) {
     		_layers.splice(idx,1);
    		}
     	orderLayers();
+    	layer._onRemove(map);
         return map;
     };
     //Arrange the drawboards
@@ -402,6 +404,7 @@ d3_mappu_Sketch = function(id, config) {
 	var activeFeature = null;
 	var selection = null;
 	var presstimer;
+	var clickCount = 0;
 	
 	/* NEW DRAWING */
 	function build(){
@@ -418,19 +421,11 @@ d3_mappu_Sketch = function(id, config) {
 					return 'blue';
 				}
 		})
-		.style('fill-opacity', 0.4)
-		.on('dblclick',function(){ //TODO: this should be working on the dblclick on the svg (see below)
-			if (type == 'LineString'){
-				finishLineString();
-			}
-			if (type == 'Polygon'){
-				finishPolygon();
-			}
-		});
+		.style('fill-opacity', 0.4);
 		
 	}
 	
-	function addPoint(){
+	function addPoint(e){
 		var m = d3.mouse(this);
 		coords.push(map.projection.invert(m));
 		activeFeature.geometry.type = 'LineString';
@@ -510,22 +505,40 @@ d3_mappu_Sketch = function(id, config) {
 			activeFeature.style.stroke = 'blue';
 			activeFeature.style['stroke-width'] = "4";
 			activeFeature.style['stroke-linecap'] = "round";
-			map.svg.on('click', addPoint);
+			map.svg.on('mousedown', addPoint);
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
+        	map.svg.on('mousedown.doublemousedown',function(e){
+        		clickCount++;
+        		if (clickCount >1){
+        			finishLineString(e);
+        		}
+        		window.setTimeout(function() {
+					clickCount = 0;
+				},300);
+        	});
 		}
 		else if (type == 'Polygon'){
 			//some defaults
 			activeFeature.style.fill = 'blue';
 			activeFeature.style.stroke = 'blue';
-			map.svg.on('click',addPoint); 
+			map.svg.on('mousedown',addPoint); 
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
+        	map.svg.on('mousedown.doublemousedown',function(e){
+        		clickCount++;
+        		if (clickCount >1){
+        			finishPolygon(e);
+        		}
+        		window.setTimeout(function() {
+					clickCount = 0;
+				},300);
+        	});
         	map.svg.on('touchstart', function(e){
 				pressTimer = window.setTimeout(function() {
-					alert('long press!');
 					finishPolygon();
 				},500);
+			})
+			.on('touchmove',function(e,d){
+				console.log(e,d);
 			})
 			.on('touchend', function(){
 				clearTimeout(pressTimer);
@@ -552,18 +565,38 @@ d3_mappu_Sketch = function(id, config) {
 	  var loc = d3.mouse(map.mapdiv);	
 	  d3.select(this).attr("cx", loc[0]).attr("cy", loc[1]);
 	  if (type == 'Polygon'){
-		  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
-		  //When dragging the closing point of the polygon, there's a twin point that should be dragged as well
-		  if (d.index === 0){
-			  activeFeature.geometry.coordinates[0].pop();
-			  activeFeature.geometry.coordinates[0].push(project.invert(loc));
-		  }
-		  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
-			  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+	  	  //Check if we have to add this point to the geometry
+	  	  if (d3.select(this).classed('sketchPointInter')){
+	  	  	  	d3.select(this).classed('sketchPointInter',false).classed('sketchPoint',true);
+	  	  	  	//add extra vertice
+				if (d.index +1 == activeFeature.geometry.coordinates[0].length){
+					activeFeature.geometry.coordinates[0].splice(1,0,d);
+				}
+				else {
+					activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
+				}
+	  	  }
+	  	  else {
+			  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
+			  //When dragging the closing point of the polygon, there's a twin point that should be dragged as well
+			  if (d.index === 0){
+				  activeFeature.geometry.coordinates[0].pop();
+				  activeFeature.geometry.coordinates[0].push(project.invert(loc));
+			  }
+			  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
+				  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+			  }
 		  }
 	  }
 	  else if (type == 'LineString'){
-	  	  activeFeature.geometry.coordinates[d.index] = project.invert(loc);
+	  	  //Check if we have to add this point to the geometry
+	  	  if (d3.select(this).classed('sketchPointInter')){
+	  	  	  d3.select(this).classed('sketchPointInter',false).classed('sketchPoint',true);
+	  	  	  activeFeature.geometry.coordinates.splice(d.index +1,0,d);
+	  	  }
+	  	  else {
+	  	  	  activeFeature.geometry.coordinates[d.index] = project.invert(loc);
+	  	  }
 	  }
 	  else if (type == 'Point'){
 	  	  activeFeature.geometry.coordinates = project.invert(loc);
@@ -584,8 +617,9 @@ d3_mappu_Sketch = function(id, config) {
 	
 		
 	function buildEdit(){
+		//Remove existing sketch features
 		svg.selectAll('.sketch').remove();
-		
+		//Build feature in sketch
 		svg.append('path').attr("d", function(){
 				return path(activeFeature);
 		}).classed('sketch', true)
@@ -599,13 +633,27 @@ d3_mappu_Sketch = function(id, config) {
 				}
 		})
 		.style('fill-opacity', 0.4);
-		
-		if (type == 'Polygon'){
-			var data = activeFeature.geometry.coordinates[0];
+		//Prepare points to add vertices (interdata)
+		if (type == 'Point'){
+				var data = [activeFeature.geometry.coordinates];
+				var interdata = [];
+		}
+		else {
+			switch (type){
+			case 'Polygon':
+				var data = activeFeature.geometry.coordinates[0];
+				break;
+			case 'LineString':
+				var data = activeFeature.geometry.coordinates;
+				break;
+			default:
+				console.warn(type,' not supported');
+			}
 			data.forEach(function(d,i){
-					d.index = i;
-					d.fid = d.id;
+				d.index = i;
+				d.fid = d.id;
 			});
+			//TODO: this may be written shorter, interdata can be part of data and d3 can draw every even point as an interPoint
 			var interdata = data.map(function(d,i){
 				if (i+1 < data.length){
 					var obj = [];
@@ -616,28 +664,6 @@ d3_mappu_Sketch = function(id, config) {
 				}
 			});
 			interdata.pop();
-			
-		}
-		else if (type == 'LineString'){
-			var data = activeFeature.geometry.coordinates;
-			data.forEach(function(d,i){
-					d.index = i;
-					d.fid = d.id;
-			});
-			var interdata = data.map(function(d,i){
-				if (i+1 < data.length){
-					var obj = [];
-					obj[0] = (d[0] + data[i+1][0])/2;
-					obj[1] = (d[1] + data[i+1][1])/2;
-					obj.index = d.index;
-					return obj;
-				}
-			});
-			interdata.pop();
-		}
-		else if (type == 'Point'){
-			var data = [activeFeature.geometry.coordinates];
-			var interdata = [];
 		}
 		
 		svg.selectAll('.sketchPointInter').remove();
@@ -649,23 +675,8 @@ d3_mappu_Sketch = function(id, config) {
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
-			.on('click', function(d){
-				event.stopPropagation();
-				if (type == 'Polygon'){
-					//add extra vertice
-					if (d.index +1 == activeFeature.geometry.coordinates[0].length){
-						activeFeature.geometry.coordinates[0].splice(1,0,d);
-					}
-					else {
-						activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
-					}
-					buildEdit();
-				}
-				else if (type == 'LineString'){
-					activeFeature.geometry.coordinates.splice(d.index +1,0,d);
-					buildEdit();
-				}
-			});
+			.call(drag);
+
 		svg.selectAll('.sketchPoint').remove();
 		svg.selectAll('.sketchPoint').data(data).enter().append('circle')
 			.classed('sketchPoint',true)
@@ -743,9 +754,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords = [];
 		map.svg.on('mousemove',null);
 		map.svg.on('click', null);
-		map.svg.on('click', null);
-		map.svg.on('dblclick', null);
-		map.svg.on('dblclick', null);
+		map.svg.on('mousedown',null);
+		map.svg.on('doublemousedown',null);
 		map.svg.on('touchstart',null);
 		map.svg.on('touchend',null);
 		layer.draw(true);
@@ -755,9 +765,11 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.draw  = draw;
 	sketch.startEdit = startEdit;
 	sketch.startRemove = startRemove;
+	sketch.remove = remove;
 	sketch.finish = finish;
 	sketch.edit = edit;
 	sketch.layer = layer;
+	map.sketch = sketch;
 	return sketch;
 };
 
@@ -873,8 +885,12 @@ d3_mappu_Layer = function(name, config){
         _map = map;
         map.orderLayers();
         layer.draw();
+		var event = new CustomEvent("layeradded", { "detail": layer});
+		layer.map.mapdiv.dispatchEvent(event);
     };
     layer._onRemove = function(){ //Removes the layer from the map object
+    	var event = new CustomEvent("layerremoved");
+		layer.map.mapdiv.dispatchEvent(event);
     };
     
     
@@ -1047,15 +1063,17 @@ d3_mappu_Layer = function(name, config){
           // Add events from config
           if (_events){
               _events.forEach(function(d){
-                 newentity.select('path').on(d.event, d.action);
-                 newentity.select('image').on(d.event, d.action);
+                 entities.each(function(){
+                 	d3.select(this).select('path').on(d.event, d.action);
+                 	d3.select(this).select('image').on(d.event, d.action);
+                 });
               });
           }
           layer.refresh(rebuild?0:_duration);
       };
       
-      var calcwidth = d3.scale.linear().range([5,5,32,32]).domain([0,21,24,30]);
-      var calcheight = d3.scale.linear().range([5,5,37,37]).domain([0,21,24,30]);
+      var calcwidth = d3.scale.linear().range([20,20,32,32]).domain([0,21,24,30]);
+      var calcheight = d3.scale.linear().range([20,20,37,37]).domain([0,21,24,30]);
       
       var refresh = function(duration){
           var drawboard = layer.drawboard;
@@ -1146,15 +1164,152 @@ d3_mappu_Layer = function(name, config){
       	  layer.draw();
       };
       
+      var zoomToFeature = function(feature){
+      	  var loc = _projection.invert(_path.centroid(feature));
+      	  layer.map.center = loc;
+      }
+      
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
       layer.addFeature = addFeature;
       layer.removeFeature = removeFeature;
+      layer.zoomToFeature = zoomToFeature;
       return layer;
   };
   
   d3_mappu_VectorLayer.prototype = Object.create(d3_mappu_Layer.prototype);
+  
+  //                                                                          マップ
+  ;  /**
+	 
+  **/
+  d3.mappu.VectorTileLayer = function(name, config){
+      return d3_mappu_VectorTileLayer(name, config);
+  };
+  
+  d3_mappu_VectorTileLayer = function(name, config) {
+  	  
+  	  config = config || {};
+      d3_mappu_Layer.call(this,name, config);
+      var layer = d3_mappu_Layer(name, config);
+      layer.type = 'vectortile';
+      var _url = config.url;
+                               
+	  var _duration = config.duration || 0;
+	  var _path;
+	  var _projection;
+	  var style = config.style || {};
+      
+	  Object.defineProperty(layer, 'url', {
+        get: function() {
+            return _url;
+        },
+        set: function(val) {
+            _url = val;
+            draw();
+        }
+      });
+      	
+      function setStyle(d){
+      	  var entity = d3.select(this);
+      	  //Do generic layer style
+      	  if (style){
+      	  	  for (var key in style) { 
+      	  	  	  entity.style(key, style[key]);
+      	  	  }
+      	  }
+      	  
+      	  //Now use per-feature styling
+      	  if (d.style){
+      	  	  for (var key in d.style) { 
+      	  	  	  entity.style(key, d.style[key]);
+      	  	  }
+      	  }
+      }
+      
+      function tileurl(d){
+          return _url    
+				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('{z}',d[2])
+				.replace('{x}',d[0])
+				.replace('{y}',d[1])
+				//FIXME: why are these curly brackets killed when used with polymer?                    
+				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
+				.replace('%7Bz%7D',d[2])
+				.replace('%7Bx%7D',d[0])
+				.replace('%7By%7D',d[1]);
+      }
+      
+      //each tile can be considered it's own drawboard, on which we build
+      function build(d){
+      	var tile = d3.select(this);
+		var url = tileurl(d);
+		_projection = d3.geo.mercator();
+		_path = d3.geo.path().projection(_projection);
+		this._xhr = d3.json(url, function(error, json) {
+			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
+			_path.projection()
+			  	.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
+				.scale(k / 2 / Math.PI);
+			
+			var features = json.features;
+			var entities = tile.selectAll('path').data(features, function(d){
+				return d.id;
+			});
+			var newentity = entities.enter().append('path')
+				.attr('id',function(d){
+						return 'entity'+ d.id;
+				})
+				//.attr('class',function(d){return d.properties.kind;})
+				.attr("d", _path);
+			entities.exit().remove();
+		});
+      }
+    
+      //Draw the tiles (based on data-update)
+      var draw = function(){
+         var drawboard = layer.drawboard;
+         var tiles = layer.map.tiles;
+         var zoombehaviour = layer.map.zoombehaviour;
+         
+         drawboard.transition().duration(_duration)
+         	.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
+         	.style("stroke-width",1/ zoombehaviour.scale()*100);
+         	
+         
+         var image = drawboard
+         	//.style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))//?? Is this needed?
+         	.selectAll(".tile")
+            .data(tiles, function(d) { return d; });
+         var imageEnter = image.enter();
+         if (layer.visible){
+         	 var scale = 1/256;
+         	 var tile = imageEnter.append("g")
+				  .attr("class", "tile")
+				  .attr("transform", function(d){
+		 			return "translate(" + d[0] + " " +d[1]+")scale("+scale+")"
+		 		  });
+			 tile.each(build);
+			 tile.each(setStyle);
+         }
+         image.exit()
+         	.remove();
+      };
+      var refresh = function(){
+          draw();
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+      };
+      
+      
+      
+      /* Exposed functions*/
+      layer.refresh = refresh;
+      layer.draw = draw;
+      return layer;
+  };
+  
+  d3_mappu_VectorTileLayer.prototype = Object.create(d3_mappu_Layer.prototype);
   
   //                                                                          マップ
   ;  /**
@@ -1212,7 +1367,7 @@ d3_mappu_Layer = function(name, config){
         var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
         return bbox;
       };
-      
+     
       var tileurl = function(d){
           var url;
           if (_ogc_type == 'tms') {
@@ -1240,26 +1395,47 @@ d3_mappu_Layer = function(name, config){
           		&TILEMATRIX=04&TILEROW=10&TILECOL=10
           		&FORMAT=image%2Fpng
           	*/
-          	url = _url + '?' + 
+          	if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	}
+          	url = _url + 
           		"&layer=" + _layers + 
           		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
+          	if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	}
 			//This calculation only works for tiles that are square and always the same size
 			var bbox = getbbox(d);
-			url =  _url + '?' +  
+			url =  _url +  
 				 "&bbox=" + bbox + 
 				 "&layers=" + _layers + 
 				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+          }
+          else if(_ogc_type == 'esri'){
+          	  if (_url.indexOf('?') < 0){
+          		_url+='?';
+          	  }
+          	  var bbox = getbbox(d);
+          	  url = _url + 
+          	  	"f=image" +
+          	  	"&transparent=true"+
+          	  	"&format=png8" +
+          	  	//"&layers=show:1,3" +
+          	  	"&bbox=" + bbox +
+          	  	"&bboxSR=102100" +
+          	  	"&imageSR=102100" +
+          	  	"&size=256,256";
           }
           return url;
       };
       
       var getFeatureInfo = function(d){
-          return; /* WORK IN PROGRESS */
+          //return; /* WORK IN PROGRESS */
+          var loc = d3.mouse(this);
+          var loc2 = d3.mouse(map.mapdiv);
           if (_ogc_type == 'wms'){
-            var loc = d3.mouse(this);
-            var loc2 = d3.mouse(map.mapdiv);
             //http://pico.geodan.nl/geoserver/pico/wms?
             //REQUEST=GetFeatureInfo
             //&EXCEPTIONS=application%2Fvnd.ogc.se_xml
@@ -1268,7 +1444,7 @@ d3_mappu_Layer = function(name, config){
             //&WIDTH=442&HEIGHT=512&format=image%2Fpng&styles=&srs=EPSG%3A28992&version=1.1.1&x=243&y=190
             //TODO: make this more flexible
             var url = _url +
-                "&SRS=EPSG:900913" + 
+                "?SRS=EPSG:900913" + 
                 "&QUERY_LAYERS=" + _layers +
                 "&LAYERS=" + _layers + 
                 "&INFO_FORMAT=application/json" + 
@@ -1292,6 +1468,34 @@ d3_mappu_Layer = function(name, config){
             });
             
           }
+          if (_ogc_type == 'esri'){
+          	  //TODO: work in progress
+          	  /* Example:
+          	  http://myserver/rest/services/StateCityHighway/MapServer/identify?
+				geometryType=esriGeometryPoint&geometry={�x�: -
+				120,�y�:40}&tolerance=10&mapExtent=-119,38,-
+				121,41&imageDisplay=400,300,96&f=json
+			  */
+			  var url = _url.replace('export','identify') +
+			  	"?geometryType=esriGeometryPoint" +
+			  	"&geometry={'x': " + Math.round(loc[0]) + ",'y':" + Math.round(loc[1]) + "}" +
+			  	"&tolerance=10" + 
+			  	"&mapExtent=-119,38,-121,41" +
+			  	"&imageDisplay=256,256,96&f=json";
+			  d3.json(url, function(error,response){
+			  	if (error || response.error){
+			  		console.warn(error || response.error); 
+			  	}
+			  	console.log(response);
+                var feat = response.results[0];
+                //TODO: check if there is a response
+                //TODO: show more than 1 response
+                d3.select('#map').append('div').classed('popover', true)
+                    .style('left', loc2[0]+'px')
+                    .style('top', loc2[1]+'px')
+                    .html(feat.id); 
+              });
+          }
       };
       
       //Draw the tiles (based on data-update)
@@ -1311,9 +1515,13 @@ d3_mappu_Layer = function(name, config){
               .attr('opacity', this.opacity)
               .attr("x", function(d) { return d[0]; })
               .attr("y", function(d) { return d[1]; })
-              .on('click', getFeatureInfo);
+              //TODO: working on this
+              //.on('click', getFeatureInfo);
          }
-         image.exit().remove();
+         image.exit()
+         	//First set the link emty to trigger a load stop in the browser
+         	.attr("xlink:href", '')
+         	.remove();
       };
       
       var refresh = function(){
@@ -1345,7 +1553,7 @@ d3_mappu_Controllers = function(map){
         
     map.svg.call(drag);
 };;/**
- Generic layer object, to be extended.
+ //TODO: write doc
 **/
 
 

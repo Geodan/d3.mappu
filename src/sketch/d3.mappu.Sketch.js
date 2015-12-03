@@ -22,6 +22,7 @@ d3_mappu_Sketch = function(id, config) {
 	var activeFeature = null;
 	var selection = null;
 	var presstimer;
+	var clickCount = 0;
 	
 	/* NEW DRAWING */
 	function build(){
@@ -38,19 +39,11 @@ d3_mappu_Sketch = function(id, config) {
 					return 'blue';
 				}
 		})
-		.style('fill-opacity', 0.4)
-		.on('dblclick',function(){ //TODO: this should be working on the dblclick on the svg (see below)
-			if (type == 'LineString'){
-				finishLineString();
-			}
-			if (type == 'Polygon'){
-				finishPolygon();
-			}
-		});
+		.style('fill-opacity', 0.4);
 		
 	}
 	
-	function addPoint(){
+	function addPoint(e){
 		var m = d3.mouse(this);
 		coords.push(map.projection.invert(m));
 		activeFeature.geometry.type = 'LineString';
@@ -130,22 +123,40 @@ d3_mappu_Sketch = function(id, config) {
 			activeFeature.style.stroke = 'blue';
 			activeFeature.style['stroke-width'] = "4";
 			activeFeature.style['stroke-linecap'] = "round";
-			map.svg.on('click', addPoint);
+			map.svg.on('mousedown', addPoint);
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishLineString); //TODO: event is not caught
+        	map.svg.on('mousedown.doublemousedown',function(e){
+        		clickCount++;
+        		if (clickCount >1){
+        			finishLineString(e);
+        		}
+        		window.setTimeout(function() {
+					clickCount = 0;
+				},300);
+        	});
 		}
 		else if (type == 'Polygon'){
 			//some defaults
 			activeFeature.style.fill = 'blue';
 			activeFeature.style.stroke = 'blue';
-			map.svg.on('click',addPoint); 
+			map.svg.on('mousedown',addPoint); 
 			map.svg.on('mousemove',movePointer);
-        	map.svg.on('dblclick',finishPolygon); //TODO: event is not caught
+        	map.svg.on('mousedown.doublemousedown',function(e){
+        		clickCount++;
+        		if (clickCount >1){
+        			finishPolygon(e);
+        		}
+        		window.setTimeout(function() {
+					clickCount = 0;
+				},300);
+        	});
         	map.svg.on('touchstart', function(e){
 				pressTimer = window.setTimeout(function() {
-					alert('long press!');
 					finishPolygon();
 				},500);
+			})
+			.on('touchmove',function(e,d){
+				console.log(e,d);
 			})
 			.on('touchend', function(){
 				clearTimeout(pressTimer);
@@ -172,18 +183,38 @@ d3_mappu_Sketch = function(id, config) {
 	  var loc = d3.mouse(map.mapdiv);	
 	  d3.select(this).attr("cx", loc[0]).attr("cy", loc[1]);
 	  if (type == 'Polygon'){
-		  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
-		  //When dragging the closing point of the polygon, there's a twin point that should be dragged as well
-		  if (d.index === 0){
-			  activeFeature.geometry.coordinates[0].pop();
-			  activeFeature.geometry.coordinates[0].push(project.invert(loc));
-		  }
-		  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
-			  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+	  	  //Check if we have to add this point to the geometry
+	  	  if (d3.select(this).classed('sketchPointInter')){
+	  	  	  	d3.select(this).classed('sketchPointInter',false).classed('sketchPoint',true);
+	  	  	  	//add extra vertice
+				if (d.index +1 == activeFeature.geometry.coordinates[0].length){
+					activeFeature.geometry.coordinates[0].splice(1,0,d);
+				}
+				else {
+					activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
+				}
+	  	  }
+	  	  else {
+			  activeFeature.geometry.coordinates[0][d.index] = project.invert(loc);
+			  //When dragging the closing point of the polygon, there's a twin point that should be dragged as well
+			  if (d.index === 0){
+				  activeFeature.geometry.coordinates[0].pop();
+				  activeFeature.geometry.coordinates[0].push(project.invert(loc));
+			  }
+			  if (d.index + 1 == activeFeature.geometry.coordinates[0].length){
+				  activeFeature.geometry.coordinates[0][0] = project.invert(loc);
+			  }
 		  }
 	  }
 	  else if (type == 'LineString'){
-	  	  activeFeature.geometry.coordinates[d.index] = project.invert(loc);
+	  	  //Check if we have to add this point to the geometry
+	  	  if (d3.select(this).classed('sketchPointInter')){
+	  	  	  d3.select(this).classed('sketchPointInter',false).classed('sketchPoint',true);
+	  	  	  activeFeature.geometry.coordinates.splice(d.index +1,0,d);
+	  	  }
+	  	  else {
+	  	  	  activeFeature.geometry.coordinates[d.index] = project.invert(loc);
+	  	  }
 	  }
 	  else if (type == 'Point'){
 	  	  activeFeature.geometry.coordinates = project.invert(loc);
@@ -204,8 +235,9 @@ d3_mappu_Sketch = function(id, config) {
 	
 		
 	function buildEdit(){
+		//Remove existing sketch features
 		svg.selectAll('.sketch').remove();
-		
+		//Build feature in sketch
 		svg.append('path').attr("d", function(){
 				return path(activeFeature);
 		}).classed('sketch', true)
@@ -219,13 +251,27 @@ d3_mappu_Sketch = function(id, config) {
 				}
 		})
 		.style('fill-opacity', 0.4);
-		
-		if (type == 'Polygon'){
-			var data = activeFeature.geometry.coordinates[0];
+		//Prepare points to add vertices (interdata)
+		if (type == 'Point'){
+				var data = [activeFeature.geometry.coordinates];
+				var interdata = [];
+		}
+		else {
+			switch (type){
+			case 'Polygon':
+				var data = activeFeature.geometry.coordinates[0];
+				break;
+			case 'LineString':
+				var data = activeFeature.geometry.coordinates;
+				break;
+			default:
+				console.warn(type,' not supported');
+			}
 			data.forEach(function(d,i){
-					d.index = i;
-					d.fid = d.id;
+				d.index = i;
+				d.fid = d.id;
 			});
+			//TODO: this may be written shorter, interdata can be part of data and d3 can draw every even point as an interPoint
 			var interdata = data.map(function(d,i){
 				if (i+1 < data.length){
 					var obj = [];
@@ -236,28 +282,6 @@ d3_mappu_Sketch = function(id, config) {
 				}
 			});
 			interdata.pop();
-			
-		}
-		else if (type == 'LineString'){
-			var data = activeFeature.geometry.coordinates;
-			data.forEach(function(d,i){
-					d.index = i;
-					d.fid = d.id;
-			});
-			var interdata = data.map(function(d,i){
-				if (i+1 < data.length){
-					var obj = [];
-					obj[0] = (d[0] + data[i+1][0])/2;
-					obj[1] = (d[1] + data[i+1][1])/2;
-					obj.index = d.index;
-					return obj;
-				}
-			});
-			interdata.pop();
-		}
-		else if (type == 'Point'){
-			var data = [activeFeature.geometry.coordinates];
-			var interdata = [];
 		}
 		
 		svg.selectAll('.sketchPointInter').remove();
@@ -269,23 +293,8 @@ d3_mappu_Sketch = function(id, config) {
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('opacity', 0.5)
-			.on('click', function(d){
-				event.stopPropagation();
-				if (type == 'Polygon'){
-					//add extra vertice
-					if (d.index +1 == activeFeature.geometry.coordinates[0].length){
-						activeFeature.geometry.coordinates[0].splice(1,0,d);
-					}
-					else {
-						activeFeature.geometry.coordinates[0].splice(d.index +1,0,d);
-					}
-					buildEdit();
-				}
-				else if (type == 'LineString'){
-					activeFeature.geometry.coordinates.splice(d.index +1,0,d);
-					buildEdit();
-				}
-			});
+			.call(drag);
+
 		svg.selectAll('.sketchPoint').remove();
 		svg.selectAll('.sketchPoint').data(data).enter().append('circle')
 			.classed('sketchPoint',true)
@@ -363,9 +372,8 @@ d3_mappu_Sketch = function(id, config) {
 		coords = [];
 		map.svg.on('mousemove',null);
 		map.svg.on('click', null);
-		map.svg.on('click', null);
-		map.svg.on('dblclick', null);
-		map.svg.on('dblclick', null);
+		map.svg.on('mousedown',null);
+		map.svg.on('doublemousedown',null);
 		map.svg.on('touchstart',null);
 		map.svg.on('touchend',null);
 		layer.draw(true);
@@ -375,9 +383,11 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.draw  = draw;
 	sketch.startEdit = startEdit;
 	sketch.startRemove = startRemove;
+	sketch.remove = remove;
 	sketch.finish = finish;
 	sketch.edit = edit;
 	sketch.layer = layer;
+	map.sketch = sketch;
 	return sketch;
 };
 
