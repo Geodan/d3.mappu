@@ -34,7 +34,7 @@
             return _data;
         },
         set: function(array) {
-            _data = array;
+        	_data = array;
             draw(false);
         }
       });
@@ -232,7 +232,7 @@
       };
       
       var addFeature = function(feature){
-      	  var replaced = false;
+      	  //var replaced = false;
 		  //Testing with d3.map to make it faster      	  
       	  var _datamap = d3.map(_data, function(d) { return d.id; });
       	  _datamap.set(feature.id, feature);

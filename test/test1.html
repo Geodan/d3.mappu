@@ -107,7 +107,8 @@ Layer styling happens in CSS, or in a per-feature function
 <script>
   
 var map = new d3.mappu.Map('map', {
-        center: [-118.184051,33.999622],
+        //center: [-118.184051,33.999622],
+        center: [5.2,52.2],
         zoom: 18,
         minZoom: 10,
         maxZoom: 24,
@@ -118,8 +119,7 @@ var map = new d3.mappu.Map('map', {
 
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
-    url: "http://{s}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png",
-    
+    url: 'https://{s}.tiles.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6IlhHVkZmaW8ifQ.hAMX5hSW-QnTeRCMAy9A8Q',
     opacity: 1
 }).addTo(map);
 
@@ -154,7 +154,18 @@ var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
 //var controllers = d3.mappu.Controllers(map);
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    reproject: false,
+    reproject: true,
+    events: [{
+    	event: 'click',
+        action: function(d){
+        	mysketch
+        		.edit(d)
+        		.then(function(f){
+        			map.redraw();
+        		})
+        }
+    }]
+    /*
     events: [{
         event: 'mouseover',
         action: function(){
@@ -174,9 +185,21 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
                 .style('top', loc[1]+'px')
                 .html('Info goes here....');
         }
-    }]
+    }]*/
 }).addTo(map);
 
+var mysketch = new d3.mappu.Sketch('sketch1', {
+}).addTo(map);
+var counter = 0;
+mysketch
+	.draw('LineString')
+	.then(function(feature){
+			feature.id = counter++;
+			mylayer.addFeature(feature);
+	});
+
+
+/*
 var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 		//url: "http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json",
 		url: "http://vector.mapzen.com/osm/roads/{z}/{x}/{y}.json?api_key=vector-tiles--R28NDY",
@@ -185,13 +208,14 @@ var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 			'stroke-width': '1px'
 		}
 }).addTo(map);
-
+*/
 /*
 d3.json('us.json', function(error, data){
 		mylayer.data = data;
 		map.redraw();
 });
 */
+/*
 d3.json("provincie_4326.topojson", function(error, data) {
   if (error) return console.error(error);
   var counter = 0;
@@ -201,7 +225,7 @@ d3.json("provincie_4326.topojson", function(error, data) {
   });
   mylayer.data = feats;
 });
-
+*/
 d3.json("gemeenten.topojson", function(error, data) {
   if (error) return console.error(error);
   //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
