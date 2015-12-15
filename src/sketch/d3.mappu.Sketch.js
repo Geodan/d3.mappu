@@ -345,11 +345,14 @@ d3_mappu_Sketch = function(id, config) {
 	
 	/** REMOVE FEATURE **/
 	var remove = function(feature){
-		self.resolve(feature);
+		return new Promise(function(resolve, reject){
+			resolve(feature);
+			finish();
+		});
 		//_layer.removeFeature(feature);
 		//var event = new CustomEvent('featureRemoved', {detail: feature});
 		//map.mapdiv.dispatchEvent(event);
-		finish();
+		
 	};
 	/**
 		startRemove()
@@ -367,9 +370,9 @@ d3_mappu_Sketch = function(id, config) {
 	**/
 	
 	var finish = function(){
-		svg.selectAll('.sketch').remove();
-		svg.selectAll('.sketchPoint').remove();
-		svg.selectAll('.sketchPointInter').remove();
+		map.svg.selectAll('.sketch').remove();
+		map.svg.selectAll('.sketchPoint').remove();
+		map.svg.selectAll('.sketchPointInter').remove();
 		//_layer.drawboard.selectAll('.entity').select('path').on('click', null);
 		activeFeature = null;
 		coords = [];
@@ -388,6 +391,7 @@ d3_mappu_Sketch = function(id, config) {
 	**/
 	function addTo(m){
 		map = m;
+		map.sketch = sketch;
 		svg = map.svg;
 		project = map.projection;
 		path = d3.geo.path()
