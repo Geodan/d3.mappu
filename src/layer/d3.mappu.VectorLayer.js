@@ -1,17 +1,17 @@
   /**
-	 
+
   **/
   d3.mappu.VectorLayer = function(name, config){
       return d3_mappu_VectorLayer(name, config);
   };
-  
+
   d3_mappu_VectorLayer = function(name, config) {
   	  /*Work in progress for webworker
   	  var builder = new Worker("../src/layer/builder.js");
   	  builder.onmessage = function(e) {
 		  console.log('Message received from worker', e.data.aap);
 	  };
-	  var obj = {project:'noot'}; 
+	  var obj = {project:'noot'};
   	  builder.postMessage(obj);
   	  console.log('Message posted to worker');
   	  */
@@ -19,15 +19,15 @@
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
-      var _data = [];                         
+      var _data = [];
 	  layer.zindex = 100; //vectors always on top
 	  var _duration = config.duration || 0;
 	  var _path;
 	  var _projection;
 	  var style = config.style || {};
 	  var labelStyle = config.labelStyle || {};
-	  var _events = config.events;   
-	  
+	  var _events = config.events;
+
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
@@ -38,7 +38,7 @@
             draw(false);
         }
       });
-      
+
       Object.defineProperty(layer, 'events', {
         get: function() {
             return _events;
@@ -47,9 +47,9 @@
             _events = array;
         }
       });
-      
-      
-      
+
+
+
       //Function taken from terraformer
       function ringIsClockwise(ringToTest) {
 		var total = 0,i = 0;
@@ -63,19 +63,19 @@
 		}
 		return (total >= 0);
 	  }
-      
+
       function setStyle(d){
       	  var entity = d3.select(this);
       	  //Do generic layer style
       	  if (style){
-      	  	  for (var key in style) { 
+      	  	  for (var key in style) {
       	  	  	  entity.select('path').style(key, style[key]);
       	  	  }
       	  }
-      	  
+
       	  //Now use per-feature styling
       	  if (d.style){
-      	  	  for (var key in d.style) { 
+      	  	  for (var key in d.style) {
       	  	  	  entity.select('path').style(key, d.style[key]);
       	  	  }
       	  }
@@ -91,7 +91,7 @@
       	  	  entity.selectAll('.halo').remove();
       	  }
       }
-      
+
       function build(d){
       	  var project = _projection;
       	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
@@ -108,7 +108,7 @@
       	  }
       	  else {
 			  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
-				  d.geometry.coordinates[0].reverse(); 
+				  d.geometry.coordinates[0].reverse();
 			  }
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true);
@@ -119,9 +119,9 @@
 		  d3.select(this).append('text')
 		  	.classed('vectorLabel',true)
 		  	.attr('text-anchor',"middle");
-		  
+
       }
-      
+
       var draw = function(rebuild){
       	  if (config.reproject){
 				_projection = layer.map.projection;
@@ -150,7 +150,7 @@
           var entities = drawboard.selectAll('.entity').data(_data, function(d){
           	return d.id;
           });
-          
+
           var newentity = entities.enter().append('g')
           	.classed('entity',true)
           	.attr('id',function(d){
@@ -158,9 +158,9 @@
             });
           newentity.each(build);
           newentity.each(setStyle);
-            
+
           entities.exit().remove();
-          
+
           // Add events from config
           if (_events){
               _events.forEach(function(d){
@@ -172,10 +172,10 @@
           }
           layer.refresh(rebuild?0:_duration);
       };
-      
+
       var calcwidth = d3.scale.linear().range([20,20,32,32]).domain([0,21,24,30]);
       var calcheight = d3.scale.linear().range([20,20,37,37]).domain([0,21,24,30]);
-      
+
       var refresh = function(duration){
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
@@ -204,7 +204,7 @@
 								.attr('y', loc[1] -20)
 								.text(text);
 							//Style text
-							for (var key in labelStyle) { 
+							for (var key in labelStyle) {
 								  d3.select(this).selectAll('text').style(key, labelStyle[key]);
 							}
 							//Add shadow text for halo
@@ -230,10 +230,10 @@
           	  drawboard.selectAll('.entity').remove();
           }
       };
-      
+
       var addFeature = function(feature){
       	  //var replaced = false;
-		  //Testing with d3.map to make it faster      	  
+		  //Testing with d3.map to make it faster
       	  var _datamap = d3.map(_data, function(d) { return d.id; });
       	  _datamap.set(feature.id, feature);
       	  _data = _datamap.values();
@@ -253,7 +253,7 @@
       	  }*/
       	  layer.draw(true);
       };
-      
+
       var removeFeature = function(feature){
       	  var idx = null;
       	  _data.forEach(function(d,i){
@@ -264,12 +264,12 @@
       	  _data.splice(idx,1);
       	  layer.draw();
       };
-      
+
       var zoomToFeature = function(feature){
       	  var loc = _projection.invert(_path.centroid(feature));
       	  layer.map.center = loc;
       }
-      
+	  
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
@@ -278,8 +278,7 @@
       layer.zoomToFeature = zoomToFeature;
       return layer;
   };
-  
+
   d3_mappu_VectorLayer.prototype = Object.create(d3_mappu_Layer.prototype);
-  
+
   //                                                                          マップ
-  
