@@ -117,7 +117,7 @@ d3_mappu_Map = function(id, config) {
 		_tile.size([_width,_height]);
 		redraw();
 	};
-	
+	var _zooming;
 	function zoomcenter(zoomval, centerval){
    	   	var scale = (1 << zoomval);
 		_zoombehaviour.scale(scale);
@@ -133,7 +133,10 @@ d3_mappu_Map = function(id, config) {
 			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
 		];
 		_zoombehaviour.translate(translate);
-		_zoombehaviour.event(_svg.transition()); //Trigger zoombehaviour
+		//Disabled transition because it gives problems when zooming and centering directly after eachother
+		if 
+		_zoombehaviour.event(_svg.transition().duration(1000)); //Trigger zoombehaviour
+		//_zoombehaviour.event(_svg);
    }
 	
 	var _svg = d3.select(_mapdiv).append('svg')
@@ -216,7 +219,7 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	//zoomcenter will move to and set the center in some steps
-			zoomcenter(_zoom, val);
+   			zoomcenter(_zoom, val);
         }
     });   
 // .zoom : (zoomlevel)
@@ -228,7 +231,7 @@ d3_mappu_Map = function(id, config) {
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
         		//zoomcenter will move to and set the zoomlevel in some steps
-				zoomcenter(val, _center);
+        		zoomcenter(val, _center);
 			}
 			else {
 				console.log('Zoomlevel exceeded',val , 'Min:',_minZoom ,'Max:', _maxZoom);
@@ -918,19 +921,19 @@ d3_mappu_Layer = function(name, config){
 };
 //                                                                          マップ
 ;  /**
-	 
+
   **/
   d3.mappu.VectorLayer = function(name, config){
       return d3_mappu_VectorLayer(name, config);
   };
-  
+
   d3_mappu_VectorLayer = function(name, config) {
   	  /*Work in progress for webworker
   	  var builder = new Worker("../src/layer/builder.js");
   	  builder.onmessage = function(e) {
 		  console.log('Message received from worker', e.data.aap);
 	  };
-	  var obj = {project:'noot'}; 
+	  var obj = {project:'noot'};
   	  builder.postMessage(obj);
   	  console.log('Message posted to worker');
   	  */
@@ -938,15 +941,15 @@ d3_mappu_Layer = function(name, config){
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vector';
-      var _data = [];                         
+      var _data = [];
 	  layer.zindex = 100; //vectors always on top
 	  var _duration = config.duration || 0;
 	  var _path;
 	  var _projection;
 	  var style = config.style || {};
 	  var labelStyle = config.labelStyle || {};
-	  var _events = config.events;   
-	  
+	  var _events = config.events;
+
       /* exposed properties*/
       Object.defineProperty(layer, 'data', {
         get: function() {
@@ -957,7 +960,7 @@ d3_mappu_Layer = function(name, config){
             draw(false);
         }
       });
-      
+
       Object.defineProperty(layer, 'events', {
         get: function() {
             return _events;
@@ -966,9 +969,9 @@ d3_mappu_Layer = function(name, config){
             _events = array;
         }
       });
-      
-      
-      
+
+
+
       //Function taken from terraformer
       function ringIsClockwise(ringToTest) {
 		var total = 0,i = 0;
@@ -982,19 +985,19 @@ d3_mappu_Layer = function(name, config){
 		}
 		return (total >= 0);
 	  }
-      
+
       function setStyle(d){
       	  var entity = d3.select(this);
       	  //Do generic layer style
       	  if (style){
-      	  	  for (var key in style) { 
+      	  	  for (var key in style) {
       	  	  	  entity.select('path').style(key, style[key]);
       	  	  }
       	  }
-      	  
+
       	  //Now use per-feature styling
       	  if (d.style){
-      	  	  for (var key in d.style) { 
+      	  	  for (var key in d.style) {
       	  	  	  entity.select('path').style(key, d.style[key]);
       	  	  }
       	  }
@@ -1010,7 +1013,7 @@ d3_mappu_Layer = function(name, config){
       	  	  entity.selectAll('.halo').remove();
       	  }
       }
-      
+
       function build(d){
       	  var project = _projection;
       	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
@@ -1027,7 +1030,7 @@ d3_mappu_Layer = function(name, config){
       	  }
       	  else {
 			  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
-				  d.geometry.coordinates[0].reverse(); 
+				  d.geometry.coordinates[0].reverse();
 			  }
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true);
@@ -1038,9 +1041,9 @@ d3_mappu_Layer = function(name, config){
 		  d3.select(this).append('text')
 		  	.classed('vectorLabel',true)
 		  	.attr('text-anchor',"middle");
-		  
+
       }
-      
+
       var draw = function(rebuild){
       	  if (config.reproject){
 				_projection = layer.map.projection;
@@ -1069,7 +1072,7 @@ d3_mappu_Layer = function(name, config){
           var entities = drawboard.selectAll('.entity').data(_data, function(d){
           	return d.id;
           });
-          
+
           var newentity = entities.enter().append('g')
           	.classed('entity',true)
           	.attr('id',function(d){
@@ -1077,9 +1080,9 @@ d3_mappu_Layer = function(name, config){
             });
           newentity.each(build);
           newentity.each(setStyle);
-            
+
           entities.exit().remove();
-          
+
           // Add events from config
           if (_events){
               _events.forEach(function(d){
@@ -1091,10 +1094,10 @@ d3_mappu_Layer = function(name, config){
           }
           layer.refresh(rebuild?0:_duration);
       };
-      
+
       var calcwidth = d3.scale.linear().range([20,20,32,32]).domain([0,21,24,30]);
       var calcheight = d3.scale.linear().range([20,20,37,37]).domain([0,21,24,30]);
-      
+
       var refresh = function(duration){
           var drawboard = layer.drawboard;
           drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
@@ -1123,7 +1126,7 @@ d3_mappu_Layer = function(name, config){
 								.attr('y', loc[1] -20)
 								.text(text);
 							//Style text
-							for (var key in labelStyle) { 
+							for (var key in labelStyle) {
 								  d3.select(this).selectAll('text').style(key, labelStyle[key]);
 							}
 							//Add shadow text for halo
@@ -1149,10 +1152,10 @@ d3_mappu_Layer = function(name, config){
           	  drawboard.selectAll('.entity').remove();
           }
       };
-      
+
       var addFeature = function(feature){
       	  //var replaced = false;
-		  //Testing with d3.map to make it faster      	  
+		  //Testing with d3.map to make it faster
       	  var _datamap = d3.map(_data, function(d) { return d.id; });
       	  _datamap.set(feature.id, feature);
       	  _data = _datamap.values();
@@ -1172,7 +1175,7 @@ d3_mappu_Layer = function(name, config){
       	  }*/
       	  layer.draw(true);
       };
-      
+
       var removeFeature = function(feature){
       	  var idx = null;
       	  _data.forEach(function(d,i){
@@ -1183,12 +1186,12 @@ d3_mappu_Layer = function(name, config){
       	  _data.splice(idx,1);
       	  layer.draw();
       };
-      
+
       var zoomToFeature = function(feature){
       	  var loc = _projection.invert(_path.centroid(feature));
       	  layer.map.center = loc;
       }
-      
+	  
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
@@ -1197,11 +1200,11 @@ d3_mappu_Layer = function(name, config){
       layer.zoomToFeature = zoomToFeature;
       return layer;
   };
-  
+
   d3_mappu_VectorLayer.prototype = Object.create(d3_mappu_Layer.prototype);
-  
+
   //                                                                          マップ
-  ;  /**
+;  /**
 	 
   **/
   d3.mappu.VectorTileLayer = function(name, config){
@@ -1333,18 +1336,18 @@ d3_mappu_Layer = function(name, config){
   
   //                                                                          マップ
   ;  /**
-	 
+
   **/
   d3.mappu.RasterLayer = function(name, config){
       return d3_mappu_RasterLayer(name, config);
   };
-  
+
   d3_mappu_RasterLayer = function(name, config) {
       var self = this;
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'raster';
-      
+
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _options = config; //Te be leaflet compatible in g-layercatalogus
@@ -1352,8 +1355,8 @@ d3_mappu_Layer = function(name, config){
       layer.visibility = layer.visible; //leaflet compat
       var _layers = config.layers;
       var _duration = 0;
-      
-      
+
+
       Object.defineProperty(layer, 'url', {
         get: function() {
             return _url;
@@ -1363,7 +1366,7 @@ d3_mappu_Layer = function(name, config){
             draw();
         }
       });
-      
+
       Object.defineProperty(layer, 'layers', {
         get: function() {
             return _layers;
@@ -1373,12 +1376,21 @@ d3_mappu_Layer = function(name, config){
             draw();
         }
       });
-      
-      
+
+      Object.defineProperty(layer, 'cql_filter', {
+        get: function() {
+            return _cqlfilter;
+        },
+        set: function(val) {
+            _cqlfilter = val;
+            draw();
+        }
+      });
+
       //Clear all tiles
       layer.clear = function(){
       };
-      
+
       var getbbox = function(d){
         var numtiles = 2 << (d[2]-1);
         var tilesize = (20037508.34 * 2) / (numtiles);
@@ -1387,16 +1399,16 @@ d3_mappu_Layer = function(name, config){
         var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
         return bbox;
       };
-     
+
       var tileurl = function(d){
           var url;
           if (_ogc_type == 'tms') {
-              url = _url    
+              url = _url
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
 				.replace('{z}',d[2])
 				.replace('{x}',d[0])
 				.replace('{y}',d[1])
-				//FIXME: why are these curly brackets killed when used with polymer?                    
+				//FIXME: why are these curly brackets killed when used with polymer?
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
 				.replace('%7Bz%7D',d[2])
 				.replace('%7Bx%7D',d[0])
@@ -1418,8 +1430,8 @@ d3_mappu_Layer = function(name, config){
           	if (_url.indexOf('?') < 0){
           		_url+='?';
           	}
-          	url = _url + 
-          		"&layer=" + _layers + 
+          	url = _url +
+          		"&layer=" + _layers +
           		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
@@ -1428,17 +1440,20 @@ d3_mappu_Layer = function(name, config){
           	}
 			//This calculation only works for tiles that are square and always the same size
 			var bbox = getbbox(d);
-			url =  _url +  
-				 "&bbox=" + bbox + 
-				 "&layers=" + _layers + 
+			url =  _url +
+				 "&bbox=" + bbox +
+				 "&layers=" + _layers +
 				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+			if (_cqlfilter){
+				url += '&cql_filter='+_cqlfilter;
+			}
           }
           else if(_ogc_type == 'esri'){
           	  if (_url.indexOf('?') < 0){
           		_url+='?';
           	  }
           	  var bbox = getbbox(d);
-          	  url = _url + 
+          	  url = _url +
           	  	"f=image" +
           	  	"&transparent=true"+
           	  	"&format=png8" +
@@ -1450,7 +1465,7 @@ d3_mappu_Layer = function(name, config){
           }
           return url;
       };
-      
+
       var getFeatureInfo = function(d){
           //return; /* WORK IN PROGRESS */
           var loc = d3.mouse(this);
@@ -1464,18 +1479,18 @@ d3_mappu_Layer = function(name, config){
             //&WIDTH=442&HEIGHT=512&format=image%2Fpng&styles=&srs=EPSG%3A28992&version=1.1.1&x=243&y=190
             //TODO: make this more flexible
             var url = _url +
-                "?SRS=EPSG:900913" + 
+                "?SRS=EPSG:900913" +
                 "&QUERY_LAYERS=" + _layers +
-                "&LAYERS=" + _layers + 
-                "&INFO_FORMAT=application/json" + 
-                "&REQUEST=GetFeatureInfo" + 
-                "&FEATURE_COUNT=50" + 
-                "&EXCEPTIONS=application/vnd.ogc.se_xml" + 
-                "&SERVICE=WMS" + 
-                "&VERSION=1.1.0" + 
-                "&WIDTH=256&HEIGHT=256" + 
-                "&X="+ Math.round(loc[0]) + 
-                "&Y="+ Math.round(loc[1]) + 
+                "&LAYERS=" + _layers +
+                "&INFO_FORMAT=application/json" +
+                "&REQUEST=GetFeatureInfo" +
+                "&FEATURE_COUNT=50" +
+                "&EXCEPTIONS=application/vnd.ogc.se_xml" +
+                "&SERVICE=WMS" +
+                "&VERSION=1.1.0" +
+                "&WIDTH=256&HEIGHT=256" +
+                "&X="+ Math.round(loc[0]) +
+                "&Y="+ Math.round(loc[1]) +
                 "&BBOX=" + getbbox(d);
             d3.json(url, function(error,response){
                 var feat = response.features[0];
@@ -1484,9 +1499,9 @@ d3_mappu_Layer = function(name, config){
                 d3.select('#map').append('div').classed('popover', true)
                     .style('left', loc2[0]+'px')
                     .style('top', loc2[1]+'px')
-                    .html(feat.id); 
+                    .html(feat.id);
             });
-            
+
           }
           if (_ogc_type == 'esri'){
           	  //TODO: work in progress
@@ -1499,12 +1514,12 @@ d3_mappu_Layer = function(name, config){
 			  var url = _url.replace('export','identify') +
 			  	"?geometryType=esriGeometryPoint" +
 			  	"&geometry={'x': " + Math.round(loc[0]) + ",'y':" + Math.round(loc[1]) + "}" +
-			  	"&tolerance=10" + 
+			  	"&tolerance=10" +
 			  	"&mapExtent=-119,38,-121,41" +
 			  	"&imageDisplay=256,256,96&f=json";
 			  d3.json(url, function(error,response){
 			  	if (error || response.error){
-			  		console.warn(error || response.error); 
+			  		console.warn(error || response.error);
 			  	}
 			  	console.log(response);
                 var feat = response.results[0];
@@ -1513,11 +1528,11 @@ d3_mappu_Layer = function(name, config){
                 d3.select('#map').append('div').classed('popover', true)
                     .style('left', loc2[0]+'px')
                     .style('top', loc2[1]+'px')
-                    .html(feat.id); 
+                    .html(feat.id);
               });
           }
       };
-      
+
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
@@ -1543,21 +1558,21 @@ d3_mappu_Layer = function(name, config){
          	.attr("xlink:href", '')
          	.remove();
       };
-      
+
       var refresh = function(){
           draw();
           layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
-      
+
       layer.refresh = refresh;
       layer.draw = draw;
       return layer;
   };
-  
+
   d3_mappu_RasterLayer.prototype = Object.create(d3_mappu_Layer.prototype);
-  
+
   //                                                                          マップ
-  ;"use strict";
+;"use strict";
 d3.mappu.Controllers = function(map) {
     return d3_mappu_Controllers(map);
 };

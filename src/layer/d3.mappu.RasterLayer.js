@@ -40,7 +40,7 @@
         }
       });
 
-	  Object.defineProperty(layer, 'cql_filter', {
+      Object.defineProperty(layer, 'cql_filter', {
         get: function() {
             return _cqlfilter;
         },

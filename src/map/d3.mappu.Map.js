@@ -105,7 +105,7 @@ d3_mappu_Map = function(id, config) {
 		_tile.size([_width,_height]);
 		redraw();
 	};
-	
+	var _zooming;
 	function zoomcenter(zoomval, centerval){
    	   	var scale = (1 << zoomval);
 		_zoombehaviour.scale(scale);
@@ -121,7 +121,10 @@ d3_mappu_Map = function(id, config) {
 			curtranslate[1] + (_height - pixcenter[1]) - (_height/2)
 		];
 		_zoombehaviour.translate(translate);
-		_zoombehaviour.event(_svg.transition()); //Trigger zoombehaviour
+		//Disabled transition because it gives problems when zooming and centering directly after eachother
+		if 
+		_zoombehaviour.event(_svg.transition().duration(1000)); //Trigger zoombehaviour
+		//_zoombehaviour.event(_svg);
    }
 	
 	var _svg = d3.select(_mapdiv).append('svg')
@@ -204,7 +207,7 @@ d3_mappu_Map = function(id, config) {
         },
         set: function(val) {
         	//zoomcenter will move to and set the center in some steps
-			zoomcenter(_zoom, val);
+   			zoomcenter(_zoom, val);
         }
     });   
 // .zoom : (zoomlevel)
@@ -216,7 +219,7 @@ d3_mappu_Map = function(id, config) {
         set: function(val) {
         	if (val <= _maxZoom && val >= _minZoom){
         		//zoomcenter will move to and set the zoomlevel in some steps
-				zoomcenter(val, _center);
+        		zoomcenter(val, _center);
 			}
 			else {
 				console.log('Zoomlevel exceeded',val , 'Min:',_minZoom ,'Max:', _maxZoom);
