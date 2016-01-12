@@ -1355,7 +1355,7 @@ d3_mappu_Layer = function(name, config){
       layer.visibility = layer.visible; //leaflet compat
       var _layers = config.layers;
       var _duration = 0;
-
+      var _cqlfilter = null;
 
       Object.defineProperty(layer, 'url', {
         get: function() {
