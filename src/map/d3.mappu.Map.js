@@ -124,7 +124,7 @@ d3_mappu_Map = function(id, config) {
 		//Disabled transition because it gives problems when zooming and centering directly after eachother
 		
 		//_zoombehaviour.event(_svg.transition().duration(1000)); //Trigger zoombehaviour
-		//_zoombehaviour.event(_svg);
+		_zoombehaviour.event(_svg);
    }
 
 	var _svg = d3.select(_mapdiv).append('svg')
