@@ -1001,6 +1001,9 @@ d3_mappu_Layer = function(name, config){
       	  	  	  entity.select('path').style(key, d.style[key]);
       	  	  }
       	  }
+      	  
+      	  
+      	  
       	  if (d._selected){
       	  	  //make halo around entity to show as selected
       	  	  entity
@@ -1013,13 +1016,13 @@ d3_mappu_Layer = function(name, config){
       	  	  entity.selectAll('.halo').remove();
       	  }
       }
-
+      //Build is only called on entry
       function build(d){
       	  var project = _projection;
       	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
       	  	  var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
-              var img = d3.select(this).append("image")
+              var img = d3.select(this).append('g').append("image")
               	.attr("width", 32)
                 .attr("height", 37)
               	//.attr("x",x-12.5) //No need setting x and y, since it's reset later
@@ -1027,6 +1030,8 @@ d3_mappu_Layer = function(name, config){
 				.attr("xlink:href", function(d){
 					return d.style['marker-url'];
 				});
+				
+				
       	  }
       	  else {
 			  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
@@ -1077,7 +1082,8 @@ d3_mappu_Layer = function(name, config){
           	.classed('entity',true)
           	.attr('id',function(d){
                     return 'entity'+ d.id;
-            });
+            })
+     
           newentity.each(build);
           newentity.each(setStyle);
 
@@ -1106,12 +1112,29 @@ d3_mappu_Layer = function(name, config){
 			  if (config.reproject){//the slow way
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
-				  entities.select('image').transition().duration(duration)
-				  	.attr('x',function(d){return project(d.geometry.coordinates)[0] - 12.5;})
-				  	.attr('y',function(d){return project(d.geometry.coordinates)[1] - 15;})
-				  	//Smaller markers when zooming out
-				  	.attr("width", calcwidth(layer.map.zoom))
-				  	.attr("height", calcheight(layer.map.zoom));
+				  entities.select('image').transition().duration(duration).each(function(d){
+				  	var width =  calcwidth(layer.map.zoom);
+				  	var height = calcheight(layer.map.zoom);
+				  	var x = project(d.geometry.coordinates)[0];
+				  	var y = project(d.geometry.coordinates)[1];
+				  	var offsetx = width/2;
+				  	var offsety = height/2;
+				  	d3.select(this).attr('x',x).attr('y',y)
+				  		//Smaller markers when zooming out
+				  		.attr("width", width)
+				  		.attr("height", height);
+				  	//Rotation has to be done seperately
+					if (d.style && d.style.rotate){
+						  //TODO: still experimental, rotate +90 should be fixed
+						  d3.select(this.parentElement).attr("transform", "translate("+ -offsetx+" "+ -offsety+") rotate(45 "+  +" "+ +")");
+						  //d3.select(this.parentElement).attr("transform", "translate("+ -offsetx+" "+ -offsety+")");
+					  }
+					  else {
+					  	  d3.select(this.parentElement).attr("transform", "translate("+ -offsetx+" "+ -offsety+")");
+					  }
+				  });		  
+				  	
+				  	
 				  if (config.labelfield){
 				  	  //no text beyond zoom 22
 				  	  if (layer.map.zoom < 22){
