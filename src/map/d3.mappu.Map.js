@@ -99,7 +99,7 @@ d3_mappu_Map = function(id, config) {
     var resize = function(){
 		_width = _mapdiv.clientWidth;
 		_height = _mapdiv.clientHeight;
-		d3.select(_mapdiv).select('svg')
+		d3.select(_mapdiv).selectAll('.drawboard')
 			.attr("width", _width)
 			.attr("height", _height);
 		_tile.size([_width,_height]);
@@ -124,12 +124,12 @@ d3_mappu_Map = function(id, config) {
 		//Disabled transition because it gives problems when zooming and centering directly after eachother
 		
 		//_zoombehaviour.event(_svg.transition().duration(1000)); //Trigger zoombehaviour
-		_zoombehaviour.event(_svg);
+		//_zoombehaviour.event(_mapdiv);
    }
-
+   /*
 	var _svg = d3.select(_mapdiv).append('svg')
 	    .style('position', 'absolute');
-
+	  */
     //var p = .5 * _ratio;
 	_projection
 		.scale(( 1 << _zoom || 1 << 12) / 2 / Math.PI)
@@ -173,6 +173,7 @@ d3_mappu_Map = function(id, config) {
 // exposed functions
 
 ////getter/setter functions
+/*
 	 Object.defineProperty(map, 'svg', {
         get: function() {
             return _svg;
@@ -181,7 +182,7 @@ d3_mappu_Map = function(id, config) {
             console.log("do not touch the svg");
         }
     });
-
+*/
     Object.defineProperty(map, 'mapdiv', {
         get: function() {
             return _mapdiv;
@@ -301,6 +302,26 @@ d3_mappu_Map = function(id, config) {
 		//see: http://stackoverflow.com/questions/14492284/center-a-map-in-d3-given-a-geojson-object
 		console.warn('Not implemented yet');
 	};
+	
+	var zoomToExtent = function(bbox){
+		var bounds = [];
+		bounds[0] = _projection([bbox[0],bbox[1]]);
+		bounds[1] = _projection([bbox[2],bbox[3]]);
+		var dx = bounds[1][0] - bounds[0][0],
+		  dy = bounds[1][1] - bounds[0][1],
+		  x = (bounds[0][0] + bounds[1][0]) / 2,
+		  y = (bounds[0][1] + bounds[1][1]) / 2,
+		  scale = .9 / Math.max(dx / _width, dy / _height),
+		  translate = [_width / 2 - scale * x, _height / 2 - scale * y];
+		  //_projection.scale(scale);
+		  //_projection.translate(translate);
+		  //_zoombehaviour.scale(scale);
+		  //_zoombehaviour.translate(translate);
+		  _zoom = 22;//FIXME
+		  _center = [bbox[0] + (bbox[2]-bbox[0]) /2 , bbox[1] + (bbox[3]-bbox[1]) /2];
+		  zoomcenter(_zoom, _center)
+	}  
+		
 
     var addLayer = function(layer){
         if (!layer.id){
@@ -336,8 +357,11 @@ d3_mappu_Map = function(id, config) {
     };
     //Arrange the drawboards
 	var orderLayers = function(){
-		var drawboards = _svg.selectAll('.drawboard').data(_layers, function(d){return d.id;});
-		drawboards.enter().append('g').attr('id', function(d){return d.id;}).classed('drawboard',true)
+		var drawboards = d3.select(_mapdiv).selectAll('.drawboard').data(_layers, function(d){return d.id;});
+		drawboards.enter().append('svg')
+			.attr('id', function(d){return d.id;})
+			.style('position', 'absolute')
+			.classed('drawboard',true)
 			.each(function(d){
 				d.drawboard = d3.select(this);
 				//Experimental!!
@@ -348,7 +372,8 @@ d3_mappu_Map = function(id, config) {
 				merge.append('feMergeNode').attr('in', 'coloredBlur');
 				merge.append('feMergeNode').attr('in', 'SourceGraphic');
 				//End of experiment
-			});
+			})
+			.append('g');
 		drawboards.exit().remove();
 		drawboards.sort(function (a, b) {
 		  return a.zindex - b.zindex;
@@ -360,6 +385,7 @@ d3_mappu_Map = function(id, config) {
 // .refresh()
 
     map.zoomToFeature = zoomToFeature;
+    map.zoomToExtent = zoomToExtent;
     map.addLayer = addLayer;
     map.removeLayer = removeLayer;
     map.orderLayers = orderLayers;

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body>
+
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/d3.geo.tile.v0.min.js"></script>
+<script src="../../postgis-service/lib/twkb.js/dist/twkb.min.js"></script>
+
+<script>
+	
+	var renders = [];
+	renders.push(new Worker("renderer.js"));
+	renders.push(new Worker("renderer.js"));
+	renders.push(new Worker("renderer.js"));
+	renders.push(new Worker("renderer.js"));
+	renders.forEach(function(d){
+		d.onmessage = function (e) {
+			var url = e.data.url;
+			var data = e.data.data;
+			var d = e.data.d;
+			draw(url,data,d);
+		}
+	});
+  var width  = Math.max(960, window.innerWidth);
+  var height = Math.max(500, window.innerHeight);
+  var roadStyles = {
+    "major_road": { color: "#555", width: 1.4 },
+    "minor_road": { color: "#aaa", width: 0.8 },
+    "highway":    { color: "#222", width: 1.8 },
+    "building":   { fill: "none", color: "grey", width: 1 },
+    "plantcover":	{ fill: "#ccff99", color: "grey", width: 1},
+    "bare":				{ fill: "#ffffcc", color: "grey", width: 1},
+    "road":				{ fill: "#cccccc", color: "grey",width: 1},
+    "water":			{ fill: "#0099ff", color: "grey",width: 1}
+  };
+  var _url = 'http://192.168.40.2:8080/data?';
+	var _layers = 'polygons';
+	var _id_column = 'ogc_fid';
+	var _attributes = ['class'];
+  var canvas = d3.select("body")
+    .append("canvas")
+    .attr("width", width)
+    .attr("height", height);
+  var context = canvas.node().getContext("2d");
+  var tile = d3.geo.tile()
+    .size([ width, height ]);
+  this.tilePath = d3.geo.path()
+    .projection(d3.geo.mercator())
+    .context(context);
+  var cachedTiles = {};
+  var center = [4.491631,52.158960];
+  var projection = d3.geo.mercator()
+    .scale((1 << 26) / 2 / Math.PI)
+    .translate([ -width / 2, -height / 2 ]);
+  var zoom = d3.behavior.zoom()
+    .scale(projection.scale() * 2 * Math.PI)
+    .scaleExtent([ 1 << 20, 1 << 30 ])
+    .size([ width, height ])
+    .translate(projection(center).map(function(x) { return -x; }))
+    //.translate(projection(center))
+    .on("zoom", zoomed);
+  var tiles = tile
+		.scale(zoom.scale())
+		.translate(zoom.translate())
+		.call();
+  canvas.call(zoom);
+  zoomed();
+  
+  function groupByKind(data) {
+    return data.reduce(function(memo, d) {
+      var kind = d.properties.class;
+      if (memo[kind]) { memo[kind].push(d); }
+      else            { memo[kind] = [ d ]; }
+      return memo;
+    }, {});
+  }
+  function drawTile(tiles, d, data) {
+    var k = Math.pow(2, d[2]) * 256;
+    var x = (d[0] + tiles.translate[0]) * tiles.scale;
+    var y = (d[1] + tiles.translate[1]) * tiles.scale;
+    var s = tiles.scale / 256;
+    tilePath
+      .projection()
+      .translate([ k / 2 - d[0] * 256, k / 2 - d[1] * 256 ])
+      .scale(k / 2 / Math.PI);
+    context.save();
+    context.translate(x, y);
+    context.scale(s, s);
+    var key;
+    for (key in data) {
+      var style = roadStyles[key];
+      if (style) {
+        context.beginPath();
+        data[key].forEach(tilePath);
+        context.closePath();
+        context.strokeStyle = style.color;
+        context.lineWidth   = style.width;
+        context.fillStyle = style.fill;
+        context.stroke();
+        context.fill();
+      }
+    }
+    context.restore();
+  }
+  
+	function draw(url,data,d){
+			drawTile(tiles, d, groupByKind(data));
+	}
+   
+  
+  function zoomed() {
+  	var getbbox = function(d){
+			var numtiles = 2 << (d[2]-1);
+			var tilesize = (20037508.34 * 2) / (numtiles);
+			var x = -20037508.34 + (d[0] * tilesize);
+			var y = 20037508.34 - ((d[1]+1) * tilesize);//shift 1 down, because we want LOWER left
+			var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
+			return bbox;
+		};
+	
+		var tileurl = function(d){
+				if (_url.indexOf('?') < 0){
+						_url+='?';
+					}
+					var bbox = getbbox(d);
+					url =  _url +
+						 "&bbox=" + bbox +
+						 "&table=" + _layers +
+						 "&id_column=" + _id_column + 
+						 "&attributes=" + _attributes +
+						 "&srs=EPSG:3857";
+				return url;
+		};
+		
+    tiles = tile
+      .scale(zoom.scale())
+      .translate(zoom.translate())
+      .call();
+    context.clearRect(0, 0, width, height);
+    tiles.forEach(function(d) {
+      var url = tileurl(d);
+      var rand = Math.round(Math.random() * 3);
+      renders[rand].postMessage({ url: url,tile:d,attributes: _attributes });
+    });
+  }
+</script>
+</body>

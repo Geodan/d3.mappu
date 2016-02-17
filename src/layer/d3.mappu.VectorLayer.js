@@ -152,7 +152,7 @@
           if (rebuild){
                drawboard.selectAll('.entity').remove();
           }
-          var entities = drawboard.selectAll('.entity').data(_data, function(d){
+          var entities = drawboard.select('g').selectAll('.entity').data(_data, function(d){
           	return d.id;
           });
 
@@ -184,9 +184,9 @@
 
       var refresh = function(duration){
           var drawboard = layer.drawboard;
-          drawboard.style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
+          drawboard.select('g').style('opacity', this.opacity).style('display',this.visible ? 'block':'none');
           if (layer.visible){
-          	  var entities = drawboard.selectAll('.entity');
+          	  var entities = drawboard.select('g').selectAll('.entity');
 			  if (config.reproject){//the slow way
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
@@ -204,7 +204,7 @@
 				  	//Rotation has to be done seperately
 					if (d.style && d.style.rotate){
 						  //TODO: still experimental, rotate +90 should be fixed
-						  d3.select(this.parentElement).attr("transform", "translate("+ -offsetx+" "+ -offsety+") rotate(45 "+  +" "+ +")");
+						  d3.select(this.parentElement).attr("transform", "translate("+ -offsetx+" "+ -offsety+") rotate("+ d.style.rotate +" " + Math.round(x + offsetx) +"  "+  Math.round(y + offsety) +")");
 						  //d3.select(this.parentElement).attr("transform", "translate("+ -offsetx+" "+ -offsety+")");
 					  }
 					  else {
@@ -244,7 +244,7 @@
 				//based on: http://bl.ocks.org/mbostock/5914438
 				var zoombehaviour = layer.map.zoombehaviour;
 				//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
-				drawboard
+				drawboard.select('g')
 				  .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
 				  .style("stroke-width", 1 / zoombehaviour.scale());
 			  }

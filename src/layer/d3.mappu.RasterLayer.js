@@ -200,9 +200,12 @@
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         drawboard.transition().duration(_duration).attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")");
-         var image = drawboard.selectAll(".tile")
+         var translate = tiles.translate.map(function(d){return Math.round(d*100)/100;});
+         //drawboard.transition().duration(_duration).attr("transform", "scale(" + tiles.scale + ")translate(" + translate + ")");
+         drawboard.select('g').attr("transform", "scale(" + Math.round(tiles.scale*100)/100 + ") translate(" + translate + ")");
+         var image = drawboard.select('g').selectAll(".tile")
             .data(tiles, function(d) { return d; });
+         
          var imageEnter = image.enter();
          if (layer.visible){
          imageEnter.append("image")
@@ -220,11 +223,12 @@
          	//First set the link emty to trigger a load stop in the browser
          	.attr("xlink:href", '')
          	.remove();
+         
       };
 
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          layer.drawboard.select('g').style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
 
       layer.refresh = refresh;

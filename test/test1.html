@@ -119,7 +119,7 @@ var map = new d3.mappu.Map('map', {
 
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
-    url: 'https://{s}.tiles.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6IlhHVkZmaW8ifQ.hAMX5hSW-QnTeRCMAy9A8Q',
+    url: 'https://{s}.tiles.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpamVuY3cxbzAwMG12ZGx4cGljbGtqMGUifQ.vpDqms08MBqoRgp667Yz5Q',
     opacity: 1
 }).addTo(map);
 
@@ -187,7 +187,7 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         }
     }]*/
 }).addTo(map);
-
+/*
 var mysketch = new d3.mappu.Sketch('sketch1', {
 }).addTo(map);
 var counter = 0;
@@ -197,9 +197,9 @@ mysketch
 			feature.id = counter++;
 			mylayer.addFeature(feature);
 	});
+*/
 
 
-/*
 var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 		//url: "http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json",
 		url: "http://vector.mapzen.com/osm/roads/{z}/{x}/{y}.json?api_key=vector-tiles--R28NDY",
@@ -208,7 +208,7 @@ var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 			'stroke-width': '1px'
 		}
 }).addTo(map);
-*/
+
 /*
 d3.json('us.json', function(error, data){
 		mylayer.data = data;
