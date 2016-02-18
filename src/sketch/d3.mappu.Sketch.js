@@ -310,7 +310,6 @@ d3_mappu_Sketch = function(id, config) {
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('fillOpacity', 0.5)
-			//kindly copied from http://bl.ocks.org/mbostock/6123708
 			.call(drag);
 	}
 	
@@ -319,6 +318,12 @@ d3_mappu_Sketch = function(id, config) {
 		Start editing a specific feature
 	**/
 	var edit = function(feature){
+		svg = d3.select(map.mapdiv).append('svg')
+			.attr( 'id', 'sketch' )
+			.style( 'position', 'absolute' )
+			.attr('width',map.mapdiv.clientWidth)
+			.attr('height',map.mapdiv.clientHeight)
+			.append('g');
 		return new Promise(function(resolve, reject){
 			self.resolve = resolve;
 			event.stopPropagation();
