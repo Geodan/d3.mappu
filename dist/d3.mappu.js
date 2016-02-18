@@ -332,20 +332,12 @@ d3_mappu_Map = function( id, config ) {
 			.classed( 'drawboard', true )
 			.each( function( d ) { 
 				d.drawboard = d3.select( this );
-				/*
-				//Experimental!!
-				var filter = d.drawboard.append( 'defs' ).append( 'filter' ).attr( 'id', 'glow' ); 
-				filter.append( 'feGaussianBlur' ).attr( 'stdDeviation', '2.5' ).attr( 'result', 'coloredBlur' ); 
-				var merge = filter.append( 'feMerge' ); 
-				merge.append( 'feMergeNode' ).attr( 'in', 'coloredBlur' ); 
-				merge.append( 'feMergeNode' ).attr( 'in', 'SourceGraphic' ); 
-				//End of experiment
-				*/
 		} ).append( 'g' ); 
-		drawboards.exit( ).remove( ); 
+		drawboards.exit( ).remove( );
 		drawboards.sort( function( a, b ) { 
 				return a.zindex - b.zindex; 
-		} ); 
+		} );
+		
 	};
 	// .removeLayers([{layer}])
 	
@@ -384,6 +376,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	/* NEW DRAWING */
 	function build(){
+		
 		svg.selectAll('.sketch').remove();
 		svg.append('path').attr("d", function(){
 				return path(activeFeature);
@@ -461,6 +454,13 @@ d3_mappu_Sketch = function(id, config) {
 	}
 	
 	var draw = function(geomtype){
+		svg = d3.select(map.mapdiv).append('svg')
+			.attr( 'id', 'sketch' )
+			.style( 'position', 'absolute' )
+			.attr('width',map.mapdiv.clientWidth)
+			.attr('height',map.mapdiv.clientHeight)
+			.append('g');
+			
 		return new Promise(function(resolve, reject){
 			this.resolve = resolve;
 			activeFeature = {
@@ -735,19 +735,22 @@ d3_mappu_Sketch = function(id, config) {
 	**/
 	
 	var finish = function(){
-		svg.selectAll('.sketch').remove();
-		svg.selectAll('.sketchPoint').remove();
-		svg.selectAll('.sketchPointInter').remove();
-		//_layer.drawboard.selectAll('.entity').select('path').on('click', null);
-		activeFeature = null;
-		coords = [];
-		d3.select(map.mapdiv).on('mousemove',null);
-		d3.select(map.mapdiv).on('click', null);
-		d3.select(map.mapdiv).on('mousedown',null);
-		d3.select(map.mapdiv).on('doublemousedown',null);
-		d3.select(map.mapdiv).on('touchstart',null);
-		d3.select(map.mapdiv).on('touchend',null);
-		//_layer.draw(true);
+		if (svg){
+			svg.selectAll('.sketch').remove();
+			svg.selectAll('.sketchPoint').remove();
+			svg.selectAll('.sketchPointInter').remove();
+			d3.select(map.mapdiv).select('#sketch').remove();
+			//_layer.drawboard.selectAll('.entity').select('path').on('click', null);
+			activeFeature = null;
+			coords = [];
+			d3.select(map.mapdiv).on('mousemove',null);
+			d3.select(map.mapdiv).on('click', null);
+			d3.select(map.mapdiv).on('mousedown',null);
+			d3.select(map.mapdiv).on('doublemousedown',null);
+			d3.select(map.mapdiv).on('touchstart',null);
+			d3.select(map.mapdiv).on('touchend',null);
+			//_layer.draw(true);
+		}
 	};
 	
 	/**
@@ -757,12 +760,7 @@ d3_mappu_Sketch = function(id, config) {
 	function addTo(m){
 		map = m;
 		map.sketch = sketch;
-		svg = d3.select(map.mapdiv).append('svg')
-			.attr( 'id', 'sketch' )
-			.style( 'position', 'absolute' )
-			.attr('width',map.mapdiv.clientWidth)
-			.attr('height',map.mapdiv.clientHeight)
-			.append('g');
+		
 		project = map.projection;
 		path = d3.geo.path()
 			.projection(map.projection)

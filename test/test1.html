@@ -188,15 +188,6 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
     }]*/
 }).addTo(map);
 
-var mysketch = new d3.mappu.Sketch('sketch1', {
-}).addTo(map);
-var counter = 0;
-mysketch
-	.draw('LineString')
-	.then(function(feature){
-			feature.id = counter++;
-			mylayer.addFeature(feature);
-	});
 
 
 
@@ -208,6 +199,15 @@ var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 			'stroke-width': '1px'
 		}
 }).addTo(map);
+var mysketch = new d3.mappu.Sketch('sketch1', {
+}).addTo(map);
+var counter = 0;
+mysketch
+	.draw('LineString')
+	.then(function(feature){
+			feature.id = counter++;
+			mylayer.addFeature(feature);
+	});
 
 /*
 d3.json('us.json', function(error, data){

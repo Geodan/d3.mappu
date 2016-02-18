@@ -320,20 +320,12 @@ d3_mappu_Map = function( id, config ) {
 			.classed( 'drawboard', true )
 			.each( function( d ) { 
 				d.drawboard = d3.select( this );
-				/*
-				//Experimental!!
-				var filter = d.drawboard.append( 'defs' ).append( 'filter' ).attr( 'id', 'glow' ); 
-				filter.append( 'feGaussianBlur' ).attr( 'stdDeviation', '2.5' ).attr( 'result', 'coloredBlur' ); 
-				var merge = filter.append( 'feMerge' ); 
-				merge.append( 'feMergeNode' ).attr( 'in', 'coloredBlur' ); 
-				merge.append( 'feMergeNode' ).attr( 'in', 'SourceGraphic' ); 
-				//End of experiment
-				*/
 		} ).append( 'g' ); 
-		drawboards.exit( ).remove( ); 
+		drawboards.exit( ).remove( );
 		drawboards.sort( function( a, b ) { 
 				return a.zindex - b.zindex; 
-		} ); 
+		} );
+		
 	};
 	// .removeLayers([{layer}])
 	
