@@ -16,7 +16,7 @@ function getData(url,d, _attributes){
   	d3.json(url, function(error, json) {
           if (error) {
             console.error("caching tiles error", error, url, json);
-            //delete cachedTiles[url];
+            delete cachedTiles[url];
           }
           else {
           	var features = [];

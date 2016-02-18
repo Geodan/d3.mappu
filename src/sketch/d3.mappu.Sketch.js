@@ -110,7 +110,7 @@ d3_mappu_Sketch = function(id, config) {
 			};
 			type = geomtype;
 			if (type == 'Point'){
-				map.svg.on('click',finishPoint);
+				d3.select(map.mapdiv).on('click',finishPoint);
 			}
 			else if (type == 'LineString'){
 				//some defaults
@@ -118,9 +118,9 @@ d3_mappu_Sketch = function(id, config) {
 				activeFeature.style.stroke = 'blue';
 				activeFeature.style['stroke-width'] = "4";
 				activeFeature.style['stroke-linecap'] = "round";
-				map.svg.on('mousedown', addPoint);
-				map.svg.on('mousemove',movePointer);
-				map.svg.on('mousedown.doublemousedown',function(e){
+				d3.select(map.mapdiv).on('mousedown', addPoint);
+				d3.select(map.mapdiv).on('mousemove',movePointer);
+				d3.select(map.mapdiv).on('mousedown.doublemousedown',function(e){
 					clickCount++;
 					if (clickCount >1){
 						finishLineString(e);
@@ -134,9 +134,9 @@ d3_mappu_Sketch = function(id, config) {
 				//some defaults
 				activeFeature.style.fill = 'blue';
 				activeFeature.style.stroke = 'blue';
-				map.svg.on('mousedown',addPoint); 
-				map.svg.on('mousemove',movePointer);
-				map.svg.on('mousedown.doublemousedown',function(e){
+				d3.select(map.mapdiv).on('mousedown',addPoint); 
+				d3.select(map.mapdiv).on('mousemove',movePointer);
+				d3.select(map.mapdiv).on('mousedown.doublemousedown',function(e){
 					clickCount++;
 					if (clickCount >1){
 						finishPolygon(e);
@@ -145,7 +145,7 @@ d3_mappu_Sketch = function(id, config) {
 						clickCount = 0;
 					},300);
 				});
-				map.svg.on('touchstart', function(e){
+				d3.select(map.mapdiv).on('touchstart', function(e){
 					pressTimer = window.setTimeout(function() {
 						finishPolygon();
 					},500);
@@ -314,7 +314,7 @@ d3_mappu_Sketch = function(id, config) {
 		return new Promise(function(resolve, reject){
 			self.resolve = resolve;
 			event.stopPropagation();
-			map.svg.on('click', function(){
+			d3.select(map.mapdiv).on('click', function(){
 				buildEdit();
 				featureChanged();
 			});
@@ -370,18 +370,18 @@ d3_mappu_Sketch = function(id, config) {
 	**/
 	
 	var finish = function(){
-		map.svg.selectAll('.sketch').remove();
-		map.svg.selectAll('.sketchPoint').remove();
-		map.svg.selectAll('.sketchPointInter').remove();
+		svg.selectAll('.sketch').remove();
+		svg.selectAll('.sketchPoint').remove();
+		svg.selectAll('.sketchPointInter').remove();
 		//_layer.drawboard.selectAll('.entity').select('path').on('click', null);
 		activeFeature = null;
 		coords = [];
-		map.svg.on('mousemove',null);
-		map.svg.on('click', null);
-		map.svg.on('mousedown',null);
-		map.svg.on('doublemousedown',null);
-		map.svg.on('touchstart',null);
-		map.svg.on('touchend',null);
+		d3.select(map.mapdiv).on('mousemove',null);
+		d3.select(map.mapdiv).on('click', null);
+		d3.select(map.mapdiv).on('mousedown',null);
+		d3.select(map.mapdiv).on('doublemousedown',null);
+		d3.select(map.mapdiv).on('touchstart',null);
+		d3.select(map.mapdiv).on('touchend',null);
 		//_layer.draw(true);
 	};
 	
@@ -392,7 +392,12 @@ d3_mappu_Sketch = function(id, config) {
 	function addTo(m){
 		map = m;
 		map.sketch = sketch;
-		svg = map.svg;
+		svg = d3.select(map.mapdiv).append('svg')
+			.attr( 'id', 'sketch' )
+			.style( 'position', 'absolute' )
+			.attr('width',map.mapdiv.clientWidth)
+			.attr('height',map.mapdiv.clientHeight)
+			.append('g');
 		project = map.projection;
 		path = d3.geo.path()
 			.projection(map.projection)

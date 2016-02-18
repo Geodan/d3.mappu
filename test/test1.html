@@ -187,7 +187,7 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         }
     }]*/
 }).addTo(map);
-/*
+
 var mysketch = new d3.mappu.Sketch('sketch1', {
 }).addTo(map);
 var counter = 0;
@@ -197,7 +197,7 @@ mysketch
 			feature.id = counter++;
 			mylayer.addFeature(feature);
 	});
-*/
+
 
 
 var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
@@ -231,7 +231,7 @@ d3.json("gemeenten.topojson", function(error, data) {
   //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
 
-
+map.resize();
 
 
 
