@@ -6,17 +6,10 @@ d3.mappu.Sketch = function(id, config) {
 
 d3_mappu_Sketch = function(id, config) {
 	var sketch = {};
-	var layer = config.layer; //Layer to edit
-	if (layer.type != 'vector'){
-		console.warn('Can\'t edit. Not a vector layer');
-		return null;
-	}
-	var map = layer.map;
-	var svg = layer.map.svg;
-	var path = d3.geo.path()
-		.projection(layer.map.projection)
-		.pointRadius(4.5);
-	var project = map.projection;
+	var map = null;
+	var svg = null;
+	var path = null;
+	var project = null;
 	var coords = [];
 	var type = null;
 	var activeFeature = null;
@@ -26,6 +19,7 @@ d3_mappu_Sketch = function(id, config) {
 	
 	/* NEW DRAWING */
 	function build(){
+		
 		svg.selectAll('.sketch').remove();
 		svg.append('path').attr("d", function(){
 				return path(activeFeature);
@@ -103,73 +97,85 @@ d3_mappu_Sketch = function(id, config) {
 	}
 	
 	var draw = function(geomtype){
-		activeFeature = {
-			id: null,
-			type: "Feature",
-			geometry: {
-				type: geomtype,
-				coordinates: []
-			},
-			style: {opacity: 0.7},
-			properties: {}
-		};
-		type = geomtype;
-		if (type == 'Point'){
-			map.svg.on('click',finishPoint);
-		}
-		else if (type == 'LineString'){
-			//some defaults
-			activeFeature.style.fill = 'none';
-			activeFeature.style.stroke = 'blue';
-			activeFeature.style['stroke-width'] = "4";
-			activeFeature.style['stroke-linecap'] = "round";
-			map.svg.on('mousedown', addPoint);
-			map.svg.on('mousemove',movePointer);
-        	map.svg.on('mousedown.doublemousedown',function(e){
-        		clickCount++;
-        		if (clickCount >1){
-        			finishLineString(e);
-        		}
-        		window.setTimeout(function() {
-					clickCount = 0;
-				},300);
-        	});
-		}
-		else if (type == 'Polygon'){
-			//some defaults
-			activeFeature.style.fill = 'blue';
-			activeFeature.style.stroke = 'blue';
-			map.svg.on('mousedown',addPoint); 
-			map.svg.on('mousemove',movePointer);
-        	map.svg.on('mousedown.doublemousedown',function(e){
-        		clickCount++;
-        		if (clickCount >1){
-        			finishPolygon(e);
-        		}
-        		window.setTimeout(function() {
-					clickCount = 0;
-				},300);
-        	});
-        	map.svg.on('touchstart', function(e){
-				pressTimer = window.setTimeout(function() {
-					finishPolygon();
-				},500);
-			})
-			.on('touchmove',function(e,d){
-				console.log(e,d);
-			})
-			.on('touchend', function(){
-				clearTimeout(pressTimer);
-			});
-		}
+		svg = d3.select(map.mapdiv).append('svg')
+			.attr( 'id', 'sketch' )
+			.style( 'position', 'absolute' )
+			.attr('width',map.mapdiv.clientWidth)
+			.attr('height',map.mapdiv.clientHeight)
+			.append('g');
+			
+		return new Promise(function(resolve, reject){
+			this.resolve = resolve;
+			activeFeature = {
+				id: null,
+				type: "Feature",
+				geometry: {
+					type: geomtype,
+					coordinates: []
+				},
+				style: {opacity: 0.7},
+				properties: {}
+			};
+			type = geomtype;
+			if (type == 'Point'){
+				d3.select(map.mapdiv).on('click',finishPoint);
+			}
+			else if (type == 'LineString'){
+				//some defaults
+				activeFeature.style.fill = 'none';
+				activeFeature.style.stroke = 'blue';
+				activeFeature.style['stroke-width'] = "4";
+				activeFeature.style['stroke-linecap'] = "round";
+				d3.select(map.mapdiv).on('mousedown', addPoint);
+				d3.select(map.mapdiv).on('mousemove',movePointer);
+				d3.select(map.mapdiv).on('mousedown.doublemousedown',function(e){
+					clickCount++;
+					if (clickCount >1){
+						finishLineString(e);
+					}
+					window.setTimeout(function() {
+						clickCount = 0;
+					},300);
+				});
+			}
+			else if (type == 'Polygon'){
+				//some defaults
+				activeFeature.style.fill = 'blue';
+				activeFeature.style.stroke = 'blue';
+				d3.select(map.mapdiv).on('mousedown',addPoint); 
+				d3.select(map.mapdiv).on('mousemove',movePointer);
+				d3.select(map.mapdiv).on('mousedown.doublemousedown',function(e){
+					clickCount++;
+					if (clickCount >1){
+						finishPolygon(e);
+					}
+					window.setTimeout(function() {
+						clickCount = 0;
+					},300);
+				});
+				d3.select(map.mapdiv).on('touchstart', function(e){
+					pressTimer = window.setTimeout(function() {
+						finishPolygon();
+					},500);
+				})
+				.on('touchmove',function(e,d){
+					console.log(e,d);
+				})
+				.on('touchend', function(){
+					clearTimeout(pressTimer);
+				});
+			}
+		});
 	};
 	
 	/**	featureCreated emits the newly created feature **/
 	var featureCreated = function(){
-		layer.addFeature(activeFeature);
-		var event = new CustomEvent('featureCreated', {detail: activeFeature});
-		map.mapdiv.dispatchEvent(event);
+		self.resolve(activeFeature);
+		//_layer.addFeature(activeFeature);
+		//var event = new CustomEvent('featureCreated', {detail: activeFeature});
+		//map.mapdiv.dispatchEvent(event);
 		finish();
+		
 	};
 	
 	
@@ -304,7 +310,6 @@ d3_mappu_Sketch = function(id, config) {
 			.style('stroke', 'steelBlue')
 			.style('fill', 'steelBlue')
 			.style('fillOpacity', 0.5)
-			//kindly copied from http://bl.ocks.org/mbostock/6123708
 			.call(drag);
 	}
 	
@@ -313,14 +318,23 @@ d3_mappu_Sketch = function(id, config) {
 		Start editing a specific feature
 	**/
 	var edit = function(feature){
-		event.stopPropagation();
-		map.svg.on('click', function(){
+		svg = d3.select(map.mapdiv).append('svg')
+			.attr( 'id', 'sketch' )
+			.style( 'position', 'absolute' )
+			.attr('width',map.mapdiv.clientWidth)
+			.attr('height',map.mapdiv.clientHeight)
+			.append('g');
+		return new Promise(function(resolve, reject){
+			self.resolve = resolve;
+			event.stopPropagation();
+			d3.select(map.mapdiv).on('click', function(){
 				buildEdit();
 				featureChanged();
+			});
+			activeFeature = feature;
+			type = feature.geometry.type;
+			buildEdit();
 		});
-		activeFeature = feature;
-		type = feature.geometry.type;
-		buildEdit();
 	};
 	
 	/**
@@ -328,56 +342,79 @@ d3_mappu_Sketch = function(id, config) {
 		adds a listener to the entities to edit them
 	**/
 	var startEdit = function(){
-		layer.drawboard.selectAll('.entity').select('path').on('click', edit);
+		//_layer.drawboard.selectAll('.entity').select('path').on('click', edit);
 	};
 	
 	/**	featureChanged emits the newly created feature **/
 	var featureChanged = function(){
-		layer.addFeature(activeFeature);
-		var event = new CustomEvent('featureChanged', {detail: activeFeature});
-		map.mapdiv.dispatchEvent(event);
+		self.resolve(activeFeature);
+		//_layer.addFeature(activeFeature);
+		//var event = new CustomEvent('featureChanged', {detail: activeFeature});
+		//map.mapdiv.dispatchEvent(event);
 		finish();
 	};
 
 	
 	
-/** REMOVE FEATURE **/
+	/** REMOVE FEATURE **/
 	var remove = function(feature){
-		layer.removeFeature(feature);
-		var event = new CustomEvent('featureRemoved', {detail: feature});
-		map.mapdiv.dispatchEvent(event);
-		finish();
+		return new Promise(function(resolve, reject){
+			resolve(feature);
+			finish();
+		});
+		//_layer.removeFeature(feature);
+		//var event = new CustomEvent('featureRemoved', {detail: feature});
+		//map.mapdiv.dispatchEvent(event);
+		
 	};
 	/**
 		startRemove()
 		adds a listener to the entities to remove them
 	**/
 	var startRemove = function(){
-		layer.drawboard.selectAll('.entity').select('path').on('click', remove);
+		//_layer.drawboard.selectAll('.entity').select('path').on('click', remove);
 	};
 
 	
-/** FINISH **/	
+	/** FINISH **/	
 	/** 
 		finish()
 		finish puts an end to the drawing or editing mode and removes listeners 
 	**/
 	
 	var finish = function(){
-		svg.selectAll('.sketch').remove();
-		svg.selectAll('.sketchPoint').remove();
-		svg.selectAll('.sketchPointInter').remove();
-		layer.drawboard.selectAll('.entity').select('path').on('click', null);
-		activeFeature = null;
-		coords = [];
-		map.svg.on('mousemove',null);
-		map.svg.on('click', null);
-		map.svg.on('mousedown',null);
-		map.svg.on('doublemousedown',null);
-		map.svg.on('touchstart',null);
-		map.svg.on('touchend',null);
-		layer.draw(true);
+		if (svg){
+			svg.selectAll('.sketch').remove();
+			svg.selectAll('.sketchPoint').remove();
+			svg.selectAll('.sketchPointInter').remove();
+			d3.select(map.mapdiv).select('#sketch').remove();
+			//_layer.drawboard.selectAll('.entity').select('path').on('click', null);
+			activeFeature = null;
+			coords = [];
+			d3.select(map.mapdiv).on('mousemove',null);
+			d3.select(map.mapdiv).on('click', null);
+			d3.select(map.mapdiv).on('mousedown',null);
+			d3.select(map.mapdiv).on('doublemousedown',null);
+			d3.select(map.mapdiv).on('touchstart',null);
+			d3.select(map.mapdiv).on('touchend',null);
+			//_layer.draw(true);
+		}
 	};
+	
+	/**
+		addTo(mapObject)
+		Attach a map to the sketch object
+	**/
+	function addTo(m){
+		map = m;
+		map.sketch = sketch;
+		
+		project = map.projection;
+		path = d3.geo.path()
+			.projection(map.projection)
+			.pointRadius(4.5);
+		return sketch;
+	}
 	
 	//Export functions
 	sketch.draw  = draw;
@@ -386,8 +423,7 @@ d3_mappu_Sketch = function(id, config) {
 	sketch.remove = remove;
 	sketch.finish = finish;
 	sketch.edit = edit;
-	sketch.layer = layer;
-	map.sketch = sketch;
+	sketch.addTo = addTo;
 	return sketch;
 };
 

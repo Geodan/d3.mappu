@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<script src="../bower_components/d3/d3.js" charset="utf-8"></script>
+<script src="../bower_components/topojson/topojson.js"></script>
+<script src="../bower_components/d3-plugins/geo/tile/tile.js"></script>
+<script src="../dist/d3.mappu.js"></script>
+
+<style>
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+path {
+  fill: none;
+  stroke: red;
+  stroke-linejoin: round;
+  
+}
+
+#header {
+	position: relative;
+	height: 10%;
+	width: 100%;
+	background: green;
+}
+
+#content {
+	position: relative;
+	height: 90%;
+	width: 100%;
+}
+#leftbar {
+	position: absolute;
+	height: 100%;
+	width: 100px;
+	background: red;
+}
+
+#map {
+  position: absolute;
+  margin: 0 auto;
+  overflow: hidden;
+  left: 100px;
+  height: 100%;
+  right: 0px;
+}
+
+.tile {
+  position: absolute;
+}
+
+.tile.loading {
+  display: none;
+}
+
+/**
+Layer styling happens in CSS, or in a per-feature function
+**/
+.mylayer {
+    fill: steelBlue;
+    fill-opacity: 0.4;
+    stroke: steelBlue;
+}
+
+.coordinates {
+    font-size: 8pt;
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+}
+
+.popover {
+    position: absolute;
+    background: white;
+}
+
+.minor_road{
+	stroke: gray;
+	stroke-width: 1px;
+}
+.major_road{
+	stroke: orange;
+	stroke-width: 2px;
+}
+.highway {
+	stroke: yellow;
+	stroke-width: 4px;
+}
+
+</style>
+
+</head>
+<body>
+	<button id="toggle">Toggle</button>
+	<div id='map'></div>
+<script>
+  
+var map = new d3.mappu.Map('map', {
+        center: [5.2,52.2],
+        zoom: 14,
+        minZoom: 10,
+        maxZoom: 24,
+        projection: d3.geo.mercator()
+});
+
+var layer = new d3.mappu.RasterLayer('layer1', {
+    ogc_type: 'tms',
+    url: 'https://{s}.tiles.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpamVuY3cxbzAwMG12ZGx4cGljbGtqMGUifQ.vpDqms08MBqoRgp667Yz5Q',
+    opacity: 0.3
+}).addTo(map);
+
+var mylayer = new d3.mappu.VectorLayer('mylayer',{
+    reproject: true,
+    duration: 5000,
+    labelStyle: {
+    	fill: 'steelBlue',
+    	stroke: 'steelBlue'
+    },
+    labelfield: 'Username'
+}).addTo(map);
+
+var set = 'born';
+function toggle(){
+	if (set == 'born'){
+		set = 'school';
+		mylayer.data = school;
+	}
+	else if (set == 'school') {
+		set = 'home';
+		mylayer.data = home;
+	}
+	else {
+		set = 'born';
+		mylayer.data = born;
+	}
+}
+
+d3.select('#toggle').on('click',toggle);
+
+var home = [];
+var born = [];
+
+d3.json("http://research.geodan.nl/sites/worldmap/geodanbornplaces.geojson", function(error, data) {
+  if (error) return console.error(error);
+  var counter = 0;
+  feats = data.features;
+  feats.forEach(function(d,i){
+		  d.id = i;
+  });
+  born = feats;
+  mylayer.data = feats;
+});
+
+
+d3.json("http://research.geodan.nl/sites/worldmap/geodanhomecities.geojson", function(error, data) {
+  if (error) return console.error(error);
+  var counter = 0;
+  feats = data.features;
+  feats.forEach(function(d,i){
+		  d.id = i;
+  });
+  home = feats;
+  //mylayer.data = feats;
+});
+
+d3.json("http://research.geodan.nl/sites/worldmap/geodanschoolcities.geojson", function(error, data) {
+  if (error) return console.error(error);
+  var counter = 0;
+  feats = data.features;
+  feats.forEach(function(d,i){
+		  d.id = i;
+  });
+  school = feats;
+  //mylayer.data = feats;
+});
+
+</script>
+
+</body>
+</html>

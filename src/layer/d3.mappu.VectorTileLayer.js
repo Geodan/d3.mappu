@@ -6,17 +6,16 @@
   };
   
   d3_mappu_VectorTileLayer = function(name, config) {
-  	  
+  	  var self = this;
   	  config = config || {};
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vectortile';
-      var _url = config.url;
-                               
-	  var _duration = config.duration || 0;
-	  var _path;
-	  var _projection;
-	  var style = config.style || {};
+			var _url = config.url;                           
+			var _duration = config.duration || 0;
+			var _path;
+			var _projection;
+			var style = config.style || {};
       
 	  Object.defineProperty(layer, 'url', {
         get: function() {

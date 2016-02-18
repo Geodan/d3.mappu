@@ -105,6 +105,16 @@ d3_mappu_Layer = function(name, config){
     layer.setZIndex = setZIndex;
 
     /* private: */
+    
+    layer._instantiate = function(mapdiv){
+    	layer.drawboard = d3.select(mapdiv)
+				.append( 'svg' )
+				.attr( 'id', function( d ) { return d.id;} )
+				.style( 'position', 'absolute' )
+				.classed( 'drawboard', true );
+			layer.drawboard.append( 'g' );
+    }
+    
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
         map.orderLayers();
