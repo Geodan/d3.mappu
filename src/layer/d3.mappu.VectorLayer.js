@@ -103,6 +103,7 @@
               var img = d3.select(this).append('g').append("image")
               	.attr("width", 32)
                 .attr("height", 37)
+                .style('pointer-events','visiblepainted')//make clickable
               	//.attr("x",x-12.5) //No need setting x and y, since it's reset later
 				//.attr("y",y-25)
 				.attr("xlink:href", function(d){
@@ -116,7 +117,8 @@
 				  d.geometry.coordinates[0].reverse();
 			  }
 			  d3.select(this).append('path').attr("d", _path)
-				.classed(name, true);
+				.classed(name, true)
+        .style('pointer-events','visiblepainted');//make clickable
 		  }
 		  d3.select(this).append('text')
 		  	.classed('shadowtext',true)

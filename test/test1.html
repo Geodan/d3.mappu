@@ -51,6 +51,10 @@ path {
 
 .tile {
   position: absolute;
+  border: 1px solid black;
+  width: 256px;
+  height: 256px;
+  font-size: 8pt;
 }
 
 .tile.loading {
@@ -91,6 +95,12 @@ Layer styling happens in CSS, or in a per-feature function
 	stroke-width: 4px;
 }
 
+#debug {
+	position: absolute;
+	bottom: 0px;
+	left: 10px;
+}
+
 </style>
 
 </head>
@@ -99,6 +109,7 @@ Layer styling happens in CSS, or in a per-feature function
 <div id="content">
 	<div id="leftbar">leftbar</div>
 	<div id='map'></div>
+	<div id="debug"></div>
 </div>
 <!--
 <script src="../src/d3.dev/d3.geo.raster.js"></script>
@@ -111,7 +122,7 @@ var map = new d3.mappu.Map('map', {
         center: [5.2,52.2],
         zoom: 18,
         minZoom: 10,
-        maxZoom: 24,
+        maxZoom: 30,
         projection: d3.geo.mercator()
 });
 
@@ -154,7 +165,7 @@ var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
 //var controllers = d3.mappu.Controllers(map);
 
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    reproject: true,
+    reproject: false,
     events: [{
     	event: 'click',
         action: function(d){
@@ -190,7 +201,7 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
 
 
 
-
+/*
 var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 		//url: "http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json",
 		url: "http://vector.mapzen.com/osm/roads/{z}/{x}/{y}.json?api_key=vector-tiles--R28NDY",
@@ -208,7 +219,7 @@ mysketch
 			feature.id = counter++;
 			mylayer.addFeature(feature);
 	});
-
+*/
 /*
 d3.json('us.json', function(error, data){
 		mylayer.data = data;
@@ -225,12 +236,12 @@ d3.json("provincie_4326.topojson", function(error, data) {
   });
   mylayer.data = feats;
 });
-*/
+
 d3.json("gemeenten.topojson", function(error, data) {
   if (error) return console.error(error);
   //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
-
+*/
 map.resize();
 
 
