@@ -7,10 +7,9 @@
 
   d3_mappu_RasterLayer = function(name, config) {
       var self = this;
-      d3_mappu_Layer.call(this,name, config);
+      //d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'raster';
-
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _options = config; //Te be leaflet compatible in g-layercatalogus
@@ -205,10 +204,8 @@
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         d3.select('#debug').html('scale'+tiles.scale);
          var image = drawboard
          		.style("transform", matrix3d(tiles.scale, tiles.translate))
-         		//.style("transform", "scale("+tiles.scale+") translate(" + tiles.translate + ")")
          		.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          
@@ -217,14 +214,12 @@
          imageEnter.append("img")
               .classed('tile',true)
               .attr("src", tileurl)
+              //.style('border','1px solid black')
               .attr('opacity', this.opacity)
               .style("left", function(d) { return (d[0] << 8) + "px"; })
               .style("top", function(d) { return (d[1] << 8) + "px"; })
-              //.html(function(d){
-              //		return 'left: ' + (d[0] << 8) + ' , top: '+ ([1] << 8); 
-              //});
               //TODO: working on this
-              //.on('click', getFeatureInfo);
+              .on('click', getFeatureInfo);
          }
          image.exit()
          	.remove();

@@ -17,7 +17,6 @@ d3_mappu_Layer = function(name, config){
     //TODO: parse config
     var _opacity = 1;
     _opacity = config.opacity || 1;
-    
     var _visible = true;
     if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
@@ -41,6 +40,60 @@ d3_mappu_Layer = function(name, config){
         map.resize();//TODO: is this needed?
         return layer;
     };
+    
+    if (config.usecache){
+			var cache = {_db:null};
+			cache._init = new Promise(function(resolve, reject){
+				var request = window.indexedDB.open("d3.mappu", 1);
+				request.onerror = function(event) {
+					console.error("Why didn't you allow my web app to use IndexedDB?!");
+					reject();
+				};
+				request.onsuccess = function(event) {
+					cache._db = event.target.result;
+					cache._db.onerror = function(event) {
+						console.error("Database error: " + event.target.error);
+					};
+					resolve();
+				};
+				request.onupgradeneeded = function(event) { 
+					cache._db = event.target.result;
+					cache._db.createObjectStore(_id, { keyPath: "key" });
+					resolve();
+				};
+			});
+			cache.add = function(key,data){
+				return new Promise(function(resolve, reject){
+						cache._db.transaction(_id,"readwrite").objectStore(_id).put({key: key,data: data}).onsucces = function(){
+							resolve();
+						};
+				});
+			}
+			cache.get = function(key,data){
+				return new Promise(function(resolve, reject){
+						var request = cache._db.transaction(_id).objectStore(_id).get(key);
+						request.onsuccess = function(event){
+							if (event.target.result){
+								resolve(event.target.result.data);
+							}
+							else {
+								reject();
+							}
+						};
+						request.onerror = function(){
+							reject();
+						}
+				});
+			}
+			cache.delete = function(key){
+				return new Promise(function(resolve, reject){
+						cache._db.transaction(_id,"readwrite").objectStore(_id).delete(key).onsucces = function(){
+							resolve();
+						};
+				});
+			}
+			layer.cache = cache;
+		}
     
     Object.defineProperty(layer, 'id', {
         get: function() {return _id;},
@@ -74,6 +127,7 @@ d3_mappu_Layer = function(name, config){
             layer.refresh(0);
         }
     });
+    
     
     Object.defineProperty(layer, 'visible', {
         get: function() {

@@ -7,7 +7,7 @@
 
   d3_mappu_RasterLayer = function(name, config) {
       var self = this;
-      d3_mappu_Layer.call(this,name, config);
+      //d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'raster';
 
