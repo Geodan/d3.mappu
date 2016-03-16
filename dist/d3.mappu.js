@@ -328,7 +328,52 @@ d3_mappu_Map = function( id, config ) {
 	//map.getLayersByName = getLayersByName;
 	map.redraw = redraw; 
 	map.resize = resize; 
-	map.dispatch = dispatch; 
+	map.dispatch = dispatch;
+	
+	/* Experimental indexeddb, move to own lib in future */
+	var req = indexedDB.deleteDatabase('d3.mappu');
+	req.onsuccess = function () {
+			console.log("Deleted database successfully");
+	};
+	req.onerror = function () {
+			console.log("Couldn't delete database");
+	};
+	req.onblocked = function () {
+			console.log("Couldn't delete database due to the operation being blocked");
+	};
+	var runningtasks = [];
+	function CreateObjectStore(dbName, storeName) {
+		return new Promise(function(resolve, reject){
+			var request = window.indexedDB.open(dbName);
+			request.onsuccess = function (e){
+					var database = e.target.result;
+					var version =  parseInt(database.version);
+					database.close();
+					var secondRequest = indexedDB.open(dbName, version+1);
+					secondRequest.onupgradeneeded = function (e) {
+							var database = e.target.result;
+							var objectStore = database.createObjectStore(storeName, {
+									keyPath: 'key'
+							});
+							database.close();
+							resolve();
+					};
+					secondRequest.onsuccess = function (e) {
+							e.target.result.close();
+							resolve();
+					};
+					secondRequest.onerror = function (e) {
+						reject(e);
+					}
+			}
+			request.onerror = function(e){
+				reject(e);
+			}
+		});
+	}
+	map.promisearray = runningtasks;
+	map.createObjectStore = CreateObjectStore;
+	
 	return map; 
 };
 //                                                                          マップ
@@ -804,59 +849,17 @@ d3_mappu_Layer = function(name, config){
         map.resize();//TODO: is this needed?
         return layer;
     };
-    
-    if (config.usecache){
+   if (config.usecache){
 			var cache = {_db:null};
-			cache._init = new Promise(function(resolve, reject){
-				var request = window.indexedDB.open("d3.mappu", 1);
-				request.onerror = function(event) {
-					console.error("Why didn't you allow my web app to use IndexedDB?!");
-					reject();
-				};
-				request.onsuccess = function(event) {
-					cache._db = event.target.result;
-					cache._db.onerror = function(event) {
-						console.error("Database error: " + event.target.error);
-					};
-					resolve();
-				};
-				request.onupgradeneeded = function(event) { 
-					cache._db = event.target.result;
-					cache._db.createObjectStore(_id, { keyPath: "key" });
-					resolve();
-				};
+			//request new objectstore
+			Promise.all(map.promisearray).then(function(){
+				console.log('creating store ', _id);
+				var promise = map.createObjectStore('d3.mappu',	_id)
+					.then(function(){
+							console.log('created store ', _id);
+					});
+				map.promisearray.push(promise);
 			});
-			cache.add = function(key,data){
-				return new Promise(function(resolve, reject){
-						cache._db.transaction(_id,"readwrite").objectStore(_id).put({key: key,data: data}).onsucces = function(){
-							resolve();
-						};
-				});
-			}
-			cache.get = function(key,data){
-				return new Promise(function(resolve, reject){
-						var request = cache._db.transaction(_id).objectStore(_id).get(key);
-						request.onsuccess = function(event){
-							if (event.target.result){
-								resolve(event.target.result.data);
-							}
-							else {
-								reject();
-							}
-						};
-						request.onerror = function(){
-							reject();
-						}
-				});
-			}
-			cache.delete = function(key){
-				return new Promise(function(resolve, reject){
-						cache._db.transaction(_id,"readwrite").objectStore(_id).delete(key).onsucces = function(){
-							resolve();
-						};
-				});
-			}
-			layer.cache = cache;
 		}
     
     Object.defineProperty(layer, 'id', {
@@ -1410,6 +1413,8 @@ d3_mappu_Layer = function(name, config){
       var _layers = config.layers;
       var _classproperty = config.classproperty;
       var _id_column = config.id_column;
+      var _geom_column = config.geom_column;
+      var _srid = config.srid;
       var _attributes = config.attributes;
       var _style = config.style;
       var _duration = config.duration || 0;
@@ -1471,9 +1476,12 @@ d3_mappu_Layer = function(name, config){
 						//This calculation only works for tiles that are square and always the same size
 						var bbox = getbbox(d);
 						url =  _url +
+							 "&request=getData" +
 							 "&bbox=" + bbox +
 							 "&table=" + _layers +
-							 "&id_column=" + _id_column + 
+							 "&id_column=" + _id_column +
+							 "&geom_column=" + _geom_column +
+							 "&srid=" + _srid +
 							 "&attributes=" + _attributes +
 							 "&srs=EPSG:3857";
           return url;
@@ -1492,26 +1500,30 @@ d3_mappu_Layer = function(name, config){
 				}
 				return (total >= 0);
 			}
-
-      var renders = [];
+			var renders = [];
 			renders.push(new Worker("twkb_processor.js"));
-			renders.push(new Worker("twkb_processor.js"));
-			renders.push(new Worker("twkb_processor.js"));
-			renders.push(new Worker("twkb_processor.js"));
+			
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
 			renders.forEach(function(renderer){
 				renderer.onmessage = function (e) {
-					var data = e.data.data;
-					var d = e.data.d;
-					//append to vectorcache
-					var promise = layer.cache.add(d[0]+'_'+d[1]+'_'+d[2],data);
-					//_vectorcache['#T'+layer.id+d[0]+'_'+d[1]+'_'+d[2]] = data;
-					build(d,data);
+					console.log(layer.id);
+					if (e.data.layerid == layer.id){
+						var data = e.data.data;
+						var d = e.data.d;
+						build(d,data);
+					}
 				}
 			});
       //each tile can be considered it's own drawboard, on which we build
       function build(d,data){
 				var counter = 0;
-				var tile = d3.select('#T'+layer.id+d[0]+'_'+d[1]+'_'+d[2]);
+				var tile = d3.select('#T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2]);
 				if (tile[0][0]){
 					_projection = d3.geo.mercator();
 					_path = d3.geo.path().projection(_projection);
@@ -1533,9 +1545,9 @@ d3_mappu_Layer = function(name, config){
 					data.forEach(function(d){
 							context.beginPath();
 							_path(d);
-							context.strokeStyle = typeof(_style.stroke)=='function'?_style.stroke(d.properties[_style.column]):_style.stroke;
+							//context.strokeStyle = typeof(_style.stroke)=='function'?_style.stroke(d.properties[_style.column]):_style.stroke;
 							context.fillStyle = typeof(_style.fill)=='function'?_style.fill(d.properties[_style.column]):_style.fill;
-							context.stroke();
+							//context.stroke();
 							context.fill();
 							context.closePath();
 					});
@@ -1550,59 +1562,46 @@ d3_mappu_Layer = function(name, config){
 			
       //Draw the tiles (based on data-update)
       var draw = function(){
-         var drawboard = layer.drawboard;
-         var tiles = layer.map.tiles;
-         _xhrqueue = [];
-         var image = drawboard
-         		.style("transform", matrix3d(tiles.scale, tiles.translate))
-         		.selectAll(".tile")
-            .data(tiles, function(d) { 
-            	return d; 
-            });
-
-         var imageEnter = image.enter();
-         if (layer.visible){
-         	 var tile = imageEnter.append("div")
-         	 		.classed("tile",true)
-         	 		.attr('id',function(d){
-         	 				return 'T'+layer.id+d[0]+'_'+d[1]+'_'+d[2];
-         	 		})
-         	 		//.style('border','1px solid black')
-              .style("left", function(d) { return (d[0] << 8) + "px"; })
-              .style("top", function(d) { return (d[1] << 8) + "px"; })
-          
-          //Delegate the xhr and twkb work to a webworker
-		 		  tile.each(function(d){
-		 		  		var url = tileurl(d);
-		 		  		//var cacheddata = _vectorcache['#T'+layer.id+d[0]+'_'+d[1]+'_'+d[2]];
-		 		  		layer.cache.get(d[0]+'_'+d[1]+'_'+d[2]).then(function(data){
-									//No need to request new data, still in cache
-									build(d,data);
-							},									
-								function() {
-									d3.json(url, function(error,json){
-											if (error) {
-												console.error("error", error);
-												return;
-											}
-											var rand = Math.round(Math.random() * 1);
-											renders[rand].postMessage({ json: json,tile:d,attributes: _attributes });
-									});
-								});
-		 		  });
-		 		  //tile.each(setStyle);
-         }
-         image.exit()
-         	.each(function(d){
-         			//Clean from vectorcache
-         			//var cacheddata = _vectorcache['#T'+layer.id+d[0]+'_'+d[1]+'_'+d[2]];
-         			//if (cacheddata){
-         			//	delete cacheddata;
-         			//}
-         			//FIXME layer.cache.delete(d[0]+'_'+d[1]+'_'+d[2]);
-         			//d3.select(this)[0][0].xhr.abort();//yuck
-         	})
-         	.remove();
+      	//Wait for cache to be settled
+      	Promise.all(map.promisearray).then(function(){
+      		 var rand = 0;
+					 var drawboard = layer.drawboard;
+					 var tiles = layer.map.tiles;
+					 _xhrqueue = [];
+					 var image = drawboard
+							.style("transform", matrix3d(tiles.scale, tiles.translate))
+							.selectAll(".tile")
+							.data(tiles, function(d) { 
+								return d; 
+							});
+	
+					 var imageEnter = image.enter();
+					 if (layer.visible){
+					 	 console.log(layer.id,imageEnter.length);
+						 var tile = imageEnter.append("div")
+								.classed("tile",true)
+								.attr('id',function(d){
+										return 'T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2];
+								})
+								//.style('border','1px solid black')
+								.style("left", function(d) { return (d[0] << 8) + "px"; })
+								.style("top", function(d) { return (d[1] << 8) + "px"; })
+						
+						//Delegate the xhr and twkb work to a webworker
+						tile.each(function(d){
+								var url = tileurl(d);
+								//var rand = Math.round(Math.random() * 3);
+								//rand>2?rand=0:rand++;
+								renders[0].postMessage({layerid: layer.id, url: url,tile:d,attributes: _attributes });
+						});
+						//tile.each(setStyle);
+					 }
+					 image.exit()
+						.each(function(d){
+								//d3.select(this)[0][0].xhr.abort();//yuck
+						})
+						.remove();
+				});
       };
 
       var refresh = function(){
@@ -1835,6 +1834,9 @@ d3_mappu_Layer = function(name, config){
               .classed('tile',true)
               .attr("src", tileurl)
               //.style('border','1px solid black')
+              .style('width','256px')
+              .style('height','256px')
+              .style('position','absolute')
               .attr('opacity', this.opacity)
               .style("left", function(d) { return (d[0] << 8) + "px"; })
               .style("top", function(d) { return (d[1] << 8) + "px"; })

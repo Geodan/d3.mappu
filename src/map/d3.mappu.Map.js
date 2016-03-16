@@ -316,7 +316,52 @@ d3_mappu_Map = function( id, config ) {
 	//map.getLayersByName = getLayersByName;
 	map.redraw = redraw; 
 	map.resize = resize; 
-	map.dispatch = dispatch; 
+	map.dispatch = dispatch;
+	
+	/* Experimental indexeddb, move to own lib in future */
+	var req = indexedDB.deleteDatabase('d3.mappu');
+	req.onsuccess = function () {
+			console.log("Deleted database successfully");
+	};
+	req.onerror = function () {
+			console.log("Couldn't delete database");
+	};
+	req.onblocked = function () {
+			console.log("Couldn't delete database due to the operation being blocked");
+	};
+	var runningtasks = [];
+	function CreateObjectStore(dbName, storeName) {
+		return new Promise(function(resolve, reject){
+			var request = window.indexedDB.open(dbName);
+			request.onsuccess = function (e){
+					var database = e.target.result;
+					var version =  parseInt(database.version);
+					database.close();
+					var secondRequest = indexedDB.open(dbName, version+1);
+					secondRequest.onupgradeneeded = function (e) {
+							var database = e.target.result;
+							var objectStore = database.createObjectStore(storeName, {
+									keyPath: 'key'
+							});
+							database.close();
+							resolve();
+					};
+					secondRequest.onsuccess = function (e) {
+							e.target.result.close();
+							resolve();
+					};
+					secondRequest.onerror = function (e) {
+						reject(e);
+					}
+			}
+			request.onerror = function(e){
+				reject(e);
+			}
+		});
+	}
+	map.promisearray = runningtasks;
+	map.createObjectStore = CreateObjectStore;
+	
 	return map; 
 };
 //                                                                          マップ
