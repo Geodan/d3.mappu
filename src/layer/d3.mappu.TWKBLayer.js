@@ -117,7 +117,6 @@
 			//renders.push(new Worker("twkb_processor.js"));
 			renders.forEach(function(renderer){
 				renderer.onmessage = function (e) {
-					console.log(layer.id);
 					if (e.data.layerid == layer.id){
 						var data = e.data.data;
 						var d = e.data.d;
@@ -168,7 +167,7 @@
       //Draw the tiles (based on data-update)
       var draw = function(){
       	//Wait for cache to be settled
-      	Promise.all(map.promisearray).then(function(){
+      	Promise.all(d3.mappu.Cache.runningtasks).then(function(){
       		 var rand = 0;
 					 var drawboard = layer.drawboard;
 					 var tiles = layer.map.tiles;
@@ -182,8 +181,7 @@
 	
 					 var imageEnter = image.enter();
 					 if (layer.visible){
-					 	 console.log(layer.id,imageEnter.length);
-						 var tile = imageEnter.append("div")
+					 	 var tile = imageEnter.append("div")
 								.classed("tile",true)
 								.attr('id',function(d){
 										return 'T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2];

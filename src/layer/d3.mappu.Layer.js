@@ -40,18 +40,6 @@ d3_mappu_Layer = function(name, config){
         map.resize();//TODO: is this needed?
         return layer;
     };
-   if (config.usecache){
-			var cache = {_db:null};
-			//request new objectstore
-			Promise.all(map.promisearray).then(function(){
-				console.log('creating store ', _id);
-				var promise = map.createObjectStore('d3.mappu',	_id)
-					.then(function(){
-							console.log('created store ', _id);
-					});
-				map.promisearray.push(promise);
-			});
-		}
     
     Object.defineProperty(layer, 'id', {
         get: function() {return _id;},
@@ -134,11 +122,11 @@ d3_mappu_Layer = function(name, config){
         map.orderLayers();
         layer.draw();
 		var event = new CustomEvent("layeradded", { "detail": layer});
-		layer.map.mapdiv.dispatchEvent(event);
+			layer.map.mapdiv.dispatchEvent(event);
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     	var event = new CustomEvent("layerremoved");
-		layer.map.mapdiv.dispatchEvent(event);
+    	layer.map.mapdiv.dispatchEvent(event);
     };
     
     

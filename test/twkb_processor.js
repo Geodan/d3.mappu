@@ -38,7 +38,6 @@ cache.add = function(key,data){
 			cache.init().then(function(){
 				var req = cache._db.transaction(_id,"readwrite").objectStore(_id).put({key: key,data: data});
 				req.onsucces = function(){
-					cache._db.close();
 					resolve();
 				};
 				req.onerror = function(e){
@@ -56,10 +55,12 @@ cache.get = function(key,data){
 					resolve(event.target.result.data);
 				}
 				else {
+					console.error('no result');
 					reject();
 				}
 			};
-			request.onerror = function(){
+			request.onerror = function(e){
+				console.error('Error: ',e);
 				reject();
 			}
 	});
@@ -117,7 +118,7 @@ function getData(url,d, _attributes){
 					.then(function(data){
 						//No need to request new data, still in cache
 						var returndata = twkb2geojson(data, _attributes);
-						postMessage({data:returndata,d:d });
+						postMessage({layerid: _id,data:returndata,d:d });
 					},function(){
 						d3.json(url, function(error,json){
 								if (error) {

@@ -10,6 +10,62 @@ d3.mappu.util.createID = function(){
 };
 
 //                                                                          マップ
+;/**
+ Singleton for indexeddb cache
+**/
+
+
+"use strict";
+d3.mappu.Cache = (function() {
+	if (window.d3.mappu._cache){
+		return window.d3.mappu._cache;
+	}
+	var cache = {};
+	var runningtasks = [];
+	
+	var delPromise = new Promise(function(resolve, reject){
+		var req = indexedDB.deleteDatabase('d3.mappu');
+		req.onsuccess = function () {
+				console.log("Deleted database successfully");
+				resolve();
+		};
+		req.onerror = function () {
+				console.log("Couldn't delete database");
+				reject();
+		};
+		req.onblocked = function () {
+				console.log("Couldn't delete database due to the operation being blocked");
+				reject();
+		};
+	});
+	runningtasks.push(delPromise);
+	delPromise.then(function(){
+			var req = indexedDB.open('d3.mappu',1);
+			req.onupgradeneeded = function (e) {
+					database = e.target.result;
+					database.createObjectStore('ッ-0', {keyPath: 'key'});
+					database.createObjectStore('ッ-1', {keyPath: 'key'});
+					database.createObjectStore('ッ-2', {keyPath: 'key'});
+					database.createObjectStore('ッ-3', {keyPath: 'key'});
+					database.createObjectStore('ッ-4', {keyPath: 'key'});
+					database.createObjectStore('ッ-5', {keyPath: 'key'});
+					database.createObjectStore('ッ-6', {keyPath: 'key'});
+					database.createObjectStore('ッ-7', {keyPath: 'key'});
+					
+			};
+			req.onsuccess = function (e) {
+					cache.database = e.target.result;
+					
+			};
+			req.onerror = function (e) {
+				
+			}
+	});
+	
+	cache.runningtasks = runningtasks;
+	window.d3.mappu._cache = cache;
+	return cache;
+})();
 ;d3.mappu = d3.mappu || {}; 
 /**
 * d3.mappu.Map is the central class of the API - it is used to create a map.
@@ -330,49 +386,7 @@ d3_mappu_Map = function( id, config ) {
 	map.resize = resize; 
 	map.dispatch = dispatch;
 	
-	/* Experimental indexeddb, move to own lib in future */
-	var req = indexedDB.deleteDatabase('d3.mappu');
-	req.onsuccess = function () {
-			console.log("Deleted database successfully");
-	};
-	req.onerror = function () {
-			console.log("Couldn't delete database");
-	};
-	req.onblocked = function () {
-			console.log("Couldn't delete database due to the operation being blocked");
-	};
-	var runningtasks = [];
-	function CreateObjectStore(dbName, storeName) {
-		return new Promise(function(resolve, reject){
-			var request = window.indexedDB.open(dbName);
-			request.onsuccess = function (e){
-					var database = e.target.result;
-					var version =  parseInt(database.version);
-					database.close();
-					var secondRequest = indexedDB.open(dbName, version+1);
-					secondRequest.onupgradeneeded = function (e) {
-							var database = e.target.result;
-							var objectStore = database.createObjectStore(storeName, {
-									keyPath: 'key'
-							});
-							database.close();
-							resolve();
-					};
-					secondRequest.onsuccess = function (e) {
-							e.target.result.close();
-							resolve();
-					};
-					secondRequest.onerror = function (e) {
-						reject(e);
-					}
-			}
-			request.onerror = function(e){
-				reject(e);
-			}
-		});
-	}
-	map.promisearray = runningtasks;
-	map.createObjectStore = CreateObjectStore;
+	
 	
 	return map; 
 };
@@ -849,18 +863,6 @@ d3_mappu_Layer = function(name, config){
         map.resize();//TODO: is this needed?
         return layer;
     };
-   if (config.usecache){
-			var cache = {_db:null};
-			//request new objectstore
-			Promise.all(map.promisearray).then(function(){
-				console.log('creating store ', _id);
-				var promise = map.createObjectStore('d3.mappu',	_id)
-					.then(function(){
-							console.log('created store ', _id);
-					});
-				map.promisearray.push(promise);
-			});
-		}
     
     Object.defineProperty(layer, 'id', {
         get: function() {return _id;},
@@ -943,11 +945,11 @@ d3_mappu_Layer = function(name, config){
         map.orderLayers();
         layer.draw();
 		var event = new CustomEvent("layeradded", { "detail": layer});
-		layer.map.mapdiv.dispatchEvent(event);
+			layer.map.mapdiv.dispatchEvent(event);
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     	var event = new CustomEvent("layerremoved");
-		layer.map.mapdiv.dispatchEvent(event);
+    	layer.map.mapdiv.dispatchEvent(event);
     };
     
     
@@ -1512,7 +1514,6 @@ d3_mappu_Layer = function(name, config){
 			//renders.push(new Worker("twkb_processor.js"));
 			renders.forEach(function(renderer){
 				renderer.onmessage = function (e) {
-					console.log(layer.id);
 					if (e.data.layerid == layer.id){
 						var data = e.data.data;
 						var d = e.data.d;
@@ -1563,7 +1564,7 @@ d3_mappu_Layer = function(name, config){
       //Draw the tiles (based on data-update)
       var draw = function(){
       	//Wait for cache to be settled
-      	Promise.all(map.promisearray).then(function(){
+      	Promise.all(d3.mappu.Cache.runningtasks).then(function(){
       		 var rand = 0;
 					 var drawboard = layer.drawboard;
 					 var tiles = layer.map.tiles;
@@ -1577,8 +1578,7 @@ d3_mappu_Layer = function(name, config){
 	
 					 var imageEnter = image.enter();
 					 if (layer.visible){
-					 	 console.log(layer.id,imageEnter.length);
-						 var tile = imageEnter.append("div")
+					 	 var tile = imageEnter.append("div")
 								.classed("tile",true)
 								.attr('id',function(d){
 										return 'T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2];
