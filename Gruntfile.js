@@ -9,13 +9,16 @@ module.exports = function(grunt){
           dist: {
             // the files to concatenate
             src: [
+            'libs/twkb.min.js',
             'src/core/d3.mappu.util.js',
+            'src/core/d3.mappu.Cache.js',
             'src/map/d3.mappu.Map.js',
             'src/sketch/d3.mappu.Sketch.js',
             'src/layer/d3.mappu.Layer.js',
             'src/layer/d3.mappu.VectorLayer.js',
-	    'src/layer/d3.mappu.VectorTileLayer.js',
-            'src/layer/d3.mappu.RasterLayer.js',
+            'src/layer/d3.mappu.VectorTileLayer.js',
+            'src/layer/d3.mappu.TWKBLayer.js',
+            'src/layer/d3.mappu.RasterDivLayer.js',
             'src/core/d3.mappu.Controllers.js',
             'src/core/d3.mappu.Coordinates.js'
             ],
@@ -39,10 +42,10 @@ module.exports = function(grunt){
           tasks: ['jshint', 'qunit']
         }
     });
-    
+
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-concat');
-    
+
     grunt.registerTask('watch', ['concat','uglify']);
     grunt.registerTask('default', ['concat','uglify']);
 };
