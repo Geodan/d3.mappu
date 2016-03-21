@@ -79,9 +79,9 @@
       	  	  	  entity.select('path').style(key, d.style[key]);
       	  	  }
       	  }
-      	  
-      	  
-      	  
+
+
+
       	  if (d._selected){
       	  	  //make halo around entity to show as selected
       	  	  entity
@@ -120,8 +120,8 @@
 				.attr("xlink:href", function(d){
 					return d.style['marker-url'];
 				});
-				
-				
+
+
       	  }
       	  else {
 			  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
@@ -174,7 +174,7 @@
           	.attr('id',function(d){
                     return 'entity'+ d.id;
             })
-     
+
           newentity.each(build);
           newentity.each(setStyle);
 
@@ -204,8 +204,9 @@
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration).each(function(d){
-				  	var width =  calcwidth(layer.map.zoom);
-				  	var height = calcheight(layer.map.zoom);
+                    //TODO: create something nice customizable for widh-height calculations
+				  	var width =  32; //calcwidth(layer.map.zoom);
+				  	var height = 37; //calcheight(layer.map.zoom);
 				  	var x = project(d.geometry.coordinates)[0];
 				  	var y = project(d.geometry.coordinates)[1];
 				  	var offsetx = width/2;
@@ -223,9 +224,9 @@
 					  else {
 					  	  d3.select(this.parentElement).attr("transform", "translate("+ -offsetx+" "+ -offsety+")");
 					  }
-				  });		  
-				  	
-				  	
+				  });
+
+
 				  if (config.labelfield){
 				  	  //TODO: add option to only show layer from certain zoomlevel
 					  entities.each(function(d){
