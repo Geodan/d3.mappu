@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF8">
+<script src="../bower_components/d3/d3.js" charset="utf-8"></script>
+<script src="../libs/colorbrewer.js" charset="utf-8"></script>
+<script src="../bower_components/topojson/topojson.js"></script>
+<script src="../bower_components/d3-plugins/geo/tile/tile.js"></script>
+<script src="../dist/d3.mappu.js"></script>
+<script src="../../postgis-service/lib/twkb.js/dist/twkb.min.js"></script>
+
+<style>
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+path {
+  fill: none;
+  stroke: red;
+  stroke-linejoin: round;
+  
+}
+
+#header {
+	position: relative;
+	height: 10%;
+	width: 100%;
+	background: green;
+}
+
+#content {
+	position: absolute;
+	left: 100px;
+	top: 0px;
+	height: 100%;
+	width: 90%;
+}
+#leftbar {
+	position: absolute;
+	height: 100%;
+	width: 100px;
+	background: grey;
+	overflow: auto;
+}
+
+#map {
+  position: absolute;
+  margin: 0 auto;
+  overflow: hidden;
+  left: 100px;
+  height: 100%;
+  right: 0px;
+}
+
+.tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+}
+
+.tile.loading {
+  display: none;
+}
+
+#dialog {
+    position: absolute;
+    background: white;
+    left: 30%;
+    right: 30%;
+    top: 20%;
+    bottom: 20%;
+    z-index: 101;
+    display: none;
+}
+
+
+</style>
+
+</head>
+<body>
+<div id="dialog">
+	<h2 id="tablename"></h2>
+	<p>
+		<span id="tableinfo"></span>
+		<button id="addtable">Voeg toe</button>
+	</p>
+</div>
+<div id="leftbar">
+
+</div>
+<div id="content">
+	<div id='map'></div>
+</div>
+<!--
+<script src="../src/d3.dev/d3.geo.raster.js"></script>
+<script src="../src/d3.dev/d3.quadtiles.js"></script>
+-->
+<script>
+/* COLORBREWER 
+var colors = [];
+for (var foo in colorbrewer){ colors.push(foo);}
+var inputs = d3.select('#leftbar').selectAll('.input').data(colors).enter().append('span');
+inputs.append('input').attr('name',"color").attr('type',"radio").attr('value',"redblue")
+	.on('click',function(d){
+			var style = twkblayer.style;
+			style.fill = d3.scale.linear()
+						.range(colorbrewer[d][3])
+						.domain([1600,1945,2020]);
+			style.stroke = d3.scale.linear()
+						.range(colorbrewer[d][3])
+						.domain([1600,1945,2020]);
+			twkblayer.style = style;
+	});
+inputs.insert('span').html(function(d){
+	return d;
+});
+inputs.append('br');
+*/
+var twkblayer;
+d3.json('http://192.168.40.2:8080/data?request=getCapabilities',function(e,result){
+		if (e){
+			console.error(e);
+		}
+		var tables = d3.select('#leftbar').selectAll('.table').data(result.data)
+			.enter().append('div').classed('table',true);
+		tables.html(function(d){
+				return d.table;
+		});
+		tables.on('click',function(d){
+				 d3.select('#dialog').style('display','block');
+				 d3.json('http://192.168.40.2:8080/data?request=getCapabilities&schema='+d.schema+'&table='+d.table,function(e,result){
+						if (e){
+							console.error(e);
+						}
+						var tabledata = result.data;
+						d3.select('#tableinfo').selectAll('div').remove();
+						d3.select('#tableinfo').selectAll('div').data(tabledata)
+							.enter().append('div').html(function(d){
+									var radio = '';
+									var id = '';
+									if (d.udt_name == 'int4' || d.udt_name == 'float8'){
+										radio = '<input type="radio" name="stylecol" value="'+d.column_name+'">';
+									}
+									id = '<input type="radio" name="idcol" value="'+d.column_name+'">';
+									return id + radio + '<b>' + d.column_name + '</b>' + d.udt_name;
+							});					
+				 });
+				 d3.select('#addtable').on('click',function(){
+				 		 d3.select('#dialog').style('display','none');
+				 		 var stylecol = d3.select('input[name="stylecol"]:checked').node().value;
+				 		 var idcol = d3.select('input[name="idcol"]:checked').node().value;
+				 		 
+				 		 //map.removeLayer(twkblayer);
+				 		 twkblayer = new d3.mappu.TWKBLayer(d.table,{
+								url: 'http://192.168.40.2:8080/data?',
+								usecache: true,
+								layers: d.schema+'.'+d.table,
+								id_column: idcol,
+								geom_column: d.geomcol,
+								srid: d.srid,
+								attributes: [stylecol],
+								style: {
+									column: stylecol,
+									fill:
+										d3.scale.linear()
+												.range(['black','grey','steelBlue'])
+												.domain([0,50,100]),
+									stroke:
+										d3.scale.linear()
+												.range(['black','grey','steelBlue'])
+												.domain([0,50,100]) 
+								}
+						}).addTo(map);
+				 });
+				 
+		});
+})
+var map = new d3.mappu.Map('map', {
+        //center: [-118.184051,33.999622],
+        center: [4.491046,52.159088],
+        zoom: 22,
+        minZoom: 10,
+        maxZoom: 28,
+        projection: d3.geo.mercator()
+});
+
+var layer = new d3.mappu.RasterLayer('layer1', {
+    ogc_type: 'tms',
+    url: 'http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
+
+    //url: 'https://{s}.tiles.mapbox.com/v4/mapbox.streets/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpamVuY3cxbzAwMG12ZGx4cGljbGtqMGUifQ.vpDqms08MBqoRgp667Yz5Q',
+    opacity: 1
+}).addTo(map);
+/*
+var twkblayer = new d3.mappu.TWKBLayer('panden',{
+    url: 'http://192.168.40.2:8080/data?',
+    usecache: true,
+    //query: 'SELECT aobjectid id, gebrksdoel, geom FROM bagagn_201501.adressen',  
+    layers: 'brt_201402.wegdeel_vlak',
+    id_column: 'ogc_fid',
+    geom_column: 'wkb_geometry',
+    srid: 28992,
+    attributes: ['visualisatiecode'],
+    style: {
+    	column: 'visualisatiecode',
+    	fill:
+    		d3.scale.linear()
+						.range(['black','grey','steelBlue'])
+						.domain([0,50,100]),
+			stroke:
+				d3.scale.linear()
+						.range(['black','grey','steelBlue'])
+						.domain([0,50,100]) 
+    }
+}).addTo(map);
+*/
+var twkblayer = new d3.mappu.TWKBLayer('adressen',{
+    url: 'http://192.168.40.2:8080/data?',
+    usecache: true,
+    //query: 'SELECT aobjectid id, gebrksdoel, geom FROM bagagn_201501.adressen',  
+    layers: 'bagagn_201501.adressen',
+    id_column: 'aobjectid',
+    geom_column: 'geom',
+    srid: 28992,
+    attributes: ['gebrksdoel'],
+    style: {
+    	column: 'gebrksdoel',
+    	fill:d3.scale.category20(), 
+			stroke:'white'
+    }
+}).addTo(map);
+
+
+
+
+
+
+
+</script>
+
+</body>
+</html>
