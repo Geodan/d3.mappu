@@ -10,12 +10,68 @@ d3.mappu.util.createID = function(){
 };
 
 //                                                                          マップ
-;d3.mappu = d3.mappu || {}; 
-/*
-* d3.mappu.Map is the central class of the API - it is used to create a map.
-*/
+;/**
+ Singleton for indexeddb cache
+**/
 
-/* d3.mappu.Map(element, config)
+
+"use strict";
+d3.mappu.Cache = (function() {
+	if (window.d3.mappu._cache){
+		return window.d3.mappu._cache;
+	}
+	var cache = {};
+	var runningtasks = [];
+	
+	var delPromise = new Promise(function(resolve, reject){
+		var req = indexedDB.deleteDatabase('d3.mappu');
+		req.onsuccess = function () {
+				console.log("Deleted database successfully");
+				resolve();
+		};
+		req.onerror = function () {
+				console.log("Couldn't delete database");
+				reject();
+		};
+		req.onblocked = function () {
+				console.log("Couldn't delete database due to the operation being blocked");
+				reject();
+		};
+	});
+	runningtasks.push(delPromise);
+	delPromise.then(function(){
+			var req = indexedDB.open('d3.mappu',1);
+			req.onupgradeneeded = function (e) {
+					database = e.target.result;
+					database.createObjectStore('ッ-0', {keyPath: 'key'});
+					database.createObjectStore('ッ-1', {keyPath: 'key'});
+					database.createObjectStore('ッ-2', {keyPath: 'key'});
+					database.createObjectStore('ッ-3', {keyPath: 'key'});
+					database.createObjectStore('ッ-4', {keyPath: 'key'});
+					database.createObjectStore('ッ-5', {keyPath: 'key'});
+					database.createObjectStore('ッ-6', {keyPath: 'key'});
+					database.createObjectStore('ッ-7', {keyPath: 'key'});
+					
+			};
+			req.onsuccess = function (e) {
+					cache.database = e.target.result;
+					
+			};
+			req.onerror = function (e) {
+				
+			}
+	});
+	
+	cache.runningtasks = runningtasks;
+	window.d3.mappu._cache = cache;
+	return cache;
+})();
+;d3.mappu = d3.mappu || {}; 
+/**
+* d3.mappu.Map is the central class of the API - it is used to create a map.
+**/
+
+/** d3.mappu.Map(element, config)
 
 element = dom object
 options:
@@ -26,7 +82,7 @@ minZoom: zoomlevel                  default = 0.0
 maxZoom: zoomlevel                  default = 13.0
 maxView: [[long,lat],[long,lat]]    default = [[-180,90],[180,-90]]
 projection: projection              default = d3.geo.mercator()
-*/
+**/
 
 
 d3.mappu.Map = function( id, config ) { 
@@ -50,15 +106,6 @@ d3_mappu_Map = function( id, config ) {
 	var _width = _mapdiv.clientWidth || 2024; 
 	var _height = _mapdiv.clientHeight || window.innerHeight || 768; 
 	var _ratio = 1;
-	/* Experimental
-	var _canvasdiv = d3.select(_mapdiv)
-	.style("width", _width + 'px')
-	.style("height", _height + 'px')
-	.append("div")
-	.style("transform", "scale(" + 1 / _ratio + ")")
-	.style("transform-origin", "0 0 0");
-	*/
-	
 	
 	var _extent = [ [ 0, 0 ],[ 1, 1 ] ]; 
 	var _center = config.center || [ 0, 0 ]; 
@@ -68,32 +115,42 @@ d3_mappu_Map = function( id, config ) {
 	var _minZoom = config.minZoom || 15; 
 	var _maxView = config.maxView || [ [- 180, 90 ],[ 180,- 90 ] ];
 	var dispatch = d3.dispatch( "loaded", "zoomend" );
-	var redraw = function( ) { 
+	var redraw = function( ) {
+		//Calculate tile set
+		_tiles = _tile
+			.scale( _zoombehaviour.scale( ))
+			.translate( _zoombehaviour.translate( ))( );
+			
 		//Calculate projection, so we can find out coordinates
-		_projection.scale( _zoombehaviour.scale( ) / 2 / Math.PI ).translate( _zoombehaviour.translate( )); 
+		_projection
+			.scale( _zoombehaviour.scale( ) / 2 / Math.PI )
+			.translate( _zoombehaviour.translate( ));
+			
+		_layers.forEach( function( d ) { 
+				d.refresh( 0 ); 
+		} );
 		//Set internal zoom
 		_zoom = Math.log( _zoombehaviour.scale( ))/ Math.log( 2 );
 		//Set internal center
 		var pixcenter = [ _width / 2, _height / 2 ]; 
 		_center =  _projection.invert( pixcenter );
-		//Calculate tile set
-		_tiles = _tile.scale( _zoombehaviour.scale( )).translate( _zoombehaviour.translate( ))( );
-		/* EXPERIMENTAL */
-		//layer.call(raster);
 		
-		_layers.forEach( function( d ) { 
-				d.refresh( 0 ); 
-		} );
+		
 		//Update extent value
+		/* Disabled, expensive calculation
 		var lb = _projection.invert( [ 0, _mapdiv.clientHeight ] ); 
 		var rt = _projection.invert( [ _mapdiv.clientWidth, 0 ] ); 
 		map.extent = [ lb, rt ];
+		*/
 		dispatch.zoomend( ); 
 	};
 	var resize = function( ) { 
 		_width = _mapdiv.clientWidth; 
 		_height = _mapdiv.clientHeight; 
-		d3.select( _mapdiv ).selectAll( '.drawboard' ).attr( "width", _width ).attr( "height", _height ); 
+		d3.select( _mapdiv ).selectAll( '.drawboard' )
+			.attr( "width", _width )
+			.attr( "height", _height )
+
 		_tile.size( [ _width, _height ] ); 
 		redraw( ); 
 	}; 
@@ -111,56 +168,31 @@ d3_mappu_Map = function( id, config ) {
 		]; 
 		_zoombehaviour.translate( translate ); 
 		//Disabled transition because it gives problems when zooming and centering directly after eachother
-		
-		//_zoombehaviour.event(_svg.transition().duration(1000)); //Trigger zoombehaviour
 		//_zoombehaviour.event(_mapdiv);
 	} 
-	/*
-	var _svg = d3.select(_mapdiv).append('svg')
-	.style('position', 'absolute');
-	*/
-	//var p = .5 * _ratio;
-	_projection.scale(( 1 << _zoom || 1 << 12 ) / 2 / Math.PI ).translate( [ _width / 2, _height / 2 ] ); 
+	
+	_projection
+		.scale(( 1 << _zoom || 1 << 12 ) / 2 / Math.PI )
+		.translate( [ _width / 2, _height / 2 ] ); 
 	//.center(_center)
-	//.clipExtent([[p, p], [_width - p, _height - p]]);
 	
 	var _projcenter = _projection( _center );
-	var _zoombehaviour = d3.behavior.zoom( ).scale( _projection.scale( ) * 2 * Math.PI ).scaleExtent( [ 1 << _minZoom, 1 << _maxZoom ] ).translate( [ _width - _projcenter [ 0 ], _height - _projcenter [ 1 ] ] ).on( "zoom", redraw ); 
+	var _zoombehaviour = d3.behavior.zoom( )
+		.scale( _projection.scale( ) * 2 * Math.PI )
+		.scaleExtent( [ 1 << _minZoom, 1 << _maxZoom ] )
+		//.translate( [ _width - _projcenter [ 0 ], _height - _projcenter [ 1 ] ] ) //obs?
+		.translate( [ _width /2, _height /2 ] )
+		.on( "zoom", redraw ); 
 	d3.select( _mapdiv ).call( _zoombehaviour ); 
-	/*Obs?
-	_projection
-	.scale(1 / 2 / Math.PI)
-	.translate([0, 0]);
-	*/
+	
 	var _tile = d3.geo.tile( ).size( [ _width, _height ] );
 	var _tiles = _tile.scale( _zoombehaviour.scale( )).translate( _zoombehaviour.translate( ))( ); 
 	//Do an initial zoomcenter
 	zoomcenter( _zoom, _center ); 
 	resize( );
-	/*
-	var raster = d3.geo.raster(_projection)
-	.scaleExtent([0, 10])
-	//.url("//{subdomain}.tiles.mapbox.com/v3/mapbox.natural-earth-2/{z}/{x}/{y}.png");
-	.url("//{subdomain}.tiles.mapbox.com/v3/examples.map-i86nkdio/{z}/{x}/{y}.png");
-	
-	var layer = _canvasdiv
-	.append("div")
-	.style("transform-origin", "0 0 0")
-	.call(raster);
-	*/
-	// exposed functions
 	
 	////getter/setter functions
-	/*
-	Object.defineProperty(map, 'svg', {
-	get: function() {
-	return _svg;
-	},
-	set: function() {
-	console.log("do not touch the svg");
-	}
-	});
-	*/
+	
 	Object.defineProperty( map, 'mapdiv', { 
 			get : function( ) { 
 				return _mapdiv; 
@@ -169,14 +201,7 @@ d3_mappu_Map = function( id, config ) {
 				console.log( "do not touch the mapdiv" ); 
 			} 
 	} );
-	Object.defineProperty( map, 'canvasdiv', { 
-			get : function( ) { 
-				return _canvasdiv; 
-			}, 
-			set : function( ) { 
-				console.log( "do not touch the canvasdiv" ); 
-			} 
-	} );
+	
 	// .center : ([long,lat])
 	Object.defineProperty( map, 'center', { 
 			get : function( ) { 
@@ -280,10 +305,6 @@ d3_mappu_Map = function( id, config ) {
 		y =( bounds [ 0 ][ 1 ] + bounds [ 1 ][ 1 ] ) / 2, 
 		scale =.9 / Math.max( dx / _width, dy / _height ), 
 		translate = [ _width / 2 - scale * x, _height / 2 - scale * y ]; 
-		//_projection.scale(scale);
-		//_projection.translate(translate);
-		//_zoombehaviour.scale(scale);
-		//_zoombehaviour.translate(translate);
 		_zoom = 22; //FIXME
 		_center = [ bbox [ 0 ] +( bbox [ 2 ]- bbox [ 0 ] ) / 2, bbox [ 1 ] +( bbox [ 3 ]- bbox [ 1 ] ) / 2 ]; 
 		zoomcenter( _zoom, _center ) 
@@ -326,13 +347,25 @@ d3_mappu_Map = function( id, config ) {
 		var drawboards = d3.select( _mapdiv )
 			.selectAll( '.drawboard' )
 			.data( _layers, function( d ) { return d.id;} ); 
-		drawboards.enter( ).append( 'svg' )
+		drawboards.enter( ).append( function(d){
+				if (d.type == 'raster'){
+					return document.createElement('div');
+				}
+				else if (d.type == 'vector' || d.type == 'vectortile'){
+					return document.createElementNS("http://www.w3.org/2000/svg", 'svg');
+				}
+				else throw 'No valid type (' + d.type + ' )specified for layer';
+			})
 			.attr( 'id', function( d ) { return d.id;} )
 			.style( 'position', 'absolute' )
+			.style( 'pointer-events','none' ) //make svg permeable for events
 			.classed( 'drawboard', true )
 			.each( function( d ) { 
 				d.drawboard = d3.select( this );
-		} ).append( 'g' ); 
+				if (d.type == 'vector' || d.type == 'vectortile'){
+					d.drawboard.append('g');
+				}
+			}); 
 		drawboards.exit( ).remove( );
 		drawboards.sort( function( a, b ) { 
 				return a.zindex - b.zindex; 
@@ -351,7 +384,10 @@ d3_mappu_Map = function( id, config ) {
 	//map.getLayersByName = getLayersByName;
 	map.redraw = redraw; 
 	map.resize = resize; 
-	map.dispatch = dispatch; 
+	map.dispatch = dispatch;
+	
+	
+	
 	return map; 
 };
 //                                                                          マップ
@@ -804,7 +840,6 @@ d3_mappu_Layer = function(name, config){
     //TODO: parse config
     var _opacity = 1;
     _opacity = config.opacity || 1;
-    
     var _visible = true;
     if (typeof(config.visible) == 'boolean' || config.visible == 'true' || config.visible == 'false'){
     	_visible = config.visible;
@@ -825,6 +860,7 @@ d3_mappu_Layer = function(name, config){
     
     var addTo = function(map){
         map.addLayer(layer);
+        map.resize();//TODO: is this needed?
         return layer;
     };
     
@@ -861,6 +897,7 @@ d3_mappu_Layer = function(name, config){
         }
     });
     
+    
     Object.defineProperty(layer, 'visible', {
         get: function() {
             return _visible;
@@ -892,26 +929,27 @@ d3_mappu_Layer = function(name, config){
     layer.setZIndex = setZIndex;
 
     /* private: */
-    
+    /* Obsolete?
     layer._instantiate = function(mapdiv){
     	layer.drawboard = d3.select(mapdiv)
 				.append( 'svg' )
 				.attr( 'id', function( d ) { return d.id;} )
 				.style( 'position', 'absolute' )
+				.style( 'pointer-events','none') //make svg permeable for events 
 				.classed( 'drawboard', true );
 			layer.drawboard.append( 'g' );
     }
-    
+    */
     layer._onAdd =  function(map){ //Adds the layer to the given map object
         _map = map;
         map.orderLayers();
         layer.draw();
 		var event = new CustomEvent("layeradded", { "detail": layer});
-		layer.map.mapdiv.dispatchEvent(event);
+			layer.map.mapdiv.dispatchEvent(event);
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     	var event = new CustomEvent("layerremoved");
-		layer.map.mapdiv.dispatchEvent(event);
+    	layer.map.mapdiv.dispatchEvent(event);
     };
     
     
@@ -1017,12 +1055,24 @@ d3_mappu_Layer = function(name, config){
       //Build is only called on entry
       function build(d){
       	  var project = _projection;
+      	  //TODO: working on bytearray img
+      	  if (d.geometry.type == 'Point' && d.style && d.style['iconimg']){
+      	  	  var x = project(d.geometry.coordinates)[0];
+              var y = project(d.geometry.coordinates)[1];
+              var img = d3.select(this).append("image")
+              	.attr("width", 32)
+                .attr("height", 37)
+                .attr("xlink:href", function(d){
+					return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
+				});
+      	  };
       	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
       	  	  var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
               var img = d3.select(this).append('g').append("image")
               	.attr("width", 32)
                 .attr("height", 37)
+                .style('pointer-events','visiblepainted')//make clickable
               	//.attr("x",x-12.5) //No need setting x and y, since it's reset later
 				//.attr("y",y-25)
 				.attr("xlink:href", function(d){
@@ -1036,7 +1086,8 @@ d3_mappu_Layer = function(name, config){
 				  d.geometry.coordinates[0].reverse();
 			  }
 			  d3.select(this).append('path').attr("d", _path)
-				.classed(name, true);
+				.classed(name, true)
+        .style('pointer-events','visiblepainted');//make clickable
 		  }
 		  d3.select(this).append('text')
 		  	.classed('shadowtext',true)
@@ -1134,29 +1185,24 @@ d3_mappu_Layer = function(name, config){
 				  	
 				  	
 				  if (config.labelfield){
-				  	  //no text beyond zoom 22
-				  	  if (layer.map.zoom < 22){
-				  	  	  entities.selectAll('text').text('');
-				  	  }
-				  	  else {
-						  entities.each(function(d){
-							var loc = _path.centroid(d);
-							var text = d.properties[config.labelfield];
-							d3.select(this).selectAll('text')
-								.attr('x',loc[0])
-								.attr('y', loc[1] -20)
-								.text(text);
-							//Style text
-							for (var key in labelStyle) {
-								  d3.select(this).selectAll('text').style(key, labelStyle[key]);
-							}
-							//Add shadow text for halo
-							d3.select(this).select('.shadowtext')
-								.style('stroke-width','2.5px')
-								.style('stroke','white')
-								.style('opacity', 0.8);
-						  });
-				  	  }
+				  	  //TODO: add option to only show layer from certain zoomlevel
+					  entities.each(function(d){
+						var loc = _path.centroid(d);
+						var text = d.properties[config.labelfield];
+						d3.select(this).selectAll('text')
+							.attr('x',loc[0])
+							.attr('y', loc[1] -20)
+							.text(text);
+						//Style text
+						for (var key in labelStyle) {
+							  d3.select(this).selectAll('text').style(key, labelStyle[key]);
+						}
+						//Add shadow text for halo
+						d3.select(this).select('.shadowtext')
+							.style('stroke-width','2.5px')
+							.style('stroke','white')
+							.style('opacity', 0.8);
+					  });
 				  }
 				  entities.each(setStyle);
 			  }
@@ -1212,7 +1258,7 @@ d3_mappu_Layer = function(name, config){
       	  var loc = _projection.invert(_path.centroid(feature));
       	  layer.map.center = loc;
       }
-	  
+
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
@@ -1365,9 +1411,9 @@ d3_mappu_Layer = function(name, config){
   d3_mappu_TWKBLayer = function(name, config) {
       var self = this;
       config = config || {};
-      d3_mappu_Layer.call(this,name, config);
+      //d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
-      layer.type = 'vector';
+      layer.type = 'raster';
       var _url = config.url;
       var _options = config; //Te be leaflet compatible in g-layercatalogus
       layer.options = _options;
@@ -1375,7 +1421,10 @@ d3_mappu_Layer = function(name, config){
       var _layers = config.layers;
       var _classproperty = config.classproperty;
       var _id_column = config.id_column;
+      var _geom_column = config.geom_column;
+      var _srid = config.srid;
       var _attributes = config.attributes;
+      var _style = config.style;
       var _duration = config.duration || 0;
 			var _path;
 			var _projection;
@@ -1402,6 +1451,17 @@ d3_mappu_Layer = function(name, config){
         }
       });
 
+      Object.defineProperty(layer, 'style', {
+        get: function() {
+            return _style;
+        },
+        set: function(val) {
+            _style = val;
+         		layer.drawboard.selectAll('.tile').remove();
+            layer.refresh(0);
+        }
+      });
+    
 
       //Clear all tiles
       layer.clear = function(){
@@ -1424,9 +1484,12 @@ d3_mappu_Layer = function(name, config){
 						//This calculation only works for tiles that are square and always the same size
 						var bbox = getbbox(d);
 						url =  _url +
+							 "&request=getData" +
 							 "&bbox=" + bbox +
 							 "&table=" + _layers +
-							 "&id_column=" + _id_column + 
+							 "&id_column=" + _id_column +
+							 "&geom_column=" + _geom_column +
+							 "&srid=" + _srid +
 							 "&attributes=" + _attributes +
 							 "&srs=EPSG:3857";
           return url;
@@ -1445,117 +1508,109 @@ d3_mappu_Layer = function(name, config){
 				}
 				return (total >= 0);
 			}
-
-      
+			var renders = [];
+			renders.push(new Worker("twkb_processor.js"));
+			
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			renders.forEach(function(renderer){
+				renderer.onmessage = function (e) {
+					if (e.data.layerid == layer.id){
+						var data = e.data.data;
+						var d = e.data.d;
+						build(d,data);
+					}
+				}
+			});
       //each tile can be considered it's own drawboard, on which we build
-      function build(d){
-      	var counter = 0;
-      	var tile = d3.select(this);
-      	
-				var url = tileurl(d);
-				_projection = d3.geo.mercator();
-				_path = d3.geo.path().projection(_projection);
-				var xhr = d3.json(url, function(error, json) {
-						
+      function build(d,data){
+				var counter = 0;
+				var tile = d3.select('#T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2]);
+				if (tile[0][0]){
+					_projection = d3.geo.mercator();
+					_path = d3.geo.path().projection(_projection);
 					var tiles = layer.map.tiles;
 					var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
-					var x = (d[0] + tiles.translate[0]) * tiles.scale;
-					var y = (d[1] + tiles.translate[1]) * tiles.scale;
-					var s = tiles.scale / 256;
 					
 					_path.projection()
 							.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
 							.scale(k / 2 / Math.PI);
 					
-					var features = [];
-					json.data.forEach(function(twkbdata){
-							if (!twkbdata.geom){
-								console.warn('no data',twkbdata);
-								return; 
-							}
-							var arr = new Uint8Array(twkbdata.geom.data);
-							var collection = new twkb.toGeoJSON(arr);
-							collection.features.forEach(function(f){
-									f.id = twkbdata.id;
-									f.properties = {};
-									_attributes.forEach(function(a){
-											f.properties[a] = twkbdata[a];
-									});
-									if (f.geometry.type == 'Polygon' && !ringIsClockwise(f.geometry.coordinates[0])){
-										f.geometry.coordinates[0].reverse();
-									}
-							});
-							features = features.concat(collection.features);
-					});
-					//TODO: FROM HERE START MAKING CANVAS
-					var canvas = tile.append("xhtml:canvas")
-						.attr("width", 1)
-						.attr("height", 1)
-						.style("border","1px solid #c3c3c3");
+					var canvas = tile.append("canvas")
+						.attr("width", 256)
+						.attr("height", 256);
+					
 					var context = canvas.node().getContext("2d");
 					_path.context(context);
 					context.save();
-					//context.translate(x, y);
-					//context.scale(s, s);
-					//context.beginPath();
-					//features.forEach(_path);
-					//context.closePath();
-					//context.strokeStyle = 'black';
-					//context.lineWidth   = 1;
-					//context.stroke();
-					//context.fill();
-					context.fillStyle = "#FF0000";
-					context.fillRect(0,0,150,75);
-					context.stroke();
-					context.restore();
-					/*
-					var entities = tile.selectAll('path').data(features, function(d){
-						return d.id;
+					
+					data.forEach(function(d){
+							context.beginPath();
+							_path(d);
+							//context.strokeStyle = typeof(_style.stroke)=='function'?_style.stroke(d.properties[_style.column]):_style.stroke;
+							context.fillStyle = typeof(_style.fill)=='function'?_style.fill(d.properties[_style.column]):_style.fill;
+							//context.stroke();
+							context.fill();
+							context.closePath();
 					});
-					var newentity = entities.enter().append('path')
-						.attr('id',function(d){
-								return 'entity'+ d.id;
-						})
-						.attr('class',function(d){
-							var classname = d.properties?d.properties[_classproperty]:'unknown';
-							return _layers + " " + classname.replace(' ','_').replace(',','_');
-						})
-						.attr("d", _path);
-					entities.exit().remove();
-					*/
-				});
-				tile[0][0].xhr = xhr;
-				_xhrqueue.push(xhr);
+					context.lineWidth   = 1;
+					context.restore();
+				}
       }
-
-            //Draw the tiles (based on data-update)
+      function matrix3d(scale, translate) {
+				var k = scale / 256, r = scale % 1 ? Number : Math.round;
+				return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
+			}
+			
+      //Draw the tiles (based on data-update)
       var draw = function(){
-         var drawboard = layer.drawboard;
-         var tiles = layer.map.tiles;
-         _xhrqueue = [];
-         var translate = tiles.translate.map(function(d){return Math.round(d*100)/100;});
-         drawboard.attr("transform", "scale(" + Math.round(tiles.scale*100)/100 + ") translate(" + translate + ")");
-         var image = drawboard
-         	//.style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))//?? Is this needed?
-         	.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
-         var imageEnter = image.enter();
-         if (layer.visible){
-         	 var tile = imageEnter.append("foreignObject")
-         	 		.classed("tile",true)   
-         	 		.attr("width", 1)
-              .attr("height", 1)
-              .attr('opacity', this.opacity)
-              .attr("x", function(d) { return d[0]; })
-              .attr("y", function(d) { return d[1]; })
-		 		  tile.each(build);
-		 		  //tile.each(setStyle);
-         }
-         image.exit()
-         	.each(function(d){
-         			d3.select(this)[0][0].xhr.abort();//yuck
-         	})
-         	.remove();
+      	//Wait for cache to be settled
+      	Promise.all(d3.mappu.Cache.runningtasks).then(function(){
+      		 var rand = 0;
+					 var drawboard = layer.drawboard;
+					 var tiles = layer.map.tiles;
+					 _xhrqueue = [];
+					 var image = drawboard
+							.style("transform", matrix3d(tiles.scale, tiles.translate))
+							.selectAll(".tile")
+							.data(tiles, function(d) { 
+								return d; 
+							});
+	
+					 var imageEnter = image.enter();
+					 if (layer.visible){
+					 	 var tile = imageEnter.append("div")
+								.classed("tile",true)
+								.attr('id',function(d){
+										return 'T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2];
+								})
+								//.style('border','1px solid black')
+								.style('position','absolute')
+								.style('width','256px')
+								.style('height','256px')
+								.style("left", function(d) { return (d[0] << 8) + "px"; })
+								.style("top", function(d) { return (d[1] << 8) + "px"; })
+						
+						//Delegate the xhr and twkb work to a webworker
+						tile.each(function(d){
+								var url = tileurl(d);
+								//var rand = Math.round(Math.random() * 3);
+								//rand>2?rand=0:rand++;
+								renders[0].postMessage({layerid: layer.id, url: url,tile:d,attributes: _attributes });
+						});
+						//tile.each(setStyle);
+					 }
+					 image.exit()
+						.each(function(d){
+								//d3.select(this)[0][0].xhr.abort();//yuck
+						})
+						.remove();
+				});
       };
 
       var refresh = function(){
@@ -1580,10 +1635,9 @@ d3_mappu_Layer = function(name, config){
 
   d3_mappu_RasterLayer = function(name, config) {
       var self = this;
-      d3_mappu_Layer.call(this,name, config);
+      //d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'raster';
-
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _options = config; //Te be leaflet compatible in g-layercatalogus
@@ -1768,40 +1822,44 @@ d3_mappu_Layer = function(name, config){
               });
           }
       };
+      function matrix3d(scale, translate) {
+				var k = scale / 256, r = scale % 1 ? Number : Math.round;
+				return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
+			}
+			
 
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         var translate = tiles.translate.map(function(d){return Math.round(d*100)/100;});
-         //drawboard.transition().duration(_duration).attr("transform", "scale(" + tiles.scale + ")translate(" + translate + ")");
-         drawboard.select('g').attr("transform", "scale(" + Math.round(tiles.scale*100)/100 + ") translate(" + translate + ")");
-         var image = drawboard.select('g').selectAll(".tile")
+         var image = drawboard
+         		.style("transform", matrix3d(tiles.scale, tiles.translate))
+         		.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          
          var imageEnter = image.enter();
          if (layer.visible){
-         imageEnter.append("image")
+         imageEnter.append("img")
               .classed('tile',true)
-              .attr("xlink:href", tileurl)
-              .attr("width", 1)
-              .attr("height", 1)
+              .attr("src", tileurl)
+              //.style('border','1px solid black')
+              .style('width','256px')
+              .style('height','256px')
+              .style('position','absolute')
               .attr('opacity', this.opacity)
-              .attr("x", function(d) { return d[0]; })
-              .attr("y", function(d) { return d[1]; })
+              .style("left", function(d) { return (d[0] << 8) + "px"; })
+              .style("top", function(d) { return (d[1] << 8) + "px"; })
               //TODO: working on this
-              //.on('click', getFeatureInfo);
+              .on('click', getFeatureInfo);
          }
          image.exit()
-         	//First set the link emty to trigger a load stop in the browser
-         	.attr("xlink:href", '')
          	.remove();
          
       };
 
       var refresh = function(){
           draw();
-          layer.drawboard.select('g').style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
 
       layer.refresh = refresh;

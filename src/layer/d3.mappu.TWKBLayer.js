@@ -8,9 +8,9 @@
   d3_mappu_TWKBLayer = function(name, config) {
       var self = this;
       config = config || {};
-      d3_mappu_Layer.call(this,name, config);
+      //d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
-      layer.type = 'vector';
+      layer.type = 'raster';
       var _url = config.url;
       var _options = config; //Te be leaflet compatible in g-layercatalogus
       layer.options = _options;
@@ -18,7 +18,10 @@
       var _layers = config.layers;
       var _classproperty = config.classproperty;
       var _id_column = config.id_column;
+      var _geom_column = config.geom_column;
+      var _srid = config.srid;
       var _attributes = config.attributes;
+      var _style = config.style;
       var _duration = config.duration || 0;
 			var _path;
 			var _projection;
@@ -45,6 +48,17 @@
         }
       });
 
+      Object.defineProperty(layer, 'style', {
+        get: function() {
+            return _style;
+        },
+        set: function(val) {
+            _style = val;
+         		layer.drawboard.selectAll('.tile').remove();
+            layer.refresh(0);
+        }
+      });
+    
 
       //Clear all tiles
       layer.clear = function(){
@@ -67,9 +81,12 @@
 						//This calculation only works for tiles that are square and always the same size
 						var bbox = getbbox(d);
 						url =  _url +
+							 "&request=getData" +
 							 "&bbox=" + bbox +
 							 "&table=" + _layers +
-							 "&id_column=" + _id_column + 
+							 "&id_column=" + _id_column +
+							 "&geom_column=" + _geom_column +
+							 "&srid=" + _srid +
 							 "&attributes=" + _attributes +
 							 "&srs=EPSG:3857";
           return url;
@@ -88,117 +105,109 @@
 				}
 				return (total >= 0);
 			}
-
-      
+			var renders = [];
+			renders.push(new Worker("twkb_processor.js"));
+			
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			//renders.push(new Worker("twkb_processor.js"));
+			renders.forEach(function(renderer){
+				renderer.onmessage = function (e) {
+					if (e.data.layerid == layer.id){
+						var data = e.data.data;
+						var d = e.data.d;
+						build(d,data);
+					}
+				}
+			});
       //each tile can be considered it's own drawboard, on which we build
-      function build(d){
-      	var counter = 0;
-      	var tile = d3.select(this);
-      	
-				var url = tileurl(d);
-				_projection = d3.geo.mercator();
-				_path = d3.geo.path().projection(_projection);
-				var xhr = d3.json(url, function(error, json) {
-						
+      function build(d,data){
+				var counter = 0;
+				var tile = d3.select('#T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2]);
+				if (tile[0][0]){
+					_projection = d3.geo.mercator();
+					_path = d3.geo.path().projection(_projection);
 					var tiles = layer.map.tiles;
 					var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
-					var x = (d[0] + tiles.translate[0]) * tiles.scale;
-					var y = (d[1] + tiles.translate[1]) * tiles.scale;
-					var s = tiles.scale / 256;
 					
 					_path.projection()
 							.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
 							.scale(k / 2 / Math.PI);
 					
-					var features = [];
-					json.data.forEach(function(twkbdata){
-							if (!twkbdata.geom){
-								console.warn('no data',twkbdata);
-								return; 
-							}
-							var arr = new Uint8Array(twkbdata.geom.data);
-							var collection = new twkb.toGeoJSON(arr);
-							collection.features.forEach(function(f){
-									f.id = twkbdata.id;
-									f.properties = {};
-									_attributes.forEach(function(a){
-											f.properties[a] = twkbdata[a];
-									});
-									if (f.geometry.type == 'Polygon' && !ringIsClockwise(f.geometry.coordinates[0])){
-										f.geometry.coordinates[0].reverse();
-									}
-							});
-							features = features.concat(collection.features);
-					});
-					//TODO: FROM HERE START MAKING CANVAS
-					var canvas = tile.append("xhtml:canvas")
-						.attr("width", 1)
-						.attr("height", 1)
-						.style("border","1px solid #c3c3c3");
+					var canvas = tile.append("canvas")
+						.attr("width", 256)
+						.attr("height", 256);
+					
 					var context = canvas.node().getContext("2d");
 					_path.context(context);
 					context.save();
-					//context.translate(x, y);
-					//context.scale(s, s);
-					//context.beginPath();
-					//features.forEach(_path);
-					//context.closePath();
-					//context.strokeStyle = 'black';
-					//context.lineWidth   = 1;
-					//context.stroke();
-					//context.fill();
-					context.fillStyle = "#FF0000";
-					context.fillRect(0,0,150,75);
-					context.stroke();
-					context.restore();
-					/*
-					var entities = tile.selectAll('path').data(features, function(d){
-						return d.id;
+					
+					data.forEach(function(d){
+							context.beginPath();
+							_path(d);
+							//context.strokeStyle = typeof(_style.stroke)=='function'?_style.stroke(d.properties[_style.column]):_style.stroke;
+							context.fillStyle = typeof(_style.fill)=='function'?_style.fill(d.properties[_style.column]):_style.fill;
+							//context.stroke();
+							context.fill();
+							context.closePath();
 					});
-					var newentity = entities.enter().append('path')
-						.attr('id',function(d){
-								return 'entity'+ d.id;
-						})
-						.attr('class',function(d){
-							var classname = d.properties?d.properties[_classproperty]:'unknown';
-							return _layers + " " + classname.replace(' ','_').replace(',','_');
-						})
-						.attr("d", _path);
-					entities.exit().remove();
-					*/
-				});
-				tile[0][0].xhr = xhr;
-				_xhrqueue.push(xhr);
+					context.lineWidth   = 1;
+					context.restore();
+				}
       }
-
-            //Draw the tiles (based on data-update)
+      function matrix3d(scale, translate) {
+				var k = scale / 256, r = scale % 1 ? Number : Math.round;
+				return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
+			}
+			
+      //Draw the tiles (based on data-update)
       var draw = function(){
-         var drawboard = layer.drawboard;
-         var tiles = layer.map.tiles;
-         _xhrqueue = [];
-         var translate = tiles.translate.map(function(d){return Math.round(d*100)/100;});
-         drawboard.attr("transform", "scale(" + Math.round(tiles.scale*100)/100 + ") translate(" + translate + ")");
-         var image = drawboard
-         	//.style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))//?? Is this needed?
-         	.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
-         var imageEnter = image.enter();
-         if (layer.visible){
-         	 var tile = imageEnter.append("foreignObject")
-         	 		.classed("tile",true)   
-         	 		.attr("width", 1)
-              .attr("height", 1)
-              .attr('opacity', this.opacity)
-              .attr("x", function(d) { return d[0]; })
-              .attr("y", function(d) { return d[1]; })
-		 		  tile.each(build);
-		 		  //tile.each(setStyle);
-         }
-         image.exit()
-         	.each(function(d){
-         			d3.select(this)[0][0].xhr.abort();//yuck
-         	})
-         	.remove();
+      	//Wait for cache to be settled
+      	Promise.all(d3.mappu.Cache.runningtasks).then(function(){
+      		 var rand = 0;
+					 var drawboard = layer.drawboard;
+					 var tiles = layer.map.tiles;
+					 _xhrqueue = [];
+					 var image = drawboard
+							.style("transform", matrix3d(tiles.scale, tiles.translate))
+							.selectAll(".tile")
+							.data(tiles, function(d) { 
+								return d; 
+							});
+	
+					 var imageEnter = image.enter();
+					 if (layer.visible){
+					 	 var tile = imageEnter.append("div")
+								.classed("tile",true)
+								.attr('id',function(d){
+										return 'T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2];
+								})
+								//.style('border','1px solid black')
+								.style('position','absolute')
+								.style('width','256px')
+								.style('height','256px')
+								.style("left", function(d) { return (d[0] << 8) + "px"; })
+								.style("top", function(d) { return (d[1] << 8) + "px"; })
+						
+						//Delegate the xhr and twkb work to a webworker
+						tile.each(function(d){
+								var url = tileurl(d);
+								//var rand = Math.round(Math.random() * 3);
+								//rand>2?rand=0:rand++;
+								renders[0].postMessage({layerid: layer.id, url: url,tile:d,attributes: _attributes });
+						});
+						//tile.each(setStyle);
+					 }
+					 image.exit()
+						.each(function(d){
+								//d3.select(this)[0][0].xhr.abort();//yuck
+						})
+						.remove();
+				});
       };
 
       var refresh = function(){

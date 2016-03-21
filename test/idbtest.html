@@ -1,0 +1,120 @@
+<html>
+
+<script>
+
+var req = indexedDB.deleteDatabase('test');
+	req.onsuccess = function () {
+			console.log("Deleted database successfully");
+	};
+	req.onerror = function () {
+			console.log("Couldn't delete database");
+	};
+	req.onblocked = function () {
+			console.log("Couldn't delete database due to the operation being blocked");
+	};
+
+var worker1 = new Worker('idbtest_worker.js');
+var worker2 = new Worker('idbtest_worker.js');
+function onmessage(e) {
+	console.log(e);
+}
+
+worker1.onmessage = onmessage;
+worker2.onmessage = onmessage;
+
+var cache1 = {};
+var cache2 = {};
+var runningtasks = [];
+function CreateObjectStore(dbName, storeName) {
+		return new Promise(function(resolve, reject){
+			var request = window.indexedDB.open(dbName);
+			request.onsuccess = function (e){
+					var database = e.target.result;
+					var version =  parseInt(database.version);
+					database.close();
+					var secondRequest = indexedDB.open(dbName, version+1);
+					secondRequest.onupgradeneeded = function (e) {
+							var database = e.target.result;
+							var objectStore = database.createObjectStore(storeName, {
+									keyPath: 'key'
+							});
+							database.close();
+							resolve();
+					};
+					secondRequest.onsuccess = function (e) {
+							e.target.result.close();
+							resolve();
+					};
+					secondRequest.onerror = function (e) {
+						reject(e);
+					}
+			}
+			request.onerror = function(e){
+				reject(e);
+			}
+		});
+}
+
+var request = indexedDB.open("test");
+request.onblocked = function(e){
+	console.error('Blocked!',e);
+	
+}
+request.onerror = function(event) {
+	console.error("Why didn't you allow my web app to use IndexedDB?!");
+	
+};
+request.onsuccess = function(event) {
+	
+	console.log('req1 opened db');
+	cache1._db = event.target.result;
+	cache1._db.close();
+	
+	var promise = CreateObjectStore('test','store1').then(function(){
+			console.log('created store1');
+			worker1.postMessage({layerid:'store1'	});
+	});
+	runningtasks.push(promise);
+	cache1._db.onerror = function(event) {
+		console.error("Database error: " + event.target.error);
+	};
+};
+request.onupgradeneeded = function(event) {
+	//console.error('No upgrade should be needed here');
+	console.log('req1 upgrade needed');
+};
+		
+var request2 = indexedDB.open("test");
+request2.onblocked = function(e){
+	console.error('Blocked!',e);
+	
+}
+request2.onerror = function(event) {
+	console.error("Why didn't you allow my web app to use IndexedDB?!");
+	
+};
+request2.onsuccess = function(event) {
+	console.log('req2 opened db');
+	cache2._db = event.target.result;
+	cache2._db.close();
+	//TODO: this should wait for the other createobject
+	Promise.all(runningtasks).then(function(){
+		var promise = CreateObjectStore('test','store2').then(function(){
+					console.log('created store2');
+					worker2.postMessage({layerid:'store2'});
+		});
+		runningtasks.push(promise);
+	});
+	cache2._db.onerror = function(event) {
+		console.error("Database error: " + event.target.error);
+	};
+
+	
+};
+request2.onupgradeneeded = function(event) {
+	//console.error('No upgrade should be needed here');
+	console.log('req1 upgrade needed');
+};		
+		
+		</script>
+		</html>

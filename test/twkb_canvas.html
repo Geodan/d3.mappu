@@ -31,12 +31,13 @@
     "plantcover":	{ fill: "#ccff99", color: "grey", width: 1},
     "bare":				{ fill: "#ffffcc", color: "grey", width: 1},
     "road":				{ fill: "#cccccc", color: "grey",width: 1},
-    "water":			{ fill: "#0099ff", color: "grey",width: 1}
+    "water":			{ fill: "#0099ff", color: "grey",width: 1},
+    "Leiden":			{ fill: "#0099ff", color: "grey",width: 1}
   };
   var _url = 'http://192.168.40.2:8080/data?';
-	var _layers = 'polygons';
-	var _id_column = 'ogc_fid';
-	var _attributes = ['class'];
+	var _layers = 'gebouwen';
+	var _id_column = 'gebwbagid';
+	var _attributes = ['woonplaats'];
   var canvas = d3.select("body")
     .append("canvas")
     .attr("width", width)
@@ -68,7 +69,7 @@
   
   function groupByKind(data) {
     return data.reduce(function(memo, d) {
-      var kind = d.properties.class;
+      var kind = d.properties.woonplaats;
       if (memo[kind]) { memo[kind].push(d); }
       else            { memo[kind] = [ d ]; }
       return memo;

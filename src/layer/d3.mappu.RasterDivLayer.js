@@ -10,7 +10,6 @@
       //d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'raster';
-
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
       var _options = config; //Te be leaflet compatible in g-layercatalogus
@@ -195,40 +194,44 @@
               });
           }
       };
+      function matrix3d(scale, translate) {
+				var k = scale / 256, r = scale % 1 ? Number : Math.round;
+				return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
+			}
+			
 
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         var translate = tiles.translate.map(function(d){return Math.round(d*100)/100;});
-         //drawboard.transition().duration(_duration).attr("transform", "scale(" + tiles.scale + ")translate(" + translate + ")");
-         drawboard.select('g').attr("transform", "scale(" + Math.round(tiles.scale*100)/100 + ") translate(" + translate + ")");
-         var image = drawboard.select('g').selectAll(".tile")
+         var image = drawboard
+         		.style("transform", matrix3d(tiles.scale, tiles.translate))
+         		.selectAll(".tile")
             .data(tiles, function(d) { return d; });
          
          var imageEnter = image.enter();
          if (layer.visible){
-         imageEnter.append("image")
+         imageEnter.append("img")
               .classed('tile',true)
-              .attr("xlink:href", tileurl)
-              .attr("width", 1)
-              .attr("height", 1)
+              .attr("src", tileurl)
+              //.style('border','1px solid black')
+              .style('width','256px')
+              .style('height','256px')
+              .style('position','absolute')
               .attr('opacity', this.opacity)
-              .attr("x", function(d) { return d[0]; })
-              .attr("y", function(d) { return d[1]; })
+              .style("left", function(d) { return (d[0] << 8) + "px"; })
+              .style("top", function(d) { return (d[1] << 8) + "px"; })
               //TODO: working on this
-              //.on('click', getFeatureInfo);
+              .on('click', getFeatureInfo);
          }
          image.exit()
-         	//First set the link emty to trigger a load stop in the browser
-         	.attr("xlink:href", '')
          	.remove();
          
       };
 
       var refresh = function(){
           draw();
-          layer.drawboard.select('g').style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
       };
 
       layer.refresh = refresh;

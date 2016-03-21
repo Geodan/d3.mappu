@@ -1,7 +1,7 @@
 d3.mappu
 ========
 
-map library based on d3. 
+map library based on d3.
 
 Will not work on a ringworld
 
@@ -58,7 +58,7 @@ var layer = new d3.mappu.VectorLayer('name', {config});
 layer.data //set/get the data (features)
 layer.events //set/get the events
 layer.addFeature(feature<geojson>) //feature is geojson object
-layer.removeFeature(feature<geojson>) //give full feature 
+layer.removeFeature(feature<geojson>) //give full feature
 
 ```
 
@@ -87,7 +87,7 @@ npm install -g bower
 #download external denpendencies and build your d3.mappu project
 cd <path_to_your>/d3.mappu
 bower install
-grunt 
+grunt
 ```
 
 Then visit:
