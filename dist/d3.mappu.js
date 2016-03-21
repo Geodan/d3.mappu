@@ -1055,6 +1055,17 @@ d3_mappu_Layer = function(name, config){
       //Build is only called on entry
       function build(d){
       	  var project = _projection;
+      	  //TODO: working on bytearray img
+      	  if (d.geometry.type == 'Point' && d.style && d.style['iconimg']){
+      	  	  var x = project(d.geometry.coordinates)[0];
+              var y = project(d.geometry.coordinates)[1];
+              var img = d3.select(this).append("image")
+              	.attr("width", 32)
+                .attr("height", 37)
+                .attr("xlink:href", function(d){
+					return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
+				});
+      	  };
       	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
       	  	  var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
@@ -1174,29 +1185,24 @@ d3_mappu_Layer = function(name, config){
 				  	
 				  	
 				  if (config.labelfield){
-				  	  //no text beyond zoom 22
-				  	  if (layer.map.zoom < 22){
-				  	  	  entities.selectAll('text').text('');
-				  	  }
-				  	  else {
-						  entities.each(function(d){
-							var loc = _path.centroid(d);
-							var text = d.properties[config.labelfield];
-							d3.select(this).selectAll('text')
-								.attr('x',loc[0])
-								.attr('y', loc[1] -20)
-								.text(text);
-							//Style text
-							for (var key in labelStyle) {
-								  d3.select(this).selectAll('text').style(key, labelStyle[key]);
-							}
-							//Add shadow text for halo
-							d3.select(this).select('.shadowtext')
-								.style('stroke-width','2.5px')
-								.style('stroke','white')
-								.style('opacity', 0.8);
-						  });
-				  	  }
+				  	  //TODO: add option to only show layer from certain zoomlevel
+					  entities.each(function(d){
+						var loc = _path.centroid(d);
+						var text = d.properties[config.labelfield];
+						d3.select(this).selectAll('text')
+							.attr('x',loc[0])
+							.attr('y', loc[1] -20)
+							.text(text);
+						//Style text
+						for (var key in labelStyle) {
+							  d3.select(this).selectAll('text').style(key, labelStyle[key]);
+						}
+						//Add shadow text for halo
+						d3.select(this).select('.shadowtext')
+							.style('stroke-width','2.5px')
+							.style('stroke','white')
+							.style('opacity', 0.8);
+					  });
 				  }
 				  entities.each(setStyle);
 			  }
@@ -1252,7 +1258,7 @@ d3_mappu_Layer = function(name, config){
       	  var loc = _projection.invert(_path.centroid(feature));
       	  layer.map.center = loc;
       }
-	  
+
       /* Exposed functions*/
       layer.refresh = refresh;
       layer.draw = draw;
