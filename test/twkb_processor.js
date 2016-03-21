@@ -55,7 +55,6 @@ cache.get = function(key,data){
 					resolve(event.target.result.data);
 				}
 				else {
-					console.error('no result');
 					reject();
 				}
 			};

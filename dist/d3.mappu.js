@@ -1584,6 +1584,9 @@ d3_mappu_Layer = function(name, config){
 										return 'T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2];
 								})
 								//.style('border','1px solid black')
+								.style('position','absolute')
+								.style('width','256px')
+								.style('height','256px')
 								.style("left", function(d) { return (d[0] << 8) + "px"; })
 								.style("top", function(d) { return (d[1] << 8) + "px"; })
 						
