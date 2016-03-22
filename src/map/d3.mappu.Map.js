@@ -81,9 +81,7 @@ d3_mappu_Map = function( id, config ) {
 		_height = _mapdiv.clientHeight;
 		d3.select( _mapdiv ).selectAll( '.drawboard' )
 			.attr( "width", _width )
-			.attr( "height", _height )
-			.style( "width", _width + 'px' )
-			.style( "height", _height + 'px');
+			.attr( "height", _height );
 
 		_tile.size( [ _width, _height ] );
 		redraw( );

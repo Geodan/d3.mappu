@@ -149,9 +149,7 @@ d3_mappu_Map = function( id, config ) {
 		_height = _mapdiv.clientHeight;
 		d3.select( _mapdiv ).selectAll( '.drawboard' )
 			.attr( "width", _width )
-			.attr( "height", _height )
-			.style( "width", _width + 'px' )
-			.style( "height", _height + 'px');
+			.attr( "height", _height );
 
 		_tile.size( [ _width, _height ] );
 		redraw( );
@@ -1260,6 +1258,7 @@ d3_mappu_Layer = function(name, config){
       var zoomToFeature = function(feature){
       	  var loc = _projection.invert(_path.centroid(feature));
       	  layer.map.center = loc;
+          layer.map.redraw();
       }
 
       /* Exposed functions*/
@@ -1593,6 +1592,9 @@ d3_mappu_Layer = function(name, config){
 										return 'T'+layer.id+'_'+d[0]+'_'+d[1]+'_'+d[2];
 								})
 								//.style('border','1px solid black')
+								.style('position','absolute')
+								.style('width','256px')
+								.style('height','256px')
 								.style("left", function(d) { return (d[0] << 8) + "px"; })
 								.style("top", function(d) { return (d[1] << 8) + "px"; })
 						

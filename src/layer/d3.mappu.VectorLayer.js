@@ -300,6 +300,7 @@
       var zoomToFeature = function(feature){
       	  var loc = _projection.invert(_path.centroid(feature));
       	  layer.map.center = loc;
+          layer.map.redraw();
       }
 
       /* Exposed functions*/
