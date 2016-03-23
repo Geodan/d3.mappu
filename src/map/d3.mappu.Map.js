@@ -69,11 +69,11 @@ d3_mappu_Map = function( id, config ) {
 
 
 		//Update extent value
-		/* Disabled, expensive calculation
-		var lb = _projection.invert( [ 0, _mapdiv.clientHeight ] );
-		var rt = _projection.invert( [ _mapdiv.clientWidth, 0 ] );
+		
+		var lb = _projection.invert( [ 0, _height] );
+		var rt = _projection.invert( [ _width, 0 ] );
 		map.extent = [ lb, rt ];
-		*/
+
 		dispatch.zoomend( );
 	};
 	var resize = function( ) {
