@@ -102,9 +102,13 @@
       	  if (d.geometry.type == 'Point' && d.style && d.style['iconimg']){
       	  	  var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
+              var width = d.style && d.style.width ? d.style.width : 
+                           (style.width ? style.width : 32);
+              var height = d.style && d.style.height ? d.style.height : 
+                           (style.height ? style.height : 37);
               var img = d3.select(this).append("image")
-              	.attr("width", 32)
-                .attr("height", 37)
+              	.attr("width", width)
+                .attr("height", height)
                 .attr("xlink:href", function(d){
 					return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
 				});
@@ -112,9 +116,13 @@
       	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
       	  	  var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
+              var width = d.style && d.style.width ? d.style.width : 
+                           (style.width ? style.width : 32);
+              var height = d.style && d.style.height ? d.style.height : 
+                           (style.height ? style.height : 37);
               var img = d3.select(this).append('g').append("image")
-              	.attr("width", 32)
-                .attr("height", 37)
+              	.attr("width", width)
+                .attr("height", height)
                 .style('pointer-events','visiblepainted')//make clickable
               	//.attr("x",x-12.5) //No need setting x and y, since it's reset later
 				//.attr("y",y-25)
@@ -206,8 +214,10 @@
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration).each(function(d){
                     //TODO: create something nice customizable for widh-height calculations
-				  	var width =  32; //calcwidth(layer.map.zoom);
-				  	var height = 37; //calcheight(layer.map.zoom);
+                    var width = d.style && d.style.width ? d.style.width : 
+                                 (style.width ? style.width : 32); //calcwidth(layer.map.zoom);
+                    var height = d.style && d.style.height ? d.style.height : 
+                                 (style.height ? style.height : 37); //calcheight(layer.map.zoom);
 				  	var x = project(d.geometry.coordinates)[0];
 				  	var y = project(d.geometry.coordinates)[1];
 				  	var offsetx = width/2;
