@@ -1023,6 +1023,7 @@ d3_mappu_Layer = function(name, config){
 	  }
 
       function setStyle(d){
+          var self = this;
       	  var entity = d3.select(this);
       	  //Do generic layer style
       	  if (style){
@@ -1204,15 +1205,24 @@ d3_mappu_Layer = function(name, config){
 							.attr('x',loc[0])
 							.attr('y', loc[1] -20)
 							.text(text);
+                            
+                        //Add shadow text for halo
+                        d3.select(this).select('.shadowtext')
+                                .style('stroke-width','2.5px')
+                                .style('stroke','white')
+                                .style('opacity', 0.8);
+
 						//Style text
-						for (var key in labelStyle) {
-							  d3.select(this).selectAll('text').style(key, labelStyle[key]);
-						}
-						//Add shadow text for halo
-						d3.select(this).select('.shadowtext')
-							.style('stroke-width','2.5px')
-							.style('stroke','white')
-							.style('opacity', 0.8);
+                        if (labelStyle){
+    						for (var key in labelStyle) {
+    							d3.select(this).selectAll('.vectorLabel').style(key, labelStyle[key]);
+                                //shadowtext only sensitive to the opacity style
+                                if (key == 'opacity'){
+                                    d3.select(this).select('.shadowtext').style('opacity', labelStyle[key]);
+                                }
+    						}
+                        }
+
 					  });
 				  }
 				  entities.each(setStyle);
@@ -1838,7 +1848,7 @@ d3_mappu_Layer = function(name, config){
 				var k = scale / 256, r = scale % 1 ? Number : Math.round;
 				return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
 			}
-			
+
 
       //Draw the tiles (based on data-update)
       var draw = function(){
@@ -1848,7 +1858,7 @@ d3_mappu_Layer = function(name, config){
          		.style("transform", matrix3d(tiles.scale, tiles.translate))
          		.selectAll(".tile")
             .data(tiles, function(d) { return d; });
-         
+
          var imageEnter = image.enter();
          if (layer.visible){
          imageEnter.append("img")
@@ -1866,7 +1876,7 @@ d3_mappu_Layer = function(name, config){
          }
          image.exit()
          	.remove();
-         
+
       };
 
       var refresh = function(){
