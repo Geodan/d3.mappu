@@ -12,39 +12,42 @@ html, body {
   margin: 0;
   width: 100%;
   height: 100%;
+  display: flex;
 }
 
 path {
   fill: none;
   stroke: red;
   stroke-linejoin: round;
-  
+
 }
 
+#main {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
 #header {
-	position: relative;
-	height: 10%;
-	width: 100%;
-	background: green;
+    display: block;
+	left: 0px;
+    right: 0px;
+    height: 100px;
+	background: steelBlue;
+    color: white;
+    padding: 10px;
 }
 
 #content {
 	position: relative;
-	height: 90%;
-	width: 100%;
-}
-#leftbar {
-	position: absolute;
-	height: 100%;
-	width: 100px;
-	background: red;
+    display: block;
+    flex: 1;
 }
 
 #map {
   position: absolute;
   margin: 0 auto;
   overflow: hidden;
-  left: 100px;
+  left: 0px;
   height: 100%;
   right: 0px;
 }
@@ -95,7 +98,7 @@ Layer styling happens in CSS, or in a per-feature function
 
 .entityundefined {
 	stroke: solid orange 2px;
-	
+
 }
 
 #debug {
@@ -108,22 +111,23 @@ Layer styling happens in CSS, or in a per-feature function
 
 </head>
 <body>
-<div id="header">Header</div>
-<div id="content">
-	<div id="leftbar">leftbar</div>
-	<div id='map'></div>
-	<div id="debug"></div>
+<div id="main">
+    <div id="header"><h2>Header</h2></div>
+    <div id="content">
+    	<div id='map'></div>
+    	<div id="debug"></div>
+    </div>
 </div>
 <!--
 <script src="../src/d3.dev/d3.geo.raster.js"></script>
 <script src="../src/d3.dev/d3.quadtiles.js"></script>
 -->
 <script>
-  
+
 var map = new d3.mappu.Map('map', {
         //center: [-118.184051,33.999622],
         center: [5.2,52.2],
-        zoom: 18,
+        zoom: 25,
         minZoom: 10,
         maxZoom: 30,
         projection: d3.geo.mercator()
@@ -164,19 +168,28 @@ var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
     layers: 'pico:pico_sjv_sf'
 })//.addTo(map);
 */
-    
-//var controllers = d3.mappu.Controllers(map);
 
+//var controllers = d3.mappu.Controllers(map);
+var colorscale = d3.scale.linear().range(['red','blue']).domain([10,25]);
+
+var colorfunc = function(d){
+    return colorscale(map.zoom);
+}
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
-    reproject: false,
+    reproject: true,
+    style: {
+        fill: colorfunc
+    },
     events: [{
     	event: 'click',
         action: function(d){
+            /*
         	mysketch
         		.edit(d)
         		.then(function(f){
         			map.redraw();
         		})
+                */
         }
     },{
     event: 'mouseover',
@@ -220,7 +233,8 @@ var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 			stroke: 'blue',
 			'stroke-width': '1px'
 		}
-}).addTo(map);/*
+})//.addTo(map);
+/*
 var mysketch = new d3.mappu.Sketch('sketch1', {
 }).addTo(map);
 var counter = 0;
@@ -246,17 +260,14 @@ d3.json("provincie_4326.topojson", function(error, data) {
 		  d.id = 'id' + counter++;
   });
   mylayer.data = feats;
-});*/
+});
+*/
 /*
 d3.json("gemeenten.topojson", function(error, data) {
   if (error) return console.error(error);
   //mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
 */
-map.resize();
-
-
-
 
 </script>
 
