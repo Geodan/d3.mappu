@@ -1056,40 +1056,29 @@ d3_mappu_Layer = function(name, config){
       //Build is only called on entry
       function build(d){
       	  var project = _projection;
-      	  //TODO: working on bytearray img
-      	  if (d.geometry.type == 'Point' && d.style && d.style['iconimg']){
-      	  	  var x = project(d.geometry.coordinates)[0];
+
+      	  if (d.geometry.type == 'Point' && d.style){
+      	      var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
-              var width = d.style && d.style.width ? d.style.width : 
+              var width = d.style && d.style.width ? d.style.width :
                            (style.width ? style.width : 32);
-              var height = d.style && d.style.height ? d.style.height : 
-                           (style.height ? style.height : 37);
-              var img = d3.select(this).append("image")
-              	.attr("width", width)
-                .attr("height", height)
-                .attr("xlink:href", function(d){
-					return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
-				});
-      	  };
-      	  if (d.geometry.type == 'Point' && d.style && d.style['marker-url']){
-      	  	  var x = project(d.geometry.coordinates)[0];
-              var y = project(d.geometry.coordinates)[1];
-              var width = d.style && d.style.width ? d.style.width : 
-                           (style.width ? style.width : 32);
-              var height = d.style && d.style.height ? d.style.height : 
+              var height = d.style && d.style.height ? d.style.height :
                            (style.height ? style.height : 37);
               var img = d3.select(this).append('g').append("image")
-              	.attr("width", width)
+                .attr("width", width)
                 .attr("height", height)
-                .style('pointer-events','visiblepainted')//make clickable
-              	//.attr("x",x-12.5) //No need setting x and y, since it's reset later
-				//.attr("y",y-25)
-				.attr("xlink:href", function(d){
-					return d.style['marker-url'];
+                //.attr("x",x-12.5) //No need setting x and y, since it's reset later
+                //.attr("y",y-25)
+                .style('pointer-events','visiblepainted')
+                .attr("xlink:href", function(d){
+                    if (d.style['iconimg']){
+					    return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
+                    }
+                    else if (d.style['marker-url']){
+    					return d.style['marker-url'];
+                    };
 				});
-
-
-      	  }
+  	      }
       	  else {
 			  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
 				  d.geometry.coordinates[0].reverse();
@@ -1172,9 +1161,9 @@ d3_mappu_Layer = function(name, config){
 				  entities.select('path').transition().duration(duration).attr("d", _path);
 				  entities.select('image').transition().duration(duration).each(function(d){
                     //TODO: create something nice customizable for widh-height calculations
-                    var width = d.style && d.style.width ? d.style.width : 
+                    var width = d.style && d.style.width ? d.style.width :
                                  (style.width ? style.width : 32); //calcwidth(layer.map.zoom);
-                    var height = d.style && d.style.height ? d.style.height : 
+                    var height = d.style && d.style.height ? d.style.height :
                                  (style.height ? style.height : 37); //calcheight(layer.map.zoom);
 				  	var x = project(d.geometry.coordinates)[0];
 				  	var y = project(d.geometry.coordinates)[1];
@@ -1205,7 +1194,7 @@ d3_mappu_Layer = function(name, config){
 							.attr('x',loc[0])
 							.attr('y', loc[1] -20)
 							.text(text);
-                            
+
                         //Add shadow text for halo
                         d3.select(this).select('.shadowtext')
                                 .style('stroke-width','2.5px')
