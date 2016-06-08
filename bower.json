@@ -1,6 +1,6 @@
 {
   "name": "d3.mappu",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "homepage": "https://github.com/Geodan/d3.mappu",
   "description": "map library based on d3",
   "keywords": [
