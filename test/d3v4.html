@@ -1,0 +1,35 @@
+<html>
+<head>
+<script src="https://d3js.org/d3.v4.0.0-alpha.50.js"></script>
+<!--
+<script src="https://d3js.org/d3-array.v1.min.js"></script>
+<script src="https://d3js.org/d3-geo.v0.0.min.js"></script>
+-->
+<script>
+
+var geojson = {
+  "type": "Feature",
+  "geometry": {
+      type: "Polygon",
+      coordinates: [[[100, 0], [100, 1], [101, 1], [101, 0], [100, 0]]]
+  },
+  "properties": {
+    "name": "Dinagat Islands"
+  }
+};
+
+var projection = d3.geoEquirectangular()
+    .scale(900 / Math.PI)
+    .precision(0);
+
+var path = d3.geoPath()
+          .projection(projection)
+
+console.log(path.area(geojson));
+
+
+</script>
+</head>
+<body>
+</body>
+</html>
