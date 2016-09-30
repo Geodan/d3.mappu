@@ -1651,6 +1651,7 @@ d3_mappu_Layer = function(name, config){
       layer.type = 'raster';
       var _url = config.url;
       var _ogc_type = config.ogc_type || 'tms';
+      var _style = config.style || '';
       var _options = config; //Te be leaflet compatible in g-layercatalogus
       layer.options = _options;
       layer.visibility = layer.visible; //leaflet compat
@@ -1743,8 +1744,9 @@ d3_mappu_Layer = function(name, config){
 			var bbox = getbbox(d);
 			url =  _url +
 				 "&bbox=" + bbox +
+				 "&styles=" + _style +
 				 "&layers=" + _layers +
-				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&styles=&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
 			if (_cqlfilter){
 				url += '&cql_filter='+_cqlfilter;
 			}
