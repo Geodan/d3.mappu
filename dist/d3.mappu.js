@@ -1864,6 +1864,7 @@ d3_mappu_Layer = function(name, config){
               .on('click', getFeatureInfo);
          }
          image.exit()
+         	.attr('src','')
          	.remove();
 
       };

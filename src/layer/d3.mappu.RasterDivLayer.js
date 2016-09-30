@@ -225,6 +225,7 @@
               .on('click', getFeatureInfo);
          }
          image.exit()
+         	.attr('src','')
          	.remove();
 
       };
