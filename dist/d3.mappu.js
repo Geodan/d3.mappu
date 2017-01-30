@@ -113,28 +113,31 @@ d3_mappu_Map = function( id, config ) {
 	var _center = config.center || [ 0, 0 ];
 	var _projection = config.projection || d3.geoMercator( );
 	var _zoom = config.zoom || 22;
+	var _transform;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [ [- 180, 90 ],[ 180,- 90 ] ];
 	//var dispatch = d3.dispatch( "loaded", "zoomend" );
 	var redraw = function( ) {
-		var transform = d3.event.transform;
+		_transform = d3.event.transform;
 
 		_tiles = _tile
-			.scale( transform.k)
-			.translate( [transform.x, transform.y])
+			.scale( _transform.k)
+			.translate( [_transform.x, _transform.y])
 			( );
 
-		_projection
-			.scale( transform.k / tau )
-			.translate( [transform.x,transform.y]);
-		
 		_layers.forEach( function( d ) {
 				d.refresh( 0 );
 		} );
-		//Set internal zoom
-		_zoom = Math.log( transform.k) / Math.log( 2 );
 		
+		
+		//Set internal zoom
+		_zoom = Math.log( _transform.k) / Math.log( 2 );
+		
+		
+		_projection
+			.scale( _transform.k / tau )
+			.translate( [_transform.x,_transform.y]);
 		//Set internal center
 		var pixcenter = [ _width / 2, _height / 2 ];
 		_center =  _projection.invert( pixcenter );
@@ -147,7 +150,7 @@ d3_mappu_Map = function( id, config ) {
 		//dispatch.zoomend( );
 	};
 	var resize = function( ) {
-		/*
+		
 		_width = _mapdiv.clientWidth;
 		_height = _mapdiv.clientHeight;
 		d3.select( _mapdiv ).selectAll( '.drawboard' )
@@ -156,7 +159,7 @@ d3_mappu_Map = function( id, config ) {
 
 		_tile.size( [ _width, _height ] );
 		//redraw( );
-		*/
+
 	};
 
 	_projection
@@ -273,6 +276,11 @@ d3_mappu_Map = function( id, config ) {
   		get : function( ) { return _tiles;},
   		set : function( ) { console.warn( 'No setting allowed for tile' );}
   } );
+  
+  Object.defineProperty( map, 'transform', {
+  		get : function( ) { return _transform;},
+  		set : function( ) { console.warn( 'No setting allowed for transform' );}
+  } );
   Object.defineProperty( map, 'zoombehaviour', {
   		get : function( ) { return _zoombehaviour;},
   		set : function( ) { console.warn( 'No setting allowed for zoombehaviour' );}
@@ -355,6 +363,7 @@ d3_mappu_Map = function( id, config ) {
 	//map.getLayersByName = getLayersByName;
 	map.redraw = redraw;
 	map.resize = resize;
+	
 	//map.dispatch = dispatch;
 
 
@@ -1070,7 +1079,7 @@ d3_mappu_Layer = function(name, config){
       var draw = function(rebuild){
       	  if (config.reproject){
 				_projection = layer.map.projection;
-				_path = d3.geo.path()
+				_path = d3.geoPath()
 					.projection(_projection)
 					.pointRadius(function(d) {
 						if (d.style && d.style.radius){
@@ -1082,10 +1091,11 @@ d3_mappu_Layer = function(name, config){
 					});
 		  }
 		  else {
-				_projection = d3.geo.mercator()
+		  	  //TODO: this should be depending on the projection given ins the config, no?
+				_projection = d3.geoMercator()
 					.scale(1 / 2 / Math.PI)
 					.translate([0, 0]);
-				_path = d3.geo.path()
+				_path = d3.geoPath()
 					.projection(_projection);
 		  }
           var drawboard = layer.drawboard;
@@ -1119,8 +1129,8 @@ d3_mappu_Layer = function(name, config){
           layer.refresh(rebuild?0:_duration);
       };
 
-      var calcwidth = d3.scale.linear().range([20,20,32,32]).domain([0,21,24,30]);
-      var calcheight = d3.scale.linear().range([20,20,37,37]).domain([0,21,24,30]);
+      var calcwidth = d3.scaleLinear().range([20,20,32,32]).domain([0,21,24,30]);
+      var calcheight = d3.scaleLinear().range([20,20,37,37]).domain([0,21,24,30]);
 
       var refresh = function(duration){
           var drawboard = layer.drawboard;
@@ -1189,11 +1199,11 @@ d3_mappu_Layer = function(name, config){
 			  }
 			  else {
 				//based on: http://bl.ocks.org/mbostock/5914438
-				var zoombehaviour = layer.map.zoombehaviour;
+				var transform = layer.map.transform;
 				//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
 				drawboard.select('g')
-				  .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
-				  .style("stroke-width", 1 / zoombehaviour.scale());
+				  .attr("transform", transform)
+				  .style("stroke-width", 1 / transform.k);
 			  }
           }
           else {
@@ -1837,6 +1847,7 @@ d3_mappu_Layer = function(name, config){
               .on('click', getFeatureInfo);
          }
          image.exit()
+         	.attr('src',null)
          	.remove();
 
       };

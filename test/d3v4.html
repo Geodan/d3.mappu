@@ -51,7 +51,7 @@ var map = new d3.mappu.Map(mapdiv, {
         center: [5.2,52.2],
         zoom: 14,
         minZoom: 10,
-        maxZoom: 24,
+        maxZoom: 26,
         projection: d3.geoMercator()
 });
 var layer = new d3.mappu.RasterLayer('layer1', {
@@ -59,6 +59,25 @@ var layer = new d3.mappu.RasterLayer('layer1', {
     url: "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
     
 }).addTo(map);
+/*
+var mylayer = new d3.mappu.VectorLayer('mylayer',{
+    reproject: false,
+    style: {
+        fill: 'none',
+        stroke: 'red'
+    }
+}).addTo(map);
+
+d3.json("provincie_4326.topojson", function(error, data) {
+  if (error) return console.error(error);
+  var counter = 0;
+  var feats = topojson.feature(data, data.objects.provincie_4326).features;
+  feats.forEach(function(d){
+		  d.id = 'id' + counter++;
+  });
+  mylayer.data = feats;
+});
+*/
 </script>
 
 </body>

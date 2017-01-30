@@ -45,28 +45,31 @@ d3_mappu_Map = function( id, config ) {
 	var _center = config.center || [ 0, 0 ];
 	var _projection = config.projection || d3.geoMercator( );
 	var _zoom = config.zoom || 22;
+	var _transform;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [ [- 180, 90 ],[ 180,- 90 ] ];
 	//var dispatch = d3.dispatch( "loaded", "zoomend" );
 	var redraw = function( ) {
-		var transform = d3.event.transform;
+		_transform = d3.event.transform;
 
 		_tiles = _tile
-			.scale( transform.k)
-			.translate( [transform.x, transform.y])
+			.scale( _transform.k)
+			.translate( [_transform.x, _transform.y])
 			( );
 
-		_projection
-			.scale( transform.k / tau )
-			.translate( [transform.x,transform.y]);
-		
 		_layers.forEach( function( d ) {
 				d.refresh( 0 );
 		} );
-		//Set internal zoom
-		_zoom = Math.log( transform.k) / Math.log( 2 );
 		
+		
+		//Set internal zoom
+		_zoom = Math.log( _transform.k) / Math.log( 2 );
+		
+		
+		_projection
+			.scale( _transform.k / tau )
+			.translate( [_transform.x,_transform.y]);
 		//Set internal center
 		var pixcenter = [ _width / 2, _height / 2 ];
 		_center =  _projection.invert( pixcenter );
@@ -205,6 +208,11 @@ d3_mappu_Map = function( id, config ) {
   		get : function( ) { return _tiles;},
   		set : function( ) { console.warn( 'No setting allowed for tile' );}
   } );
+  
+  Object.defineProperty( map, 'transform', {
+  		get : function( ) { return _transform;},
+  		set : function( ) { console.warn( 'No setting allowed for transform' );}
+  } );
   Object.defineProperty( map, 'zoombehaviour', {
   		get : function( ) { return _zoombehaviour;},
   		set : function( ) { console.warn( 'No setting allowed for zoombehaviour' );}
@@ -287,6 +295,7 @@ d3_mappu_Map = function( id, config ) {
 	//map.getLayersByName = getLayersByName;
 	map.redraw = redraw;
 	map.resize = resize;
+	
 	//map.dispatch = dispatch;
 
 
