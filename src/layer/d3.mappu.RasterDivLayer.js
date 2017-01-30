@@ -95,7 +95,7 @@
           	}
           	url = _url +
           		"&layer=" + _layers +
-          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[0]+"&TILECOL="+d[1]+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
           	if (_url.indexOf('?') < 0){
