@@ -95,7 +95,7 @@
           	}
           	url = _url +
           		"&layer=" + _layers +
-          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[0]+"&TILECOL="+d[1]+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
           	if (_url.indexOf('?') < 0){
@@ -197,9 +197,9 @@
           }
       };
       function matrix3d(scale, translate) {
-				var k = scale / 256, r = scale % 1 ? Number : Math.round;
-				return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
-			}
+		var k = scale / 256, r = scale % 1 ? Number : Math.round;
+		return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
+	  }
 
 
       //Draw the tiles (based on data-update)
@@ -227,7 +227,7 @@
               .on('click', getFeatureInfo);
          }
          image.exit()
-         	.attr('src','')
+         	.attr('src',null)
          	.remove();
 
       };

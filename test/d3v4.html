@@ -1,10 +1,36 @@
 <html>
 <head>
-<script src="https://d3js.org/d3.v4.0.0-alpha.50.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="//d3js.org/d3-tile.v0.0.min.js"></script>
+<script src="//d3js.org/topojson.v1.min.js"></script>
+<script src="../dist/d3.mappu.js"></script>
+
 <!--
 <script src="https://d3js.org/d3-array.v1.min.js"></script>
 <script src="https://d3js.org/d3-geo.v0.0.min.js"></script>
 -->
+
+<style>
+#map{
+	width: 100%;
+	height: 100%;
+	background: ivory;
+}
+
+.tile {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+}
+
+.tile path {
+  fill: none;
+  stroke: #000;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+</style>
 <script>
 
 var geojson = {
@@ -31,5 +57,71 @@ console.log(path.area(geojson));
 </script>
 </head>
 <body>
+<div id='map'></div>
+
+<script>
+var mapdiv= d3.select('#map').node();
+var map = new d3.mappu.Map(mapdiv, {
+        center: [5.2,52.2],
+        zoom: 22,
+        minZoom: 10,
+        maxZoom: 30,
+        projection: d3.geoMercator()
+});
+/*
+var layer = new d3.mappu.RasterLayer('layer1', {
+    ogc_type: 'tms',
+    //url: "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    url: "http://tile.stamen.com/toner/{z}/{x}/{y}.png"
+    
+}).addTo(map);
+*/
+/*
+var mylayer = new d3.mappu.VectorLayer('mylayer',{
+    reproject: false,
+    style: {
+        fill: 'none',
+        stroke: 'steelBlue'
+    }
+    ,events: [{
+        event: 'mouseover',
+        action: function(){
+            var opac = d3.select(this).style('opacity');
+            var fill = d3.select(this).style('fill');
+            d3.select(this).style('opacity',0.3).style('fill','#FF0033')
+                .transition().style('opacity', opac).style('fill',fill);
+        }
+    }]
+}).addTo(map);
+*/
+/*
+d3.json("provincie_4326.topojson", function(error, data) {
+  if (error) return console.error(error);
+  var counter = 0;
+  var feats = topojson.feature(data, data.objects.provincie_4326).features;
+  feats.forEach(function(d){
+		  d.id = 'id' + counter++;
+  });
+  mylayer.data = feats;
+});
+*/
+/*
+d3.json("gemeenten.topojson", function(error, data) {
+  if (error) return console.error(error);
+  mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
+});
+*/
+
+var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
+		//url: "http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json",
+		url: "http://vector.mapzen.com/osm/roads/{z}/{x}/{y}.json?api_key=vector-tiles--R28NDY",
+		style:{
+			stroke: 'blue',
+			'stroke-width': '1px'
+		}
+}).addTo(map);
+
+</script>
+
 </body>
 </html>

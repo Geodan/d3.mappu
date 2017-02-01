@@ -11,11 +11,13 @@
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vectortile';
-			var _url = config.url;                           
-			var _duration = config.duration || 0;
-			var _path;
-			var _projection;
-			var style = config.style || {};
+      var pi = Math.PI;
+      var tau = 2 * pi;
+      var _url = config.url;                           
+      var _duration = config.duration || 0;
+      var _path;
+      var _projection;
+      var style = config.style || {};
       
 	  Object.defineProperty(layer, 'url', {
         get: function() {
@@ -61,14 +63,16 @@
       function build(d){
       	var tile = d3.select(this);
 		var url = tileurl(d);
-		_projection = d3.geo.mercator();
-		_path = d3.geo.path().projection(_projection);
+		_projection = d3.geoMercator();
+		_path = d3.geoPath().projection(_projection);
 		this._xhr = d3.json(url, function(error, json) {
 			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
+			
 			_path.projection()
 			  	.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
 				.scale(k / 2 / Math.PI);
-			
+
+				
 			var features = json.features;
 			var entities = tile.selectAll('path').data(features, function(d){
 				return d.id;
@@ -87,17 +91,20 @@
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         var zoombehaviour = layer.map.zoombehaviour;
-         
-         drawboard.transition().duration(_duration)
-         	.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
-         	.style("stroke-width",1/ zoombehaviour.scale()*100);
+         var transform = layer.map.transform;
          	
-         
-         var image = drawboard
-         	//.style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))//?? Is this needed?
-         	.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
+		 
+		 var image = drawboard.select('g')
+			//.style("transform",transform)
+			.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
+			.style("stroke-width",1/ transform.k*100)
+			.selectAll(".tile")
+			.data(tiles, function(d) { return d; });
+		
+		image.exit()
+		  .each(function(d) { if (this._xhr) this._xhr.abort(); })
+		  .remove();
+		  
          var imageEnter = image.enter();
          if (layer.visible){
          	 var scale = 1/256;
@@ -108,9 +115,9 @@
 		 		  });
 			 tile.each(build);
 			 tile.each(setStyle);
+			 //tile.append('circle').attr('cx',50).attr('cy',50).attr('r',10).style('stroke','green');
          }
-         image.exit()
-         	.remove();
+         
       };
       var refresh = function(){
           draw();
