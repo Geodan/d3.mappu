@@ -57,7 +57,9 @@ d3_mappu_Map = function( id, config ) {
 			.scale( _transform.k)
 			.translate( [_transform.x, _transform.y])
 			( );
-
+		_projection
+			.scale( _transform.k / tau )
+			.translate( [_transform.x,_transform.y]);
 		_layers.forEach( function( d ) {
 				d.refresh( 0 );
 		} );
@@ -67,9 +69,7 @@ d3_mappu_Map = function( id, config ) {
 		_zoom = Math.log( _transform.k) / Math.log( 2 );
 		
 		
-		_projection
-			.scale( _transform.k / tau )
-			.translate( [_transform.x,_transform.y]);
+		
 		//Set internal center
 		var pixcenter = [ _width / 2, _height / 2 ];
 		_center =  _projection.invert( pixcenter );
@@ -111,13 +111,9 @@ d3_mappu_Map = function( id, config ) {
 		.call( _zoombehaviour )
 		.call(_zoombehaviour.transform, d3.zoomIdentity
 			.translate(_width / 2, _height / 2)
-			.scale(1 << _maxZoom)
+			.scale(1 << _zoom)
 			.translate(-_projcenter[0], - _projcenter[1])
 		);
-
-	
-	
-	//resize( );
 
 	////getter/setter functions
 
@@ -286,19 +282,12 @@ d3_mappu_Map = function( id, config ) {
 		} );
 
 	};
-	// .removeLayers([{layer}])
 
-	// .refresh()
 	map.addLayer = addLayer;
 	map.removeLayer = removeLayer;
 	map.orderLayers = orderLayers;
-	//map.getLayersByName = getLayersByName;
 	map.redraw = redraw;
 	map.resize = resize;
-	
-	//map.dispatch = dispatch;
-
-
 
 	return map;
 };

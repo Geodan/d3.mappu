@@ -197,9 +197,9 @@
           }
       };
       function matrix3d(scale, translate) {
-				var k = scale / 256, r = scale % 1 ? Number : Math.round;
-				return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
-			}
+		var k = scale / 256, r = scale % 1 ? Number : Math.round;
+		return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
+	  }
 
 
       //Draw the tiles (based on data-update)

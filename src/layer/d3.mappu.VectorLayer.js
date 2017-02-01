@@ -182,7 +182,7 @@
           // Add events from config
           if (_events){
               _events.forEach(function(d){
-                 entities.each(function(){
+                 newentity.each(function(){
                  	d3.select(this).select('path').on(d.event, d.action);
                  	d3.select(this).select('image').on(d.event, d.action);
                  });
