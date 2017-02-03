@@ -127,7 +127,7 @@
 			  }
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true)
-        .style('pointer-events','visiblepainted');//make clickable
+				.style('pointer-events','visiblepainted');//make clickable
 		  }
 		  d3.select(this).append('text')
 		  	.classed('shadowtext',true)

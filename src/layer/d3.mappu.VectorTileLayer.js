@@ -17,7 +17,10 @@
       var _duration = config.duration || 0;
       var _path;
       var _projection;
+      var tms = config.tms;
       var style = config.style || {};
+      var labelStyle = config.labelStyle || {};
+      var _events = config.events;
       
 	  Object.defineProperty(layer, 'url', {
         get: function() {
@@ -26,6 +29,15 @@
         set: function(val) {
             _url = val;
             draw();
+        }
+      });
+      
+      Object.defineProperty(layer, 'events', {
+        get: function() {
+            return _events;
+        },
+        set: function(array) {
+            _events = array;
         }
       });
       	
@@ -47,16 +59,22 @@
       }
       
       function tileurl(d){
+      	  var 	x = d[0],
+      	  		y = d[1],
+      	  		z = d[2];
+      	  if (tms) {
+      	  	  y = Math.pow(2, z) - y - 1; //TMS reverse for Y-down
+      	  }
           return _url    
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('{z}',d[2])
-				.replace('{x}',d[0])
-				.replace('{y}',d[1])
+				.replace('{z}',z)
+				.replace('{x}',x)
+				.replace('{y}',y)
 				//FIXME: why are these curly brackets killed when used with polymer?                    
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('%7Bz%7D',d[2])
-				.replace('%7Bx%7D',d[0])
-				.replace('%7By%7D',d[1]);
+				.replace('%7Bz%7D',z)
+				.replace('%7Bx%7D',x)
+				.replace('%7By%7D',y);
       }
       
       //each tile can be considered it's own drawboard, on which we build
@@ -65,26 +83,58 @@
 		var url = tileurl(d);
 		_projection = d3.geoMercator();
 		_path = d3.geoPath().projection(_projection);
+		
 		this._xhr = d3.json(url, function(error, json) {
-			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
-			
-			_path.projection()
-			  	.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
-				.scale(k / 2 / Math.PI);
-
+			if (error) throw error;
+			if (json.objects.pand){
+				var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
 				
-			var features = json.features;
-			var entities = tile.selectAll('path').data(features, function(d){
-				return d.id;
-			});
-			var newentity = entities.enter().append('path')
-				.attr('id',function(d){
-						return 'entity'+ d.id;
-				})
-				//.attr('class',function(d){return d.properties.kind;})
-				.attr("d", _path);
-			entities.exit().remove();
+				_path.projection()
+					.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
+					.scale(k / 2 / Math.PI);
+				
+				function matrix(a, b, c, d, tx, ty) {
+				  return d3.geoTransform({
+					point: function(x, y) {
+					  this.stream.point(a * x + b * y + tx, c * x + d * y + ty);
+					}
+				  });
+				}
+				var tx = 0; //k / 2 - d[0] *256;
+				var ty = 0 ; //k / 2 - d[0] *256;
+				
+				console.log(
+				var scale = 1/256;
+				var path = d3.geoPath()
+					.projection(matrix(scale, 0, 0, scale, tx, ty));
+					
+				//var features = json.features;
+				var collection = topojson.feature(json, json.objects.pand);
+				
+				var entities = tile.selectAll('path').data(collection.features, function(d){
+					return d.id;
+				});
+				var newentity = entities.enter().append('path')
+					.attr('id',function(d){
+							return 'entity'+ d.id;
+					})
+					.attr('class',function(d){return d.properties.kind;})
+					.attr("d", path)
+					.style('pointer-events','visiblepainted');//make clickable;
+				tile.append('circle').attr('cx',50).attr('cy',50).attr('r',10).style('fill','red');
+				entities.exit().remove();
+				
+				// Add events from config
+				  if (_events){
+					  _events.forEach(function(d){
+						 newentity.each(function(){
+							d3.select(this).select('path').on(d.event, d.action);
+						 });
+					  });
+				  }
+			}
 		});
+		
       }
     
       //Draw the tiles (based on data-update)
@@ -95,7 +145,6 @@
          	
 		 
 		 var image = drawboard.select('g')
-			//.style("transform",transform)
 			.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
 			.style("stroke-width",1/ transform.k*100)
 			.selectAll(".tile")
@@ -115,7 +164,6 @@
 		 		  });
 			 tile.each(build);
 			 tile.each(setStyle);
-			 //tile.append('circle').attr('cx',50).attr('cy',50).attr('r',10).style('stroke','green');
          }
          
       };
