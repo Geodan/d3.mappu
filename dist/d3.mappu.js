@@ -595,11 +595,12 @@ d3_mappu_Sketch = function(id, config) {
 	  buildEdit();
 	}
 	
-	var drag = d3.behavior.drag()
-		.origin(function(d) { return d; })
-		.on("dragstart", dragstarted)
+	var drag = d3.drag()
+		//TODO: working on new d3v4 drag  
+		.subject(function(d) { return d; })
+		.on("start", dragstarted)
 		.on("drag", dragged)
-		.on("dragend", dragended);
+		.on("end", dragended);
 	
 		
 	function buildEdit(){
@@ -772,7 +773,7 @@ d3_mappu_Sketch = function(id, config) {
 		map.sketch = sketch;
 		
 		project = map.projection;
-		path = d3.geo.path()
+		path = d3.geoPath()
 			.projection(map.projection)
 			.pointRadius(4.5);
 		return sketch;
@@ -1158,7 +1159,7 @@ d3_mappu_Layer = function(name, config){
 				  if (config.labelfield){
 				  	  //TODO: add option to only show layer from certain zoomlevel
 					  entities.each(function(d){
-						var loc = _path.centroid(d);
+						var loc = _path.centroid(d.geometry);
 						var text = d.properties[config.labelfield];
 						d3.select(this).selectAll('text')
 							.attr('x',loc[0])
@@ -1276,6 +1277,7 @@ d3_mappu_Layer = function(name, config){
       var style = config.style || {};
       var labelStyle = config.labelStyle || {};
       var _events = config.events;
+      var _filter = config.filter;
       
 	  Object.defineProperty(layer, 'url', {
         get: function() {
@@ -1300,14 +1302,20 @@ d3_mappu_Layer = function(name, config){
       	  var entity = d3.select(this);
       	  //Do generic layer style
       	  if (style){
-      	  	  for (var key in style) { 
+      	  	  for (var key in style) {
+      	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
+      	  	  	  	  style[key] = 'none';
+      	  	  	  }
       	  	  	  entity.style(key, style[key]);
       	  	  }
       	  }
       	  
       	  //Now use per-feature styling
       	  if (d.style){
-      	  	  for (var key in d.style) { 
+      	  	  for (var key in d.style) {
+      	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
+      	  	  	  	  d.style[key] = 'none';
+      	  	  	  }
       	  	  	  entity.style(key, d.style[key]);
       	  	  }
       	  }
@@ -1366,33 +1374,35 @@ d3_mappu_Layer = function(name, config){
 			
 			if (json.objects){
 				var features = topojson.feature(json,json.objects[layername]).features;	
-			} else if (jsonl.features){
+			} else if (json.features){
 				var features = json.features;
 			} else {
 				throw "Can't work with this vectortile data";
 			}
 			
-			//TT: TODO: add option for topojson input
-			//var collection = topojson.feature(json, json.objects.pand);
+			if (typeof _filter === 'function'){
+				features = features.filter(_filter);
+			}
 			
 			var entities = tile.selectAll('path').data(features, function(d){
 				return d.id;
 			});
+			
 			var newentity = entities.enter().append('path')
 				.attr('id',function(d){
-						return 'entity'+ d.id;
+						return 'entity'+ d.properties.id;
 				})
 				.attr('class',function(d){return d.properties.kind;})
 				.attr("d", _path)
 				.style('pointer-events','visiblepainted');//make clickable;
-			
+			newentity.each(setStyle);
 			entities.exit().remove();
 			
 			// Add events from config
 			  if (_events){
 				  _events.forEach(function(d){
 					 newentity.each(function(){
-						d3.select(this).select('path').on(d.event, d.action);
+						d3.select(this).on(d.event, d.action);
 					 });
 				  });
 			  }
@@ -1426,7 +1436,7 @@ d3_mappu_Layer = function(name, config){
 		 			return "translate(" + d[0] + " " +d[1]+")scale("+scale+")"
 		 		  });
 			 tile.each(build);
-			 tile.each(setStyle);
+			 
          }
          
       };

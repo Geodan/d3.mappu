@@ -231,7 +231,7 @@
 				  if (config.labelfield){
 				  	  //TODO: add option to only show layer from certain zoomlevel
 					  entities.each(function(d){
-						var loc = _path.centroid(d);
+						var loc = _path.centroid(d.geometry);
 						var text = d.properties[config.labelfield];
 						d3.select(this).selectAll('text')
 							.attr('x',loc[0])
