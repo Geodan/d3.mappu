@@ -2,7 +2,7 @@
 <head>
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="//d3js.org/d3-tile.v0.0.min.js"></script>
-<script src="//d3js.org/topojson.v1.min.js"></script>
+<script src="//d3js.org/topojson.v2.min.js"></script>
 <script src="../dist/d3.mappu.js"></script>
 
 <!--
@@ -30,6 +30,13 @@
   stroke-linecap: round;
 }
 
+.tile path.minor_road {
+	stroke: #cccc00;
+}
+
+.tile path.major_road {
+	stroke: #ff0033;
+}
 </style>
 <script>
 
@@ -63,19 +70,19 @@ console.log(path.area(geojson));
 var mapdiv= d3.select('#map').node();
 var map = new d3.mappu.Map(mapdiv, {
         center: [5.2,52.2],
-        zoom: 22,
+        zoom: 24,
         minZoom: 10,
         maxZoom: 30,
         projection: d3.geoMercator()
 });
-/*
+
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
     //url: "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
     url: "http://tile.stamen.com/toner/{z}/{x}/{y}.png"
     
 }).addTo(map);
-*/
+
 /*
 var mylayer = new d3.mappu.VectorLayer('mylayer',{
     reproject: false,
@@ -114,8 +121,10 @@ d3.json("gemeenten.topojson", function(error, data) {
 
 var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 		//url: "http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json",
-		url: "http://vector.mapzen.com/osm/roads/{z}/{x}/{y}.json?api_key=vector-tiles--R28NDY",
-		style:{
+		url: "http://tile.mapzen.com/mapzen/vector/v1/roads/{z}/{x}/{y}.topojson?api_key=vector-tiles--R28NDY",
+		//url: "http://192.168.40.8:3389/geoserver/gwc/service/tms/1.0.0/research%3Apand@World_3857@geojson/{z}/{x}/{y}.topojson",
+		layername: 'roads',
+		style: {
 			stroke: 'blue',
 			'stroke-width': '1px'
 		}

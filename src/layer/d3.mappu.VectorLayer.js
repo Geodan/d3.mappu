@@ -127,7 +127,7 @@
 			  }
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true)
-        .style('pointer-events','visiblepainted');//make clickable
+				.style('pointer-events','visiblepainted');//make clickable
 		  }
 		  d3.select(this).append('text')
 		  	.classed('shadowtext',true)
@@ -231,7 +231,7 @@
 				  if (config.labelfield){
 				  	  //TODO: add option to only show layer from certain zoomlevel
 					  entities.each(function(d){
-						var loc = _path.centroid(d);
+						var loc = _path.centroid(d.geometry);
 						var text = d.properties[config.labelfield];
 						d3.select(this).selectAll('text')
 							.attr('x',loc[0])

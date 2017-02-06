@@ -595,11 +595,12 @@ d3_mappu_Sketch = function(id, config) {
 	  buildEdit();
 	}
 	
-	var drag = d3.behavior.drag()
-		.origin(function(d) { return d; })
-		.on("dragstart", dragstarted)
+	var drag = d3.drag()
+		//TODO: working on new d3v4 drag  
+		.subject(function(d) { return d; })
+		.on("start", dragstarted)
 		.on("drag", dragged)
-		.on("dragend", dragended);
+		.on("end", dragended);
 	
 		
 	function buildEdit(){
@@ -772,7 +773,7 @@ d3_mappu_Sketch = function(id, config) {
 		map.sketch = sketch;
 		
 		project = map.projection;
-		path = d3.geo.path()
+		path = d3.geoPath()
 			.projection(map.projection)
 			.pointRadius(4.5);
 		return sketch;
@@ -1054,7 +1055,7 @@ d3_mappu_Layer = function(name, config){
 			  }
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true)
-        .style('pointer-events','visiblepainted');//make clickable
+				.style('pointer-events','visiblepainted');//make clickable
 		  }
 		  d3.select(this).append('text')
 		  	.classed('shadowtext',true)
@@ -1158,7 +1159,7 @@ d3_mappu_Layer = function(name, config){
 				  if (config.labelfield){
 				  	  //TODO: add option to only show layer from certain zoomlevel
 					  entities.each(function(d){
-						var loc = _path.centroid(d);
+						var loc = _path.centroid(d.geometry);
 						var text = d.properties[config.labelfield];
 						d3.select(this).selectAll('text')
 							.attr('x',loc[0])
@@ -1271,7 +1272,12 @@ d3_mappu_Layer = function(name, config){
       var _duration = config.duration || 0;
       var _path;
       var _projection;
+      var tms = config.tms;
+      var layername = config.layername;
       var style = config.style || {};
+      var labelStyle = config.labelStyle || {};
+      var _events = config.events;
+      var _filter = config.filter;
       
 	  Object.defineProperty(layer, 'url', {
         get: function() {
@@ -1282,35 +1288,56 @@ d3_mappu_Layer = function(name, config){
             draw();
         }
       });
+      
+      Object.defineProperty(layer, 'events', {
+        get: function() {
+            return _events;
+        },
+        set: function(array) {
+            _events = array;
+        }
+      });
       	
       function setStyle(d){
       	  var entity = d3.select(this);
       	  //Do generic layer style
       	  if (style){
-      	  	  for (var key in style) { 
+      	  	  for (var key in style) {
+      	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
+      	  	  	  	  style[key] = 'none';
+      	  	  	  }
       	  	  	  entity.style(key, style[key]);
       	  	  }
       	  }
       	  
       	  //Now use per-feature styling
       	  if (d.style){
-      	  	  for (var key in d.style) { 
+      	  	  for (var key in d.style) {
+      	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
+      	  	  	  	  d.style[key] = 'none';
+      	  	  	  }
       	  	  	  entity.style(key, d.style[key]);
       	  	  }
       	  }
       }
       
       function tileurl(d){
+      	  var 	x = d[0],
+      	  		y = d[1],
+      	  		z = d[2];
+      	  if (tms) {
+      	  	  y = Math.pow(2, z) - y - 1; //TMS reverse for Y-down
+      	  }
           return _url    
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('{z}',d[2])
-				.replace('{x}',d[0])
-				.replace('{y}',d[1])
+				.replace('{z}',z)
+				.replace('{x}',x)
+				.replace('{y}',y)
 				//FIXME: why are these curly brackets killed when used with polymer?                    
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('%7Bz%7D',d[2])
-				.replace('%7Bx%7D',d[0])
-				.replace('%7By%7D',d[1]);
+				.replace('%7Bz%7D',z)
+				.replace('%7Bx%7D',x)
+				.replace('%7By%7D',y);
       }
       
       //each tile can be considered it's own drawboard, on which we build
@@ -1319,26 +1346,68 @@ d3_mappu_Layer = function(name, config){
 		var url = tileurl(d);
 		_projection = d3.geoMercator();
 		_path = d3.geoPath().projection(_projection);
+		
 		this._xhr = d3.json(url, function(error, json) {
+			if (error) throw error;
+			
 			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
 			
 			_path.projection()
-			  	.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
+				.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
 				.scale(k / 2 / Math.PI);
-
-				
-			var features = json.features;
+			/* TT: WORK IN PROGRESS FOR ALREADY PROJECTED DATA
+			function matrix(a, b, c, d, tx, ty) {
+			  return d3.geoTransform({
+				point: function(x, y) {
+				  this.stream.point(a * x + b * y + tx, c * x + d * y + ty);
+				}
+			  });
+			}
+			var tx = 0; //k / 2 - d[0] *256;
+			var ty = 0 ; //k / 2 - d[0] *256;
+			
+			
+			var scale = 1/256;
+			var path = d3.geoPath()
+				.projection(matrix(scale, 0, 0, scale, tx, ty));
+			/* END OF WORK IN PROGRESS */
+			
+			if (json.objects){
+				var features = topojson.feature(json,json.objects[layername]).features;	
+			} else if (json.features){
+				var features = json.features;
+			} else {
+				throw "Can't work with this vectortile data";
+			}
+			
+			if (typeof _filter === 'function'){
+				features = features.filter(_filter);
+			}
+			
 			var entities = tile.selectAll('path').data(features, function(d){
 				return d.id;
 			});
+			
 			var newentity = entities.enter().append('path')
 				.attr('id',function(d){
-						return 'entity'+ d.id;
+						return 'entity'+ d.properties.id;
 				})
-				//.attr('class',function(d){return d.properties.kind;})
-				.attr("d", _path);
+				.attr('class',function(d){return d.properties.kind;})
+				.attr("d", _path)
+				.style('pointer-events','visiblepainted');//make clickable;
+			newentity.each(setStyle);
 			entities.exit().remove();
+			
+			// Add events from config
+			  if (_events){
+				  _events.forEach(function(d){
+					 newentity.each(function(){
+						d3.select(this).on(d.event, d.action);
+					 });
+				  });
+			  }
 		});
+		
       }
     
       //Draw the tiles (based on data-update)
@@ -1349,7 +1418,6 @@ d3_mappu_Layer = function(name, config){
          	
 		 
 		 var image = drawboard.select('g')
-			//.style("transform",transform)
 			.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
 			.style("stroke-width",1/ transform.k*100)
 			.selectAll(".tile")
@@ -1368,8 +1436,7 @@ d3_mappu_Layer = function(name, config){
 		 			return "translate(" + d[0] + " " +d[1]+")scale("+scale+")"
 		 		  });
 			 tile.each(build);
-			 tile.each(setStyle);
-			 //tile.append('circle').attr('cx',50).attr('cy',50).attr('r',10).style('stroke','green');
+			 
          }
          
       };
@@ -1845,6 +1912,7 @@ d3_mappu_Layer = function(name, config){
          image.exit()
          	.attr('src',null)
          	.remove();
+
       };
 
       var refresh = function(){
