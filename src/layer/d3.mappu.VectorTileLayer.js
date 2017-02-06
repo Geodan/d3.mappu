@@ -11,11 +11,18 @@
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vectortile';
-			var _url = config.url;                           
-			var _duration = config.duration || 0;
-			var _path;
-			var _projection;
-			var style = config.style || {};
+      var pi = Math.PI;
+      var tau = 2 * pi;
+      var _url = config.url;                           
+      var _duration = config.duration || 0;
+      var _path;
+      var _projection;
+      var tms = config.tms;
+      var layername = config.layername;
+      var style = config.style || {};
+      var labelStyle = config.labelStyle || {};
+      var _events = config.events;
+      var _filter = config.filter;
       
 	  Object.defineProperty(layer, 'url', {
         get: function() {
@@ -26,78 +33,145 @@
             draw();
         }
       });
+      
+      Object.defineProperty(layer, 'events', {
+        get: function() {
+            return _events;
+        },
+        set: function(array) {
+            _events = array;
+        }
+      });
       	
       function setStyle(d){
       	  var entity = d3.select(this);
       	  //Do generic layer style
       	  if (style){
-      	  	  for (var key in style) { 
+      	  	  for (var key in style) {
+      	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
+      	  	  	  	  style[key] = 'none';
+      	  	  	  }
       	  	  	  entity.style(key, style[key]);
       	  	  }
       	  }
       	  
       	  //Now use per-feature styling
       	  if (d.style){
-      	  	  for (var key in d.style) { 
+      	  	  for (var key in d.style) {
+      	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
+      	  	  	  	  d.style[key] = 'none';
+      	  	  	  }
       	  	  	  entity.style(key, d.style[key]);
       	  	  }
       	  }
       }
       
       function tileurl(d){
+      	  var 	x = d[0],
+      	  		y = d[1],
+      	  		z = d[2];
+      	  if (tms) {
+      	  	  y = Math.pow(2, z) - y - 1; //TMS reverse for Y-down
+      	  }
           return _url    
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('{z}',d[2])
-				.replace('{x}',d[0])
-				.replace('{y}',d[1])
+				.replace('{z}',z)
+				.replace('{x}',x)
+				.replace('{y}',y)
 				//FIXME: why are these curly brackets killed when used with polymer?                    
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('%7Bz%7D',d[2])
-				.replace('%7Bx%7D',d[0])
-				.replace('%7By%7D',d[1]);
+				.replace('%7Bz%7D',z)
+				.replace('%7Bx%7D',x)
+				.replace('%7By%7D',y);
       }
       
       //each tile can be considered it's own drawboard, on which we build
       function build(d){
       	var tile = d3.select(this);
 		var url = tileurl(d);
-		_projection = d3.geo.mercator();
-		_path = d3.geo.path().projection(_projection);
+		_projection = d3.geoMercator();
+		_path = d3.geoPath().projection(_projection);
+		
 		this._xhr = d3.json(url, function(error, json) {
-			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
-			_path.projection()
-			  	.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
-				.scale(k / 2 / Math.PI);
+			if (error) throw error;
 			
-			var features = json.features;
+			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
+			
+			_path.projection()
+				.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
+				.scale(k / 2 / Math.PI);
+			/* TT: WORK IN PROGRESS FOR ALREADY PROJECTED DATA
+			function matrix(a, b, c, d, tx, ty) {
+			  return d3.geoTransform({
+				point: function(x, y) {
+				  this.stream.point(a * x + b * y + tx, c * x + d * y + ty);
+				}
+			  });
+			}
+			var tx = 0; //k / 2 - d[0] *256;
+			var ty = 0 ; //k / 2 - d[0] *256;
+			
+			
+			var scale = 1/256;
+			var path = d3.geoPath()
+				.projection(matrix(scale, 0, 0, scale, tx, ty));
+			/* END OF WORK IN PROGRESS */
+			
+			if (json.objects){
+				var features = topojson.feature(json,json.objects[layername]).features;	
+			} else if (json.features){
+				var features = json.features;
+			} else {
+				throw "Can't work with this vectortile data";
+			}
+			
+			if (typeof _filter === 'function'){
+				features = features.filter(_filter);
+			}
+			
 			var entities = tile.selectAll('path').data(features, function(d){
 				return d.id;
 			});
+			
 			var newentity = entities.enter().append('path')
 				.attr('id',function(d){
-						return 'entity'+ d.id;
+						return 'entity'+ d.properties.id;
 				})
-				//.attr('class',function(d){return d.properties.kind;})
-				.attr("d", _path);
+				.attr('class',function(d){return d.properties.kind;})
+				.attr("d", _path)
+				.style('pointer-events','visiblepainted');//make clickable;
+			newentity.each(setStyle);
 			entities.exit().remove();
+			
+			// Add events from config
+			  if (_events){
+				  _events.forEach(function(d){
+					 newentity.each(function(){
+						d3.select(this).on(d.event, d.action);
+					 });
+				  });
+			  }
 		});
+		
       }
     
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         var zoombehaviour = layer.map.zoombehaviour;
-         
-         drawboard.transition().duration(_duration)
-         	.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
-         	.style("stroke-width",1/ zoombehaviour.scale()*100);
+         var transform = layer.map.transform;
          	
-         
-         var image = drawboard
-         	//.style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))//?? Is this needed?
-         	.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
+		 
+		 var image = drawboard.select('g')
+			.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
+			.style("stroke-width",1/ transform.k*100)
+			.selectAll(".tile")
+			.data(tiles, function(d) { return d; });
+		
+		image.exit()
+		  .each(function(d) { if (this._xhr) this._xhr.abort(); })
+		  .remove();
+		  
          var imageEnter = image.enter();
          if (layer.visible){
          	 var scale = 1/256;
@@ -107,10 +181,9 @@
 		 			return "translate(" + d[0] + " " +d[1]+")scale("+scale+")"
 		 		  });
 			 tile.each(build);
-			 tile.each(setStyle);
+			 
          }
-         image.exit()
-         	.remove();
+         
       };
       var refresh = function(){
           draw();
