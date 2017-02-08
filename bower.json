@@ -21,9 +21,9 @@
     "tests"
   ],
   "dependencies": {
-    "d3": "~3.5",
-    "topojson": "~1.6",
-    "d3-plugins": "*",
-    "turf": "~2.0"
+    "d3": "~4",
+    "topojson": "~2",
+    "turf": "~2.0",
+    "d3-tile": "d3/d3-tile#~0"
   }
 }

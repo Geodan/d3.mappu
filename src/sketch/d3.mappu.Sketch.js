@@ -233,11 +233,12 @@ d3_mappu_Sketch = function(id, config) {
 	  buildEdit();
 	}
 	
-	var drag = d3.behavior.drag()
-		.origin(function(d) { return d; })
-		.on("dragstart", dragstarted)
+	var drag = d3.drag()
+		//TODO: working on new d3v4 drag  
+		.subject(function(d) { return d; })
+		.on("start", dragstarted)
 		.on("drag", dragged)
-		.on("dragend", dragended);
+		.on("end", dragended);
 	
 		
 	function buildEdit(){
@@ -410,7 +411,7 @@ d3_mappu_Sketch = function(id, config) {
 		map.sketch = sketch;
 		
 		project = map.projection;
-		path = d3.geo.path()
+		path = d3.geoPath()
 			.projection(map.projection)
 			.pointRadius(4.5);
 		return sketch;
