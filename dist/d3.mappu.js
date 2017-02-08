@@ -1057,7 +1057,7 @@ d3_mappu_Layer = function(name, config){
       function build(d){
       	  var project = _projection;
 
-      	  if (d.geometry.type == 'Point' && d.style){
+      	  if (d.geometry.type == 'Point' && d.style && (d.style['iconimg_encoding'] || d.style['marker-url'])){
       	      var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
               var width = d.style && d.style.width ? d.style.width :
