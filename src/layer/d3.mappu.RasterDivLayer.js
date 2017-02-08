@@ -16,6 +16,7 @@
       var _options = config; //Te be leaflet compatible in g-layercatalogus
       layer.options = _options;
       layer.visibility = layer.visible; //leaflet compat
+      var _opacity = config.opacity;
       var _layers = config.layers;
       var _duration = 0;
       var _cqlfilter = null;
@@ -220,7 +221,7 @@
               .style('width','256px')
               .style('height','256px')
               .style('position','absolute')
-              .attr('opacity', this.opacity)
+              .style('opacity', _opacity)
               .style("left", function(d) { return (d[0] << 8) + "px"; })
               .style("top", function(d) { return (d[1] << 8) + "px"; })
               //TODO: working on this
@@ -234,7 +235,7 @@
 
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          layer.drawboard.style('opacity', _opacity).style('display',this.visible?'block':'none');
       };
 
       layer.refresh = refresh;

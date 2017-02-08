@@ -999,6 +999,7 @@ d3_mappu_Layer = function(name, config){
       	  if (style){
       	  	  for (var key in style) {
       	  	  	  entity.select('path').style(key, style[key]);
+      	  	  	  entity.select('circle').style(key, style[key]);
       	  	  }
       	  }
 
@@ -1006,6 +1007,7 @@ d3_mappu_Layer = function(name, config){
       	  if (d.style){
       	  	  for (var key in d.style) {
       	  	  	  entity.select('path').style(key, d.style[key]);
+      	  	  	  entity.select('circle').style(key, d.style[key]);
       	  	  }
       	  }
 
@@ -1027,27 +1029,40 @@ d3_mappu_Layer = function(name, config){
       function build(d){
       	  var project = _projection;
 
-      	  if (d.geometry.type == 'Point' && d.style && (d.style['iconimg_encoding'] || d.style['marker-url'])){
+      	  if (d.geometry.type == 'Point' && d.style){
       	      var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
-              var width = d.style && d.style.width ? d.style.width :
-                           (style.width ? style.width : 32);
-              var height = d.style && d.style.height ? d.style.height :
-                           (style.height ? style.height : 37);
-              var img = d3.select(this).append('g').append("image")
-                .attr("width", width)
-                .attr("height", height)
-                //.attr("x",x-12.5) //No need setting x and y, since it's reset later
-                //.attr("y",y-25)
-                .style('pointer-events','visiblepainted')
-                .attr("xlink:href", function(d){
-                    if (d.style['iconimg']){
-					    return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
-                    }
-                    else if (d.style['marker-url']){
-    					return d.style['marker-url'];
-                    };
-				});
+              
+              if (d.style['iconimg_encoding'] || d.style['marker-url']){
+				  var width = d.style && d.style.width ? d.style.width :
+							   (style.width ? style.width : 32);
+				  var height = d.style && d.style.height ? d.style.height :
+							   (style.height ? style.height : 37);
+				  var img = d3.select(this).append('g').append("image")
+					.attr("width", width)
+					.attr("height", height)
+					.style('pointer-events','visiblepainted')
+					.attr("xlink:href", function(d){
+						if (d.style['iconimg']){
+							return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
+						}
+						else if (d.style['marker-url']){
+							return d.style['marker-url'];
+						};
+					});
+			  }
+			  else {
+			  	  d3.select(this).append("circle")
+					.attr("cx", x)
+					.attr("cy", y)
+					.attr("r", function(d){
+							return style.radius ? style.radius :
+								(d.style && d.style.radius) ? d.style.radius :
+									5;
+					})
+					.classed(name, true)
+					.style('pointer-events','visiblepainted');//make clickable
+			  }
   	      }
       	  else {
 			  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
@@ -1113,6 +1128,7 @@ d3_mappu_Layer = function(name, config){
                  newentity.each(function(){
                  	d3.select(this).select('path').on(d.event, d.action);
                  	d3.select(this).select('image').on(d.event, d.action);
+                 	d3.select(this).select('circle').on(d.event, d.action);
                  });
               });
           }
@@ -1130,6 +1146,11 @@ d3_mappu_Layer = function(name, config){
 			  if (config.reproject){//the slow way
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
+				  entities.select('circle').transition().duration(duration).each(function(d){
+				  		  var x = project(d.geometry.coordinates)[0];
+				  		  var y = project(d.geometry.coordinates)[1];
+				  		  d3.select(this).attr('cx',x).attr('cy',y);
+				  });
 				  entities.select('image').transition().duration(duration).each(function(d){
                     //TODO: create something nice customizable for widh-height calculations
                     var width = d.style && d.style.width ? d.style.width :
@@ -1176,9 +1197,9 @@ d3_mappu_Layer = function(name, config){
                         if (labelStyle){
     						for (var key in labelStyle) {
     							d3.select(this).selectAll('.vectorLabel').style(key, labelStyle[key]);
-                                //shadowtext only sensitive to the opacity style
-                                if (key == 'opacity'){
-                                    d3.select(this).select('.shadowtext').style('opacity', labelStyle[key]);
+                                //shadowtext only sensitive to the opacity style or font params
+                                if (key == 'opacity' || key.indexOf('font') > -1 ){
+                                    d3.select(this).select('.shadowtext').style(key, labelStyle[key]);
                                 }
     						}
                         }
@@ -1699,6 +1720,7 @@ d3_mappu_Layer = function(name, config){
       var _options = config; //Te be leaflet compatible in g-layercatalogus
       layer.options = _options;
       layer.visibility = layer.visible; //leaflet compat
+      var _opacity = config.opacity;
       var _layers = config.layers;
       var _duration = 0;
       var _cqlfilter = null;
@@ -1903,7 +1925,7 @@ d3_mappu_Layer = function(name, config){
               .style('width','256px')
               .style('height','256px')
               .style('position','absolute')
-              .attr('opacity', this.opacity)
+              .style('opacity', _opacity)
               .style("left", function(d) { return (d[0] << 8) + "px"; })
               .style("top", function(d) { return (d[1] << 8) + "px"; })
               //TODO: working on this
@@ -1917,7 +1939,7 @@ d3_mappu_Layer = function(name, config){
 
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          layer.drawboard.style('opacity', _opacity).style('display',this.visible?'block':'none');
       };
 
       layer.refresh = refresh;
