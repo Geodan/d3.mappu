@@ -127,7 +127,7 @@
 			  }
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true)
-        .style('pointer-events','visiblepainted');//make clickable
+				.style('pointer-events','visiblepainted');//make clickable
 		  }
 		  d3.select(this).append('text')
 		  	.classed('shadowtext',true)
@@ -141,7 +141,7 @@
       var draw = function(rebuild){
       	  if (config.reproject){
 				_projection = layer.map.projection;
-				_path = d3.geo.path()
+				_path = d3.geoPath()
 					.projection(_projection)
 					.pointRadius(function(d) {
 						if (d.style && d.style.radius){
@@ -153,10 +153,11 @@
 					});
 		  }
 		  else {
-				_projection = d3.geo.mercator()
+		  	  //TODO: this should be depending on the projection given ins the config, no?
+				_projection = d3.geoMercator()
 					.scale(1 / 2 / Math.PI)
 					.translate([0, 0]);
-				_path = d3.geo.path()
+				_path = d3.geoPath()
 					.projection(_projection);
 		  }
           var drawboard = layer.drawboard;
@@ -181,7 +182,7 @@
           // Add events from config
           if (_events){
               _events.forEach(function(d){
-                 entities.each(function(){
+                 newentity.each(function(){
                  	d3.select(this).select('path').on(d.event, d.action);
                  	d3.select(this).select('image').on(d.event, d.action);
                  });
@@ -190,8 +191,8 @@
           layer.refresh(rebuild?0:_duration);
       };
 
-      var calcwidth = d3.scale.linear().range([20,20,32,32]).domain([0,21,24,30]);
-      var calcheight = d3.scale.linear().range([20,20,37,37]).domain([0,21,24,30]);
+      var calcwidth = d3.scaleLinear().range([20,20,32,32]).domain([0,21,24,30]);
+      var calcheight = d3.scaleLinear().range([20,20,37,37]).domain([0,21,24,30]);
 
       var refresh = function(duration){
           var drawboard = layer.drawboard;
@@ -230,7 +231,7 @@
 				  if (config.labelfield){
 				  	  //TODO: add option to only show layer from certain zoomlevel
 					  entities.each(function(d){
-						var loc = _path.centroid(d);
+						var loc = _path.centroid(d.geometry);
 						var text = d.properties[config.labelfield];
 						d3.select(this).selectAll('text')
 							.attr('x',loc[0])
@@ -260,11 +261,11 @@
 			  }
 			  else {
 				//based on: http://bl.ocks.org/mbostock/5914438
-				var zoombehaviour = layer.map.zoombehaviour;
+				var transform = layer.map.transform;
 				//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
 				drawboard.select('g')
-				  .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
-				  .style("stroke-width", 1 / zoombehaviour.scale());
+				  .attr("transform", transform)
+				  .style("stroke-width", 1 / transform.k);
 			  }
           }
           else {

@@ -89,6 +89,8 @@ d3.mappu.Map = function( id, config ) {
 	return d3_mappu_Map( id, config );
 };
 d3_mappu_Map = function( id, config ) {
+	var pi = Math.PI,
+    	tau = 2 * pi;
 	var map = {};
 	var _layers = [ ];
 	var _mapdiv;
@@ -109,42 +111,46 @@ d3_mappu_Map = function( id, config ) {
 
 	var _extent = [ [ 0, 0 ],[ 1, 1 ] ];
 	var _center = config.center || [ 0, 0 ];
-	var _projection = config.projection || d3.geo.mercator( );
+	var _projection = config.projection || d3.geoMercator( );
 	var _zoom = config.zoom || 22;
+	var _transform;
 	var _maxZoom = config.maxZoom || 24;
 	var _minZoom = config.minZoom || 15;
 	var _maxView = config.maxView || [ [- 180, 90 ],[ 180,- 90 ] ];
-	var dispatch = d3.dispatch( "loaded", "zoomend" );
+	//var dispatch = d3.dispatch( "loaded", "zoomend" );
 	var redraw = function( ) {
-		//Calculate tile set
+		_transform = d3.event.transform;
+
 		_tiles = _tile
-			.scale( _zoombehaviour.scale( ))
-			.translate( _zoombehaviour.translate( ))( );
-
-		//Calculate projection, so we can find out coordinates
+			.scale( _transform.k)
+			.translate( [_transform.x, _transform.y])
+			( );
 		_projection
-			.scale( _zoombehaviour.scale( ) / 2 / Math.PI )
-			.translate( _zoombehaviour.translate( ));
-
+			.scale( _transform.k / tau )
+			.translate( [_transform.x,_transform.y]);
 		_layers.forEach( function( d ) {
 				d.refresh( 0 );
 		} );
+		
+		
 		//Set internal zoom
-		_zoom = Math.log( _zoombehaviour.scale( ))/ Math.log( 2 );
+		_zoom = Math.log( _transform.k) / Math.log( 2 );
+		
+		
+		
 		//Set internal center
 		var pixcenter = [ _width / 2, _height / 2 ];
 		_center =  _projection.invert( pixcenter );
 
-
 		//Update extent value
-		
 		var lb = _projection.invert( [ 0, _height] );
 		var rt = _projection.invert( [ _width, 0 ] );
 		map.extent = [ lb, rt ];
 
-		dispatch.zoomend( );
+		//dispatch.zoomend( );
 	};
 	var resize = function( ) {
+		
 		_width = _mapdiv.clientWidth;
 		_height = _mapdiv.clientHeight;
 		d3.select( _mapdiv ).selectAll( '.drawboard' )
@@ -152,44 +158,30 @@ d3_mappu_Map = function( id, config ) {
 			.attr( "height", _height );
 
 		_tile.size( [ _width, _height ] );
-		redraw( );
+		//redraw( );
+
 	};
-	var _zooming;
-	function zoomcenter( zoomval, centerval ) {
-		var scale =( 1 << zoomval );
-		_zoombehaviour.scale( scale );
-		_projection.scale( _zoombehaviour.scale( ) / 2 / Math.PI ).translate( _zoombehaviour.translate( ));
-		//Adapt projection based on new zoomlevel
-		var pixcenter = _projection( centerval );
-		var curtranslate = _zoombehaviour.translate( );
-		var translate = [
-			curtranslate [ 0 ] +( _width - pixcenter [ 0 ] ) -( _width / 2 ),
-			curtranslate [ 1 ] +( _height - pixcenter [ 1 ] ) -( _height / 2 )
-		];
-		_zoombehaviour.translate( translate );
-		//Disabled transition because it gives problems when zooming and centering directly after eachother
-		//_zoombehaviour.event(_mapdiv);
-	}
 
 	_projection
-		.scale(( 1 << _zoom || 1 << 12 ) / 2 / Math.PI )
-		.translate( [ _width / 2, _height / 2 ] );
-	//.center(_center)
+		.scale(1 / tau)
+		.translate([0,0]);
+
+	var _tile = d3.tile( )
+		.size( [ _width, _height ] );
+	
+	var _zoombehaviour = d3.zoom( )
+		.scaleExtent( [ 1 << _minZoom, 1 << _maxZoom ] )
+		.on("zoom", redraw );
 
 	var _projcenter = _projection( _center );
-	var _zoombehaviour = d3.behavior.zoom( )
-		.scale( _projection.scale( ) * 2 * Math.PI )
-		.scaleExtent( [ 1 << _minZoom, 1 << _maxZoom ] )
-		//.translate( [ _width - _projcenter [ 0 ], _height - _projcenter [ 1 ] ] ) //obs?
-		.translate( [ _width /2, _height /2 ] )
-		.on( "zoom", redraw );
-	d3.select( _mapdiv ).call( _zoombehaviour );
-
-	var _tile = d3.geo.tile( ).size( [ _width, _height ] );
-	var _tiles = _tile.scale( _zoombehaviour.scale( )).translate( _zoombehaviour.translate( ))( );
-	//Do an initial zoomcenter
-	zoomcenter( _zoom, _center );
-	resize( );
+	
+	d3.select( _mapdiv )
+		.call( _zoombehaviour )
+		.call(_zoombehaviour.transform, d3.zoomIdentity
+			.translate(_width / 2, _height / 2)
+			.scale(1 << _zoom)
+			.translate(-_projcenter[0], - _projcenter[1])
+		);
 
 	////getter/setter functions
 
@@ -209,7 +201,7 @@ d3_mappu_Map = function( id, config ) {
 			},
 			set : function( val ) {
 				//zoomcenter will move to and set the center in some steps
-   			zoomcenter( _zoom, val );
+   			//zoomcenter( _zoom, val );
    		}
   } );
   // .zoom : (zoomlevel)
@@ -221,7 +213,7 @@ d3_mappu_Map = function( id, config ) {
   		set : function( val ) {
   			if( val <= _maxZoom && val >= _minZoom ) {
   				//zoomcenter will move to and set the zoomlevel in some steps
-  				zoomcenter( val, _center );
+  				//zoomcenter( val, _center );
   			}
   			else {
   				console.log( 'Zoomlevel exceeded', val, 'Min:', _minZoom, 'Max:', _maxZoom );
@@ -235,7 +227,7 @@ d3_mappu_Map = function( id, config ) {
   		},
   		set : function( val ) {
   			_minZoom = val;
-  			this.zoombehaviour.scaleExtent( [ 1 << _minZoom, 1 << _maxZoom ] );
+  			//this.zoombehaviour.scaleExtent( [ 1 << _minZoom, 1 << _maxZoom ] );
   		}
   } );
   // .maxZoom : (zoomlevel)
@@ -245,7 +237,7 @@ d3_mappu_Map = function( id, config ) {
   		},
   		set : function( val ) {
   			_maxZoom = val;
-  			this.zoombehaviour.scaleExtent( [ 1 << _minZoom, 1 << _maxZoom ] );
+  			//this.zoombehaviour.scaleExtent( [ 1 << _minZoom, 1 << _maxZoom ] );
   		}
   } );
   // .maxView : ([[long,lat],[long,lat]])
@@ -280,6 +272,11 @@ d3_mappu_Map = function( id, config ) {
   		get : function( ) { return _tiles;},
   		set : function( ) { console.warn( 'No setting allowed for tile' );}
   } );
+  
+  Object.defineProperty( map, 'transform', {
+  		get : function( ) { return _transform;},
+  		set : function( ) { console.warn( 'No setting allowed for transform' );}
+  } );
   Object.defineProperty( map, 'zoombehaviour', {
   		get : function( ) { return _zoombehaviour;},
   		set : function( ) { console.warn( 'No setting allowed for zoombehaviour' );}
@@ -289,26 +286,7 @@ d3_mappu_Map = function( id, config ) {
   		set : function( ) { console.warn( 'No setting allowed for layers' );}
   } );
   ////singular functions
-
-	var zoomToFeature = function( d ) {
-		//TODO
-		//see: http://stackoverflow.com/questions/14492284/center-a-map-in-d3-given-a-geojson-object
-		console.warn( 'Not implemented yet' );
-	};
-	var zoomToExtent = function( bbox ) {
-		var bounds = [ ];
-		bounds [ 0 ] = _projection( [ bbox [ 0 ], bbox [ 1 ] ] );
-		bounds [ 1 ] = _projection( [ bbox [ 2 ], bbox [ 3 ] ] );
-		var dx = bounds [ 1 ][ 0 ] - bounds [ 0 ][ 0 ],
-		dy = bounds [ 1 ][ 1 ] - bounds [ 0 ][ 1 ],
-		x =( bounds [ 0 ][ 0 ] + bounds [ 1 ][ 0 ] ) / 2,
-		y =( bounds [ 0 ][ 1 ] + bounds [ 1 ][ 1 ] ) / 2,
-		scale =.9 / Math.max( dx / _width, dy / _height ),
-		translate = [ _width / 2 - scale * x, _height / 2 - scale * y ];
-		_zoom = 22; //FIXME
-		_center = [ bbox [ 0 ] +( bbox [ 2 ]- bbox [ 0 ] ) / 2, bbox [ 1 ] +( bbox [ 3 ]- bbox [ 1 ] ) / 2 ];
-		zoomcenter( _zoom, _center )
-	}
+	
 	var addLayer = function( layer ) {
 		if( ! layer.id ) {
 			console.warn( 'Not a valid layer. (No ID)' );
@@ -372,21 +350,12 @@ d3_mappu_Map = function( id, config ) {
 		} );
 
 	};
-	// .removeLayers([{layer}])
 
-	// .refresh()
-
-	map.zoomToFeature = zoomToFeature;
-	map.zoomToExtent = zoomToExtent;
 	map.addLayer = addLayer;
 	map.removeLayer = removeLayer;
 	map.orderLayers = orderLayers;
-	//map.getLayersByName = getLayersByName;
 	map.redraw = redraw;
 	map.resize = resize;
-	map.dispatch = dispatch;
-
-
 
 	return map;
 };
@@ -626,11 +595,12 @@ d3_mappu_Sketch = function(id, config) {
 	  buildEdit();
 	}
 	
-	var drag = d3.behavior.drag()
-		.origin(function(d) { return d; })
-		.on("dragstart", dragstarted)
+	var drag = d3.drag()
+		//TODO: working on new d3v4 drag  
+		.subject(function(d) { return d; })
+		.on("start", dragstarted)
 		.on("drag", dragged)
-		.on("dragend", dragended);
+		.on("end", dragended);
 	
 		
 	function buildEdit(){
@@ -803,7 +773,7 @@ d3_mappu_Sketch = function(id, config) {
 		map.sketch = sketch;
 		
 		project = map.projection;
-		path = d3.geo.path()
+		path = d3.geoPath()
 			.projection(map.projection)
 			.pointRadius(4.5);
 		return sketch;
@@ -1085,7 +1055,7 @@ d3_mappu_Layer = function(name, config){
 			  }
 			  d3.select(this).append('path').attr("d", _path)
 				.classed(name, true)
-        .style('pointer-events','visiblepainted');//make clickable
+				.style('pointer-events','visiblepainted');//make clickable
 		  }
 		  d3.select(this).append('text')
 		  	.classed('shadowtext',true)
@@ -1099,7 +1069,7 @@ d3_mappu_Layer = function(name, config){
       var draw = function(rebuild){
       	  if (config.reproject){
 				_projection = layer.map.projection;
-				_path = d3.geo.path()
+				_path = d3.geoPath()
 					.projection(_projection)
 					.pointRadius(function(d) {
 						if (d.style && d.style.radius){
@@ -1111,10 +1081,11 @@ d3_mappu_Layer = function(name, config){
 					});
 		  }
 		  else {
-				_projection = d3.geo.mercator()
+		  	  //TODO: this should be depending on the projection given ins the config, no?
+				_projection = d3.geoMercator()
 					.scale(1 / 2 / Math.PI)
 					.translate([0, 0]);
-				_path = d3.geo.path()
+				_path = d3.geoPath()
 					.projection(_projection);
 		  }
           var drawboard = layer.drawboard;
@@ -1139,7 +1110,7 @@ d3_mappu_Layer = function(name, config){
           // Add events from config
           if (_events){
               _events.forEach(function(d){
-                 entities.each(function(){
+                 newentity.each(function(){
                  	d3.select(this).select('path').on(d.event, d.action);
                  	d3.select(this).select('image').on(d.event, d.action);
                  });
@@ -1148,8 +1119,8 @@ d3_mappu_Layer = function(name, config){
           layer.refresh(rebuild?0:_duration);
       };
 
-      var calcwidth = d3.scale.linear().range([20,20,32,32]).domain([0,21,24,30]);
-      var calcheight = d3.scale.linear().range([20,20,37,37]).domain([0,21,24,30]);
+      var calcwidth = d3.scaleLinear().range([20,20,32,32]).domain([0,21,24,30]);
+      var calcheight = d3.scaleLinear().range([20,20,37,37]).domain([0,21,24,30]);
 
       var refresh = function(duration){
           var drawboard = layer.drawboard;
@@ -1188,7 +1159,7 @@ d3_mappu_Layer = function(name, config){
 				  if (config.labelfield){
 				  	  //TODO: add option to only show layer from certain zoomlevel
 					  entities.each(function(d){
-						var loc = _path.centroid(d);
+						var loc = _path.centroid(d.geometry);
 						var text = d.properties[config.labelfield];
 						d3.select(this).selectAll('text')
 							.attr('x',loc[0])
@@ -1218,11 +1189,11 @@ d3_mappu_Layer = function(name, config){
 			  }
 			  else {
 				//based on: http://bl.ocks.org/mbostock/5914438
-				var zoombehaviour = layer.map.zoombehaviour;
+				var transform = layer.map.transform;
 				//FIXME: bug in chrome? When zoomed in too much, browser tab stalls on zooming. Probably to do with rounding floats or something..
 				drawboard.select('g')
-				  .attr("transform", "translate(" + zoombehaviour.translate() + ")scale(" + zoombehaviour.scale() + ")")
-				  .style("stroke-width", 1 / zoombehaviour.scale());
+				  .attr("transform", transform)
+				  .style("stroke-width", 1 / transform.k);
 			  }
           }
           else {
@@ -1295,11 +1266,18 @@ d3_mappu_Layer = function(name, config){
       d3_mappu_Layer.call(this,name, config);
       var layer = d3_mappu_Layer(name, config);
       layer.type = 'vectortile';
-			var _url = config.url;                           
-			var _duration = config.duration || 0;
-			var _path;
-			var _projection;
-			var style = config.style || {};
+      var pi = Math.PI;
+      var tau = 2 * pi;
+      var _url = config.url;                           
+      var _duration = config.duration || 0;
+      var _path;
+      var _projection;
+      var tms = config.tms;
+      var layername = config.layername;
+      var style = config.style || {};
+      var labelStyle = config.labelStyle || {};
+      var _events = config.events;
+      var _filter = config.filter;
       
 	  Object.defineProperty(layer, 'url', {
         get: function() {
@@ -1310,78 +1288,145 @@ d3_mappu_Layer = function(name, config){
             draw();
         }
       });
+      
+      Object.defineProperty(layer, 'events', {
+        get: function() {
+            return _events;
+        },
+        set: function(array) {
+            _events = array;
+        }
+      });
       	
       function setStyle(d){
       	  var entity = d3.select(this);
       	  //Do generic layer style
       	  if (style){
-      	  	  for (var key in style) { 
+      	  	  for (var key in style) {
+      	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
+      	  	  	  	  style[key] = 'none';
+      	  	  	  }
       	  	  	  entity.style(key, style[key]);
       	  	  }
       	  }
       	  
       	  //Now use per-feature styling
       	  if (d.style){
-      	  	  for (var key in d.style) { 
+      	  	  for (var key in d.style) {
+      	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
+      	  	  	  	  d.style[key] = 'none';
+      	  	  	  }
       	  	  	  entity.style(key, d.style[key]);
       	  	  }
       	  }
       }
       
       function tileurl(d){
+      	  var 	x = d[0],
+      	  		y = d[1],
+      	  		z = d[2];
+      	  if (tms) {
+      	  	  y = Math.pow(2, z) - y - 1; //TMS reverse for Y-down
+      	  }
           return _url    
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('{z}',d[2])
-				.replace('{x}',d[0])
-				.replace('{y}',d[1])
+				.replace('{z}',z)
+				.replace('{x}',x)
+				.replace('{y}',y)
 				//FIXME: why are these curly brackets killed when used with polymer?                    
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('%7Bz%7D',d[2])
-				.replace('%7Bx%7D',d[0])
-				.replace('%7By%7D',d[1]);
+				.replace('%7Bz%7D',z)
+				.replace('%7Bx%7D',x)
+				.replace('%7By%7D',y);
       }
       
       //each tile can be considered it's own drawboard, on which we build
       function build(d){
       	var tile = d3.select(this);
 		var url = tileurl(d);
-		_projection = d3.geo.mercator();
-		_path = d3.geo.path().projection(_projection);
+		_projection = d3.geoMercator();
+		_path = d3.geoPath().projection(_projection);
+		
 		this._xhr = d3.json(url, function(error, json) {
-			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
-			_path.projection()
-			  	.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
-				.scale(k / 2 / Math.PI);
+			if (error) throw error;
 			
-			var features = json.features;
+			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
+			
+			_path.projection()
+				.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
+				.scale(k / 2 / Math.PI);
+			/* TT: WORK IN PROGRESS FOR ALREADY PROJECTED DATA
+			function matrix(a, b, c, d, tx, ty) {
+			  return d3.geoTransform({
+				point: function(x, y) {
+				  this.stream.point(a * x + b * y + tx, c * x + d * y + ty);
+				}
+			  });
+			}
+			var tx = 0; //k / 2 - d[0] *256;
+			var ty = 0 ; //k / 2 - d[0] *256;
+			
+			
+			var scale = 1/256;
+			var path = d3.geoPath()
+				.projection(matrix(scale, 0, 0, scale, tx, ty));
+			/* END OF WORK IN PROGRESS */
+			
+			if (json.objects){
+				var features = topojson.feature(json,json.objects[layername]).features;	
+			} else if (json.features){
+				var features = json.features;
+			} else {
+				throw "Can't work with this vectortile data";
+			}
+			
+			if (typeof _filter === 'function'){
+				features = features.filter(_filter);
+			}
+			
 			var entities = tile.selectAll('path').data(features, function(d){
 				return d.id;
 			});
+			
 			var newentity = entities.enter().append('path')
 				.attr('id',function(d){
-						return 'entity'+ d.id;
+						return 'entity'+ d.properties.id;
 				})
-				//.attr('class',function(d){return d.properties.kind;})
-				.attr("d", _path);
+				.attr('class',function(d){return d.properties.kind;})
+				.attr("d", _path)
+				.style('pointer-events','visiblepainted');//make clickable;
+			newentity.each(setStyle);
 			entities.exit().remove();
+			
+			// Add events from config
+			  if (_events){
+				  _events.forEach(function(d){
+					 newentity.each(function(){
+						d3.select(this).on(d.event, d.action);
+					 });
+				  });
+			  }
 		});
+		
       }
     
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
-         var zoombehaviour = layer.map.zoombehaviour;
-         
-         drawboard.transition().duration(_duration)
-         	.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
-         	.style("stroke-width",1/ zoombehaviour.scale()*100);
+         var transform = layer.map.transform;
          	
-         
-         var image = drawboard
-         	//.style(prefix + "transform", matrix3d(tiles.scale, tiles.translate))//?? Is this needed?
-         	.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
+		 
+		 var image = drawboard.select('g')
+			.attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
+			.style("stroke-width",1/ transform.k*100)
+			.selectAll(".tile")
+			.data(tiles, function(d) { return d; });
+		
+		image.exit()
+		  .each(function(d) { if (this._xhr) this._xhr.abort(); })
+		  .remove();
+		  
          var imageEnter = image.enter();
          if (layer.visible){
          	 var scale = 1/256;
@@ -1391,10 +1436,9 @@ d3_mappu_Layer = function(name, config){
 		 			return "translate(" + d[0] + " " +d[1]+")scale("+scale+")"
 		 		  });
 			 tile.each(build);
-			 tile.each(setStyle);
+			 
          }
-         image.exit()
-         	.remove();
+         
       };
       var refresh = function(){
           draw();
@@ -1734,7 +1778,7 @@ d3_mappu_Layer = function(name, config){
           	}
           	url = _url +
           		"&layer=" + _layers +
-          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[0]+"&TILECOL="+d[1]+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
           	if (_url.indexOf('?') < 0){
@@ -1836,9 +1880,9 @@ d3_mappu_Layer = function(name, config){
           }
       };
       function matrix3d(scale, translate) {
-				var k = scale / 256, r = scale % 1 ? Number : Math.round;
-				return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
-			}
+		var k = scale / 256, r = scale % 1 ? Number : Math.round;
+		return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
+	  }
 
 
       //Draw the tiles (based on data-update)
@@ -1866,7 +1910,7 @@ d3_mappu_Layer = function(name, config){
               .on('click', getFeatureInfo);
          }
          image.exit()
-         	.attr('src','')
+         	.attr('src',null)
          	.remove();
 
       };
