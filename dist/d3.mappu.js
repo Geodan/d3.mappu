@@ -1325,7 +1325,7 @@ d3_mappu_Layer = function(name, config){
       	  if (style){
       	  	  for (var key in style) {
       	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
-      	  	  	  	  style[key] = 'none';
+      	  	  	  	  entity.style(key, 'none');
       	  	  	  }
       	  	  	  entity.style(key, style[key]);
       	  	  }
@@ -1335,7 +1335,7 @@ d3_mappu_Layer = function(name, config){
       	  if (d.style){
       	  	  for (var key in d.style) {
       	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
-      	  	  	  	  d.style[key] = 'none';
+      	  	  	  	  entity.style(key, 'none');
       	  	  	  }
       	  	  	  entity.style(key, d.style[key]);
       	  	  }

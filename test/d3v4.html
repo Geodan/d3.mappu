@@ -120,7 +120,7 @@ d3.json("gemeenten.topojson", function(error, data) {
   mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
 */
-/*
+
 var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 		//url: "http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json",
 		//url: "http://tile.mapzen.com/mapzen/vector/v1/roads/{z}/{x}/{y}.topojson?api_key=vector-tiles--R28NDY",
@@ -163,13 +163,13 @@ var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 			fill: 'green',
 			stroke: 'green'
 		}
-}).addTo(map);*/
+}).addTo(map);
 var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 		url: "http://localhost:3001/bgt/onbegroeidterreindeel_2d/{z}/{x}/{y}.mvt",
 		layername: 'onbegroeidterreindeel_2d',
 		style: {
-			"fill": 'red',
-			"stroke": 'red'
+			"fill": 'yellow',
+			"stroke": 'yellow'
 		}
 }).addTo(map);
 
