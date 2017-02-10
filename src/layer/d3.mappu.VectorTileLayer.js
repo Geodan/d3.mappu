@@ -92,66 +92,107 @@
 		_projection = d3.geoMercator();
 		_path = d3.geoPath().projection(_projection);
 		
-		this._xhr = d3.json(url, function(error, json) {
-			if (error) throw error;
-			
-			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
-			
-			_path.projection()
-				.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
-				.scale(k / 2 / Math.PI);
-			/* TT: WORK IN PROGRESS FOR ALREADY PROJECTED DATA
-			function matrix(a, b, c, d, tx, ty) {
-			  return d3.geoTransform({
-				point: function(x, y) {
-				  this.stream.point(a * x + b * y + tx, c * x + d * y + ty);
+		/* Test with MVT */
+		if (url.indexOf('.mvt') > -1){
+			this._xhr = d3.request(url).responseType('arraybuffer').get(function(error, json) {
+				var layers = [layername];
+				var vtile = new VectorTile( new pbf( new Uint8Array(json.response) ) );
+				var extents = 4096;
+				var data = {};
+				
+				for (var key in vtile.layers) {
+					data[key] = vtile.layers[layername].toGeoJSON();
 				}
-			  });
-			}
-			var tx = 0; //k / 2 - d[0] *256;
-			var ty = 0 ; //k / 2 - d[0] *256;
-			
-			
-			var scale = 1/256;
-			var path = d3.geoPath()
-				.projection(matrix(scale, 0, 0, scale, tx, ty));
-			/* END OF WORK IN PROGRESS */
-			
-			if (json.objects){
-				var features = topojson.feature(json,json.objects[layername]).features;	
-			} else if (json.features){
-				var features = json.features;
-			} else {
-				throw "Can't work with this vectortile data";
-			}
-			
-			if (typeof _filter === 'function'){
-				features = features.filter(_filter);
-			}
-			
-			var entities = tile.selectAll('path').data(features, function(d){
-				return d.id;
-			});
-			
-			var newentity = entities.enter().append('path')
-				.attr('id',function(d){
-						return 'entity'+ d.properties.id;
-				})
-				.attr('class',function(d){return d.properties.kind;})
-				.attr("d", _path)
-				.style('pointer-events','visiblepainted');//make clickable;
-			newentity.each(setStyle);
-			entities.exit().remove();
-			
-			// Add events from config
-			  if (_events){
-				  _events.forEach(function(d){
-					 newentity.each(function(){
-						d3.select(this).on(d.event, d.action);
-					 });
+				if (!data[layername]){return;}
+				var features = data[layername].features;
+				var entities = tile.selectAll('path').data(features, function(d){
+					return d.id;
+				});
+				var tile_projection = d3.geoTransform({
+					point: function(x, y) {
+					  // Sometimes PBF points in a mixed-geometry layer are corrupted
+					  if(!isNaN(y)){
+						x = x/extents*256;
+						y = y/extents*256;
+					  } else {
+						y = x[0][1]/extents * 256;
+						x = x[0][0]/extents * 256;
+					  }
+					  this.stream.point(x, y);
+					}
 				  });
-			  }
-		});
+				 var tilePath = d3.geoPath()
+					.projection(tile_projection)
+				var newentity = entities.enter().append('path')
+					.attr('id',function(d){
+							return 'entity'+ d.properties.id;
+					})
+					.attr('class',function(d){return d.properties.kind;})
+					.attr("d", tilePath)
+					.style('pointer-events','visiblepainted');//make clickable;
+				newentity.each(setStyle);
+				entities.exit().remove();
+				
+				// Add events from config
+				  if (_events){
+					  _events.forEach(function(d){
+						 newentity.each(function(){
+							d3.select(this).on(d.event, d.action);
+						 });
+					  });
+				  }
+			});
+		}
+	  
+		  
+		/* END of test with mvt */
+		else {
+		
+			this._xhr = d3.json(url, function(error, json) {
+				if (error) throw error;
+				
+				var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
+				
+				_path.projection()
+					.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
+					.scale(k / 2 / Math.PI);
+				
+				if (json.objects){
+					var features = topojson.feature(json,json.objects[layername]).features;	
+				} else if (json.features){
+					var features = json.features;
+				} else {
+					throw "Can't work with this vectortile data";
+				}
+				
+				if (typeof _filter === 'function'){
+					features = features.filter(_filter);
+				}
+				
+				var entities = tile.selectAll('path').data(features, function(d){
+					return d.id;
+				});
+				
+				var newentity = entities.enter().append('path')
+					.attr('id',function(d){
+							return 'entity'+ d.properties.id;
+					})
+					.attr('class',function(d){return d.properties.kind;})
+					.attr("d", _path)
+					.style('pointer-events','visiblepainted');//make clickable;
+				newentity.each(setStyle);
+				entities.exit().remove();
+				
+				// Add events from config
+				  if (_events){
+					  _events.forEach(function(d){
+						 newentity.each(function(){
+							d3.select(this).on(d.event, d.action);
+						 });
+					  });
+				  }
+			});
+		}
 		
       }
     
