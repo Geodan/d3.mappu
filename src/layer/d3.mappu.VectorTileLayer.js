@@ -120,8 +120,8 @@
 					  }
 					  this.stream.point(x, y);
 					}
-				  });
-				 var tilePath = d3.geoPath()
+				});
+				var tilePath = d3.geoPath()
 					.projection(tile_projection)
 				var newentity = entities.enter().append('path')
 					.attr('id',function(d){
