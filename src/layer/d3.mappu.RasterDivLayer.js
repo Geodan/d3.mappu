@@ -69,14 +69,14 @@
           if (_ogc_type == 'tms') {
               url = _url
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('{z}',d[2])
-				.replace('{x}',d[0])
-				.replace('{y}',d[1])
+				.replace('{z}',d.z)
+				.replace('{x}',d.x)
+				.replace('{y}',d.y)
 				//FIXME: why are these curly brackets killed when used with polymer?
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('%7Bz%7D',d[2])
-				.replace('%7Bx%7D',d[0])
-				.replace('%7By%7D',d[1]);
+				.replace('%7Bz%7D',d.z)
+				.replace('%7Bx%7D',d.x)
+				.replace('%7By%7D',d.y);
           }
           else if (_ogc_type == 'wmts'){
           	  //TODO: working on this

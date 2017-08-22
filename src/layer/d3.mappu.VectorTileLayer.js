@@ -67,9 +67,9 @@
       }
       
       function tileurl(d){
-      	  var 	x = d[0],
-      	  		y = d[1],
-      	  		z = d[2];
+      	  var 	x = d.x,
+      	  		y = d.y,
+      	  		z = d.z;
       	  if (tms) {
       	  	  y = Math.pow(2, z) - y - 1; //TMS reverse for Y-down
       	  }
@@ -154,7 +154,7 @@
 				var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
 				
 				_path.projection()
-					.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0°,0°] in pixels
+					.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0ï¿½,0ï¿½] in pixels
 					.scale(k / 2 / Math.PI);
 				
 				if (json.objects){

@@ -3,10 +3,10 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="//d3js.org/d3-tile.v0.0.min.js"></script>
 <script src="//d3js.org/topojson.v2.min.js"></script>
-<!--
+
 <script src="https://cdn.rawgit.com/devTristan/pbf/master/dist/pbf.min.js"></script>
 <script src="https://rawgit.com/devTristan/vector-tile-js/master/dist/vectortile.min.js"></script>
--->
+
 <script src="../dist/d3.mappu.js"></script>
 
 <!--
@@ -78,21 +78,28 @@ console.log(path.area(geojson));
 var mapdiv= d3.select('#map').node();
 var map = new d3.mappu.Map(mapdiv, {
         center: [4.4928,51.9072],
-        zoom: 24,
+        zoom: 16,
         minZoom: 10,
         maxZoom: 30,
         projection: d3.geoMercator()
 });
-
+/*
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
     //url: "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
     url: "http://tile.stamen.com/toner/{z}/{x}/{y}.png"
     
 }).addTo(map);
+*/
 
+var mylayer = new d3.mappu.VectorCanvasLayer('canvaslayer',{
+    style: {
+        fill: 'none',
+        stroke: 'red'
+    }
+}).addTo(map);
 
-var mylayer = new d3.mappu.VectorLayer('mylayer',{
+var mylayer = new d3.mappu.VectorLayer('vectorlayer',{
     reproject: false,
     style: {
         fill: 'none',
