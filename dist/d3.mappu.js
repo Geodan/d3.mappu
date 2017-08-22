@@ -1943,6 +1943,7 @@ d3_mappu_Layer = function(name, config){
       var _layers = config.layers;
       var _duration = 0;
       var _cqlfilter = null;
+      var _time = null;
 
       Object.defineProperty(layer, 'url', {
         get: function() {
@@ -1974,15 +1975,25 @@ d3_mappu_Layer = function(name, config){
         }
       });
 
+      Object.defineProperty(layer, 'time', {
+        get: function() {
+            return _time;
+        },
+        set: function(val) {
+            _time = val;
+            draw();
+        }
+      });
+
       //Clear all tiles
       layer.clear = function(){
       };
 
       var getbbox = function(d){
-        var numtiles = 2 << (d[2]-1);
+        var numtiles = 2 << (d.z-1);
         var tilesize = (20037508.34 * 2) / (numtiles);
-        var x = -20037508.34 + (d[0] * tilesize);
-        var y = 20037508.34 - ((d[1]+1) * tilesize);//shift 1 down, because we want LOWER left
+        var x = -20037508.34 + (d.x * tilesize);
+        var y = 20037508.34 - ((d.y+1) * tilesize);//shift 1 down, because we want LOWER left
         var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
         return bbox;
       };
@@ -2031,10 +2042,13 @@ d3_mappu_Layer = function(name, config){
 				 "&bbox=" + bbox +
 				 "&styles=" + _style +
 				 "&layers=" + _layers +
-				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+				 "&service=WMS&version=1.3.0&request=GetMap&CRS=EPSG:3857&tiled=true&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
 			if (_cqlfilter){
 				url += '&cql_filter='+_cqlfilter;
-			}
+            }
+            if (_time){
+                url += '&time='+_time;
+            }
           }
           else if(_ogc_type == 'esri'){
           	  if (_url.indexOf('?') < 0){
