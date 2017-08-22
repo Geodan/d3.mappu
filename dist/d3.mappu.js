@@ -2019,7 +2019,7 @@ d3_mappu_Layer = function(name, config){
           	}
           	url = _url +
           		"&layer=" + _layers +
-          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[0]+"&TILECOL="+d[1]+"&FORMAT=image%2Fpng";
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d.z+ "&TILEROW="+d.x+"&TILECOL="+d.y+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
           	if (_url.indexOf('?') < 0){
@@ -2121,19 +2121,25 @@ d3_mappu_Layer = function(name, config){
           }
       };
       function matrix3d(scale, translate) {
-		var k = scale / 256, r = scale % 1 ? Number : Math.round;
-		return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
-	  }
-
+        var k = scale / 256, r = scale % 1 ? Number : Math.round;
+        /*
+		return "matrix3d(" + [
+            k, 0, 0, 0, 
+            0, k, 0, 0, 
+            0, 0, k, 0, 
+            r(translate[0] * scale), r(translate[1] * scale), 0, 1 
+        ] + ")";*/
+        return "matrix(" + [k,0,0,k,r(translate[0] * scale), r(translate[1] * scale)]+")";
+      }
 
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
          var image = drawboard
-         		.style("transform", matrix3d(tiles.scale, tiles.translate))
+                 .style("transform", matrix3d(tiles.scale, tiles.translate))
          		.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
+                .data(tiles, function(d) { return [d.tx, d.ty, d.z]; });
 
          var imageEnter = image.enter();
          if (layer.visible){
@@ -2145,8 +2151,14 @@ d3_mappu_Layer = function(name, config){
               .style('height','256px')
               .style('position','absolute')
               .style('opacity', _opacity)
-              .style("left", function(d) { return (d[0] << 8) + "px"; })
-              .style("top", function(d) { return (d[1] << 8) + "px"; })
+              .style("left", function(d) {
+                  //return (d.x << 8) + "px"; 
+                  return d.tx + "px"; 
+                })
+              .style("top", function(d) { 
+                  //return (d.y << 8) + "px"; 
+                  return d.ty + "px";
+                })
               //TODO: working on this
               .on('click', getFeatureInfo);
          }
