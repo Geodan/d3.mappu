@@ -28,6 +28,7 @@
         },
         set: function(val) {
             _url = val;
+            clear();
             draw();
         }
       });
@@ -38,6 +39,7 @@
         },
         set: function(val) {
             _layers = val;
+            clear();
             draw();
         }
       });
@@ -48,6 +50,7 @@
         },
         set: function(val) {
             _cqlfilter = val;
+            clear();
             draw();
         }
       });
@@ -58,13 +61,12 @@
         },
         set: function(val) {
             _time = val;
+            clear();
             draw();
         }
       });
 
-      //Clear all tiles
-      layer.clear = function(){
-      };
+      
 
       var getbbox = function(d){
         var numtiles = 2 << (d.z-1);
@@ -263,7 +265,12 @@
           draw();
           layer.drawboard.style('opacity', _opacity).style('display',this.visible?'block':'none');
       };
+      //Clear all tiles
+      var clear = function(){
+          layer.drawboard.selectAll('.tile').remove();
+      };
 
+      layer.clear = clear;
       layer.refresh = refresh;
       layer.draw = draw;
       return layer;

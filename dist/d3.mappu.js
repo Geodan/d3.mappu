@@ -1951,6 +1951,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _url = val;
+            clear();
             draw();
         }
       });
@@ -1961,6 +1962,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _layers = val;
+            clear();
             draw();
         }
       });
@@ -1971,6 +1973,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _cqlfilter = val;
+            clear();
             draw();
         }
       });
@@ -1981,13 +1984,12 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _time = val;
+            clear();
             draw();
         }
       });
 
-      //Clear all tiles
-      layer.clear = function(){
-      };
+      
 
       var getbbox = function(d){
         var numtiles = 2 << (d.z-1);
@@ -2186,7 +2188,12 @@ d3_mappu_Layer = function(name, config){
           draw();
           layer.drawboard.style('opacity', _opacity).style('display',this.visible?'block':'none');
       };
+      //Clear all tiles
+      var clear = function(){
+          layer.drawboard.selectAll('.tile').remove();
+      };
 
+      layer.clear = clear;
       layer.refresh = refresh;
       layer.draw = draw;
       return layer;
