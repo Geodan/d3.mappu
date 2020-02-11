@@ -4,7 +4,8 @@
 <meta http-equiv="content-type" content="text/html; charset=UTF8">
 <script src="../bower_components/d3/d3.js" charset="utf-8"></script>
 <script src="../bower_components/topojson/topojson.js"></script>
-<script src="../bower_components/d3-plugins/geo/tile/tile.js"></script>
+<script src="https://unpkg.com/d3-array@1.0"></script>
+<script src="https://unpkg.com/d3-tile@0.0"></script>
 <script src="../dist/d3.mappu.js"></script>
 
 <style>
@@ -127,10 +128,10 @@ Layer styling happens in CSS, or in a per-feature function
 var map = new d3.mappu.Map('map', {
         //center: [-118.184051,33.999622],
         center: [5.2,52.2],
-        zoom: 25,
+        zoom: 20,
         minZoom: 10,
-        maxZoom: 30,
-        projection: d3.geo.mercator()
+        maxZoom: 22,
+        projection: d3.geoMercator()
 });
 
 //var coords = new d3.mappu.Coordinates().addTo(map);
@@ -170,7 +171,7 @@ var laag2 = new d3.mappu.RasterLayer('pico:pico_sjv_sf', {
 */
 
 //var controllers = d3.mappu.Controllers(map);
-var colorscale = d3.scale.linear().range(['red','blue']).domain([10,25]);
+var colorscale = d3.scaleLinear().range(['red','blue']).domain([10,25]);
 
 var colorfunc = function(d){
     return colorscale(map.zoom);

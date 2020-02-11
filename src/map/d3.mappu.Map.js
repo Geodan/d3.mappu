@@ -264,6 +264,9 @@ d3_mappu_Map = function( id, config ) {
 				else if (d.type == 'vector' || d.type == 'vectortile'){
 					return document.createElementNS("http://www.w3.org/2000/svg", 'svg');
 				}
+				else if (d.type == 'canvas'){
+					return document.createElement('canvas');
+				}
 				else throw 'No valid type (' + d.type + ' )specified for layer';
 			})
 			.attr( 'id', function( d ) { return d.id;} )

@@ -332,6 +332,9 @@ d3_mappu_Map = function( id, config ) {
 				else if (d.type == 'vector' || d.type == 'vectortile'){
 					return document.createElementNS("http://www.w3.org/2000/svg", 'svg');
 				}
+				else if (d.type == 'canvas'){
+					return document.createElement('canvas');
+				}
 				else throw 'No valid type (' + d.type + ' )specified for layer';
 			})
 			.attr( 'id', function( d ) { return d.id;} )
@@ -915,7 +918,7 @@ d3_mappu_Layer = function(name, config){
         map.orderLayers();
         layer.draw();
 		var event = new CustomEvent("layeradded", { "detail": layer});
-			layer.map.mapdiv.dispatchEvent(event);
+		layer.map.mapdiv.dispatchEvent(event);
     };
     layer._onRemove = function(){ //Removes the layer from the map object
     	var event = new CustomEvent("layerremoved");
@@ -999,6 +1002,7 @@ d3_mappu_Layer = function(name, config){
       	  if (style){
       	  	  for (var key in style) {
       	  	  	  entity.select('path').style(key, style[key]);
+      	  	  	  entity.select('circle').style(key, style[key]);
       	  	  }
       	  }
 
@@ -1006,6 +1010,7 @@ d3_mappu_Layer = function(name, config){
       	  if (d.style){
       	  	  for (var key in d.style) {
       	  	  	  entity.select('path').style(key, d.style[key]);
+      	  	  	  entity.select('circle').style(key, d.style[key]);
       	  	  }
       	  }
 
@@ -1030,24 +1035,37 @@ d3_mappu_Layer = function(name, config){
       	  if (d.geometry.type == 'Point' && d.style){
       	      var x = project(d.geometry.coordinates)[0];
               var y = project(d.geometry.coordinates)[1];
-              var width = d.style && d.style.width ? d.style.width :
-                           (style.width ? style.width : 32);
-              var height = d.style && d.style.height ? d.style.height :
-                           (style.height ? style.height : 37);
-              var img = d3.select(this).append('g').append("image")
-                .attr("width", width)
-                .attr("height", height)
-                //.attr("x",x-12.5) //No need setting x and y, since it's reset later
-                //.attr("y",y-25)
-                .style('pointer-events','visiblepainted')
-                .attr("xlink:href", function(d){
-                    if (d.style['iconimg']){
-					    return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
-                    }
-                    else if (d.style['marker-url']){
-    					return d.style['marker-url'];
-                    };
-				});
+              
+              if (d.style['iconimg_encoding'] || d.style['marker-url']){
+				  var width = d.style && d.style.width ? d.style.width :
+							   (style.width ? style.width : 32);
+				  var height = d.style && d.style.height ? d.style.height :
+							   (style.height ? style.height : 37);
+				  var img = d3.select(this).append('g').append("image")
+					.attr("width", width)
+					.attr("height", height)
+					.style('pointer-events','visiblepainted')
+					.attr("xlink:href", function(d){
+						if (d.style['iconimg']){
+							return 'data:image/' + d.style['iconimg_encoding'] +','+ d.style['iconimg_bytearray'];
+						}
+						else if (d.style['marker-url']){
+							return d.style['marker-url'];
+						};
+					});
+			  }
+			  else {
+			  	  d3.select(this).append("circle")
+					.attr("cx", x)
+					.attr("cy", y)
+					.attr("r", function(d){
+							return style.radius ? style.radius :
+								(d.style && d.style.radius) ? d.style.radius :
+									5;
+					})
+					.classed(name, true)
+					.style('pointer-events','visiblepainted');//make clickable
+			  }
   	      }
       	  else {
 			  if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
@@ -1113,6 +1131,7 @@ d3_mappu_Layer = function(name, config){
                  newentity.each(function(){
                  	d3.select(this).select('path').on(d.event, d.action);
                  	d3.select(this).select('image').on(d.event, d.action);
+                 	d3.select(this).select('circle').on(d.event, d.action);
                  });
               });
           }
@@ -1130,6 +1149,11 @@ d3_mappu_Layer = function(name, config){
 			  if (config.reproject){//the slow way
 			  	  var project = layer.map.projection;
 				  entities.select('path').transition().duration(duration).attr("d", _path);
+				  entities.select('circle').transition().duration(duration).each(function(d){
+				  		  var x = project(d.geometry.coordinates)[0];
+				  		  var y = project(d.geometry.coordinates)[1];
+				  		  d3.select(this).attr('cx',x).attr('cy',y);
+				  });
 				  entities.select('image').transition().duration(duration).each(function(d){
                     //TODO: create something nice customizable for widh-height calculations
                     var width = d.style && d.style.width ? d.style.width :
@@ -1176,9 +1200,9 @@ d3_mappu_Layer = function(name, config){
                         if (labelStyle){
     						for (var key in labelStyle) {
     							d3.select(this).selectAll('.vectorLabel').style(key, labelStyle[key]);
-                                //shadowtext only sensitive to the opacity style
-                                if (key == 'opacity'){
-                                    d3.select(this).select('.shadowtext').style('opacity', labelStyle[key]);
+                                //shadowtext only sensitive to the opacity style or font params
+                                if (key == 'opacity' || key.indexOf('font') > -1 ){
+                                    d3.select(this).select('.shadowtext').style(key, labelStyle[key]);
                                 }
     						}
                         }
@@ -1254,6 +1278,181 @@ d3_mappu_Layer = function(name, config){
 
   //                                                                          マップ
 ;  /**
+
+  **/
+  d3.mappu.VectorCanvasLayer = function(name, config){
+      return d3_mappu_VectorCanvasLayer(name, config);
+  };
+
+  d3_mappu_VectorCanvasLayer = function(name, config) {
+  	  /*Work in progress for webworker
+  	  var builder = new Worker("../src/layer/builder.js");
+  	  builder.onmessage = function(e) {
+		  console.log('Message received from worker', e.data.aap);
+	  };
+	  var obj = {project:'noot'};
+  	  builder.postMessage(obj);
+  	  console.log('Message posted to worker');
+  	  */
+  	  config = config || {};
+      d3_mappu_Layer.call(this,name, config);
+      var layer = d3_mappu_Layer(name, config);
+      layer.type = 'canvas';
+      var _data = [];
+	  layer.zindex = 100; //vectors always on top
+	  var _duration = config.duration || 0;
+	  var _path;
+	  var _projection;
+	  var _style = config.style || {};
+	  var labelStyle = config.labelStyle || {};
+	  var _events = config.events;
+
+      /* exposed properties*/
+      Object.defineProperty(layer, 'data', {
+        get: function() {
+            return _data;
+        },
+        set: function(array) {
+        	_data = array;
+            draw(false);
+        }
+      });
+
+      Object.defineProperty(layer, 'style', {
+        get: function() {
+            return _style;
+        },
+        set: function(val) {
+            _style = val;
+         	layer.drawboard.selectAll('.tile').remove();
+            layer.refresh(0);
+        }
+      });
+      
+      
+      Object.defineProperty(layer, 'events', {
+        get: function() {
+            return _events;
+        },
+        set: function(array) {
+            _events = array;
+        }
+      });
+
+
+
+      //Function taken from terraformer
+      function ringIsClockwise(ringToTest) {
+		var total = 0,i = 0;
+		var rLength = ringToTest.length;
+		var pt1 = ringToTest[i];
+		var pt2;
+		for (i; i < rLength - 1; i++) {
+		  pt2 = ringToTest[i + 1];
+		  total += (pt2[0] - pt1[0]) * (pt2[1] + pt1[1]);
+		  pt1 = pt2;
+		}
+		return (total >= 0);
+	  }
+
+      function setStyle(d){
+          var self = this;
+      	  var entity = d3.select(this);
+      	  //Do generic layer style
+      	  if (style){
+      	  	  for (var key in style) {
+      	  	  	  entity.select('path').style(key, style[key]);
+      	  	  	  entity.select('circle').style(key, style[key]);
+      	  	  }
+      	  }
+
+      	  //Now use per-feature styling
+      	  if (d.style){
+      	  	  for (var key in d.style) {
+      	  	  	  entity.select('path').style(key, d.style[key]);
+      	  	  	  entity.select('circle').style(key, d.style[key]);
+      	  	  }
+      	  }
+
+
+
+      	  if (d._selected){
+      	  	  //make halo around entity to show as selected
+      	  	  entity
+      	  	  	.append('path').attr("d", _path)
+      	  	  	.style('stroke', 'none')
+      	  	  	.style('fill', 'red')
+      	  	  	.classed('halo', true);
+      	  }
+      	  else {
+      	  	  entity.selectAll('.halo').remove();
+      	  }
+      }
+      //Build is only called on entry
+      function build(d){
+      	  	if (d.geometry.type == 'Polygon' && !ringIsClockwise(d.geometry.coordinates[0])){
+      	  		d.geometry.coordinates[0].reverse();
+			}
+			var project = _projection;
+			_projection = d3.geoMercator();
+			_path = d3.geoPath().projection(_projection);
+			var canvas = layer.drawboard;
+			var context = canvas.node().getContext("2d");
+			_path.context(context);
+			context.save();
+			context.beginPath();
+			_path(d);
+			context.fillStyle = typeof(_style.fill)=='function'?_style.fill(d.properties[_style.column]):_style.fill;
+			context.fill();
+			context.closePath();
+			context.lineWidth   = 1;
+			context.restore();
+	  }
+	  
+	  
+
+      var draw = function(rebuild){
+      	  if (config.reproject){
+				_projection = layer.map.projection;
+				_path = d3.geoPath()
+					.projection(_projection)
+		  }
+		  else {
+		  	  //TODO: this should be depending on the projection given ins the config, no?
+				_projection = d3.geoMercator()
+					.scale(1 / 2 / Math.PI)
+					.translate([0, 0]);
+				_path = d3.geoPath()
+					.projection(_projection);
+		  }
+          var drawboard = layer.drawboard;
+          if (rebuild){
+               //drawboard.selectAll('.entity').remove();
+          }
+          _data.forEach(build);
+      };
+
+      function refresh() {
+      	  var canvas = layer.drawboard;
+		  canvas.save();
+		  canvas.clearRect(0, 0, width, height);
+		  canvas.translate(d3.event.translate[0], d3.event.translate[1]);
+		  canvas.scale(d3.event.scale, d3.event.scale);
+		  draw();
+		  canvas.restore();
+	  }
+      
+      
+      /* Exposed functions*/
+      layer.refresh = refresh;
+      layer.draw = draw;
+      return layer;
+  };
+
+  d3_mappu_VectorCanvasLayer.prototype = Object.create(d3_mappu_Layer.prototype);
+
+  //                                                                          マップ
+;  /**
 	 
   **/
   d3.mappu.VectorTileLayer = function(name, config){
@@ -1304,7 +1503,7 @@ d3_mappu_Layer = function(name, config){
       	  if (style){
       	  	  for (var key in style) {
       	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
-      	  	  	  	  style[key] = 'none';
+      	  	  	  	  entity.style(key, 'none');
       	  	  	  }
       	  	  	  entity.style(key, style[key]);
       	  	  }
@@ -1314,7 +1513,7 @@ d3_mappu_Layer = function(name, config){
       	  if (d.style){
       	  	  for (var key in d.style) {
       	  	  	  if (key == 'fill' && d.geometry.type.indexOf('Polygon') == -1){
-      	  	  	  	  d.style[key] = 'none';
+      	  	  	  	  entity.style(key, 'none');
       	  	  	  }
       	  	  	  entity.style(key, d.style[key]);
       	  	  }
@@ -1322,9 +1521,9 @@ d3_mappu_Layer = function(name, config){
       }
       
       function tileurl(d){
-      	  var 	x = d[0],
-      	  		y = d[1],
-      	  		z = d[2];
+      	  var 	x = d.x,
+      	  		y = d.y,
+      	  		z = d.z;
       	  if (tms) {
       	  	  y = Math.pow(2, z) - y - 1; //TMS reverse for Y-down
       	  }
@@ -1347,66 +1546,107 @@ d3_mappu_Layer = function(name, config){
 		_projection = d3.geoMercator();
 		_path = d3.geoPath().projection(_projection);
 		
-		this._xhr = d3.json(url, function(error, json) {
-			if (error) throw error;
-			
-			var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
-			
-			_path.projection()
-				.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
-				.scale(k / 2 / Math.PI);
-			/* TT: WORK IN PROGRESS FOR ALREADY PROJECTED DATA
-			function matrix(a, b, c, d, tx, ty) {
-			  return d3.geoTransform({
-				point: function(x, y) {
-				  this.stream.point(a * x + b * y + tx, c * x + d * y + ty);
+		/* Test with MVT */
+		if (url.indexOf('.mvt') > -1){
+			this._xhr = d3.request(url).responseType('arraybuffer').get(function(error, json) {
+				var layers = [layername];
+				var vtile = new VectorTile( new pbf( new Uint8Array(json.response) ) );
+				var extents = 4096;
+				var data = {};
+				
+				for (var key in vtile.layers) {
+					data[key] = vtile.layers[layername].toGeoJSON();
 				}
-			  });
-			}
-			var tx = 0; //k / 2 - d[0] *256;
-			var ty = 0 ; //k / 2 - d[0] *256;
-			
-			
-			var scale = 1/256;
-			var path = d3.geoPath()
-				.projection(matrix(scale, 0, 0, scale, tx, ty));
-			/* END OF WORK IN PROGRESS */
-			
-			if (json.objects){
-				var features = topojson.feature(json,json.objects[layername]).features;	
-			} else if (json.features){
-				var features = json.features;
-			} else {
-				throw "Can't work with this vectortile data";
-			}
-			
-			if (typeof _filter === 'function'){
-				features = features.filter(_filter);
-			}
-			
-			var entities = tile.selectAll('path').data(features, function(d){
-				return d.id;
+				if (!data[layername]){return;}
+				var features = data[layername].features;
+				var entities = tile.selectAll('path').data(features, function(d){
+					return d.id;
+				});
+				var tile_projection = d3.geoTransform({
+					point: function(x, y) {
+					  // Sometimes PBF points in a mixed-geometry layer are corrupted
+					  if(!isNaN(y)){
+						x = x/extents*256;
+						y = y/extents*256;
+					  } else {
+						y = x[0][1]/extents * 256;
+						x = x[0][0]/extents * 256;
+					  }
+					  this.stream.point(x, y);
+					}
+				});
+				var tilePath = d3.geoPath()
+					.projection(tile_projection)
+				var newentity = entities.enter().append('path')
+					.attr('id',function(d){
+							return 'entity'+ d.properties.id;
+					})
+					.attr('class',function(d){return d.properties.kind;})
+					.attr("d", tilePath)
+					.style('pointer-events','visiblepainted');//make clickable;
+				newentity.each(setStyle);
+				entities.exit().remove();
+				
+				// Add events from config
+				  if (_events){
+					  _events.forEach(function(d){
+						 newentity.each(function(){
+							d3.select(this).on(d.event, d.action);
+						 });
+					  });
+				  }
 			});
-			
-			var newentity = entities.enter().append('path')
-				.attr('id',function(d){
-						return 'entity'+ d.properties.id;
-				})
-				.attr('class',function(d){return d.properties.kind;})
-				.attr("d", _path)
-				.style('pointer-events','visiblepainted');//make clickable;
-			newentity.each(setStyle);
-			entities.exit().remove();
-			
-			// Add events from config
-			  if (_events){
-				  _events.forEach(function(d){
-					 newentity.each(function(){
-						d3.select(this).on(d.event, d.action);
-					 });
-				  });
-			  }
-		});
+		}
+	  
+		  
+		/* END of test with mvt */
+		else {
+		
+			this._xhr = d3.json(url, function(error, json) {
+				if (error) throw error;
+				
+				var k = Math.pow(2, d[2]) * 256; // size of the world in pixels
+				
+				_path.projection()
+					.translate([k / 2 - d[0] *256, k / 2 - d[1] *256]) // [0�,0�] in pixels
+					.scale(k / 2 / Math.PI);
+				
+				if (json.objects){
+					var features = topojson.feature(json,json.objects[layername]).features;	
+				} else if (json.features){
+					var features = json.features;
+				} else {
+					throw "Can't work with this vectortile data";
+				}
+				
+				if (typeof _filter === 'function'){
+					features = features.filter(_filter);
+				}
+				
+				var entities = tile.selectAll('path').data(features, function(d){
+					return d.id;
+				});
+				
+				var newentity = entities.enter().append('path')
+					.attr('id',function(d){
+							return 'entity'+ d.properties.id;
+					})
+					.attr('class',function(d){return d.properties.kind;})
+					.attr("d", _path)
+					.style('pointer-events','visiblepainted');//make clickable;
+				newentity.each(setStyle);
+				entities.exit().remove();
+				
+				// Add events from config
+				  if (_events){
+					  _events.forEach(function(d){
+						 newentity.each(function(){
+							d3.select(this).on(d.event, d.action);
+						 });
+					  });
+				  }
+			});
+		}
 		
       }
     
@@ -1699,9 +1939,11 @@ d3_mappu_Layer = function(name, config){
       var _options = config; //Te be leaflet compatible in g-layercatalogus
       layer.options = _options;
       layer.visibility = layer.visible; //leaflet compat
+      var _opacity = config.opacity;
       var _layers = config.layers;
       var _duration = 0;
       var _cqlfilter = null;
+      var _time = null;
 
       Object.defineProperty(layer, 'url', {
         get: function() {
@@ -1709,6 +1951,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _url = val;
+            clear();
             draw();
         }
       });
@@ -1719,6 +1962,7 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _layers = val;
+            clear();
             draw();
         }
       });
@@ -1729,19 +1973,29 @@ d3_mappu_Layer = function(name, config){
         },
         set: function(val) {
             _cqlfilter = val;
+            clear();
             draw();
         }
       });
 
-      //Clear all tiles
-      layer.clear = function(){
-      };
+      Object.defineProperty(layer, 'time', {
+        get: function() {
+            return _time;
+        },
+        set: function(val) {
+            _time = val;
+            clear();
+            draw();
+        }
+      });
+
+      
 
       var getbbox = function(d){
-        var numtiles = 2 << (d[2]-1);
+        var numtiles = 2 << (d.z-1);
         var tilesize = (20037508.34 * 2) / (numtiles);
-        var x = -20037508.34 + (d[0] * tilesize);
-        var y = 20037508.34 - ((d[1]+1) * tilesize);//shift 1 down, because we want LOWER left
+        var x = -20037508.34 + (d.x * tilesize);
+        var y = 20037508.34 - ((d.y+1) * tilesize);//shift 1 down, because we want LOWER left
         var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
         return bbox;
       };
@@ -1751,14 +2005,14 @@ d3_mappu_Layer = function(name, config){
           if (_ogc_type == 'tms') {
               url = _url
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('{z}',d[2])
-				.replace('{x}',d[0])
-				.replace('{y}',d[1])
+				.replace('{z}',d.z)
+				.replace('{x}',d.x)
+				.replace('{y}',d.y)
 				//FIXME: why are these curly brackets killed when used with polymer?
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('%7Bz%7D',d[2])
-				.replace('%7Bx%7D',d[0])
-				.replace('%7By%7D',d[1]);
+				.replace('%7Bz%7D',d.z)
+				.replace('%7Bx%7D',d.x)
+				.replace('%7By%7D',d.y);
           }
           else if (_ogc_type == 'wmts'){
           	  //TODO: working on this
@@ -1778,7 +2032,7 @@ d3_mappu_Layer = function(name, config){
           	}
           	url = _url +
           		"&layer=" + _layers +
-          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[0]+"&TILECOL="+d[1]+"&FORMAT=image%2Fpng";
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d.z+ "&TILEROW="+d.x+"&TILECOL="+d.y+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
           	if (_url.indexOf('?') < 0){
@@ -1790,10 +2044,13 @@ d3_mappu_Layer = function(name, config){
 				 "&bbox=" + bbox +
 				 "&styles=" + _style +
 				 "&layers=" + _layers +
-				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+				 "&service=WMS&version=1.3.0&request=GetMap&CRS=EPSG:3857&tiled=true&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
 			if (_cqlfilter){
 				url += '&cql_filter='+_cqlfilter;
-			}
+            }
+            if (_time){
+                url += '&time='+_time;
+            }
           }
           else if(_ogc_type == 'esri'){
           	  if (_url.indexOf('?') < 0){
@@ -1880,19 +2137,25 @@ d3_mappu_Layer = function(name, config){
           }
       };
       function matrix3d(scale, translate) {
-		var k = scale / 256, r = scale % 1 ? Number : Math.round;
-		return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
-	  }
-
+        var k = scale / 256, r = scale % 1 ? Number : Math.round;
+        /*
+		return "matrix3d(" + [
+            k, 0, 0, 0, 
+            0, k, 0, 0, 
+            0, 0, k, 0, 
+            r(translate[0] * scale), r(translate[1] * scale), 0, 1 
+        ] + ")";*/
+        return "matrix(" + [k,0,0,k,r(translate[0] * scale), r(translate[1] * scale)]+")";
+      }
 
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
          var image = drawboard
-         		.style("transform", matrix3d(tiles.scale, tiles.translate))
+                 .style("transform", matrix3d(tiles.scale, tiles.translate))
          		.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
+                .data(tiles, function(d) { return [d.tx, d.ty, d.z]; });
 
          var imageEnter = image.enter();
          if (layer.visible){
@@ -1903,9 +2166,15 @@ d3_mappu_Layer = function(name, config){
               .style('width','256px')
               .style('height','256px')
               .style('position','absolute')
-              .attr('opacity', this.opacity)
-              .style("left", function(d) { return (d[0] << 8) + "px"; })
-              .style("top", function(d) { return (d[1] << 8) + "px"; })
+              .style('opacity', _opacity)
+              .style("left", function(d) {
+                  //return (d.x << 8) + "px"; 
+                  return d.tx + "px"; 
+                })
+              .style("top", function(d) { 
+                  //return (d.y << 8) + "px"; 
+                  return d.ty + "px";
+                })
               //TODO: working on this
               .on('click', getFeatureInfo);
          }
@@ -1917,9 +2186,14 @@ d3_mappu_Layer = function(name, config){
 
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          layer.drawboard.style('opacity', _opacity).style('display',this.visible?'block':'none');
+      };
+      //Clear all tiles
+      var clear = function(){
+          layer.drawboard.selectAll('.tile').remove();
       };
 
+      layer.clear = clear;
       layer.refresh = refresh;
       layer.draw = draw;
       return layer;

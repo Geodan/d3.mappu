@@ -3,6 +3,10 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="//d3js.org/d3-tile.v0.0.min.js"></script>
 <script src="//d3js.org/topojson.v2.min.js"></script>
+
+<script src="https://cdn.rawgit.com/devTristan/pbf/master/dist/pbf.min.js"></script>
+<script src="https://rawgit.com/devTristan/vector-tile-js/master/dist/vectortile.min.js"></script>
+
 <script src="../dist/d3.mappu.js"></script>
 
 <!--
@@ -11,6 +15,10 @@
 -->
 
 <style>
+body{
+	margin:0px;
+	
+}
 #map{
 	width: 100%;
 	height: 100%;
@@ -69,22 +77,29 @@ console.log(path.area(geojson));
 <script>
 var mapdiv= d3.select('#map').node();
 var map = new d3.mappu.Map(mapdiv, {
-        center: [5.2,52.2],
-        zoom: 24,
+        center: [4.4928,51.9072],
+        zoom: 16,
         minZoom: 10,
         maxZoom: 30,
         projection: d3.geoMercator()
 });
-
+/*
 var layer = new d3.mappu.RasterLayer('layer1', {
     ogc_type: 'tms',
     //url: "http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
     url: "http://tile.stamen.com/toner/{z}/{x}/{y}.png"
     
 }).addTo(map);
+*/
 
-/*
-var mylayer = new d3.mappu.VectorLayer('mylayer',{
+var mylayer = new d3.mappu.VectorCanvasLayer('canvaslayer',{
+    style: {
+        fill: 'none',
+        stroke: 'red'
+    }
+}).addTo(map);
+
+var mylayer = new d3.mappu.VectorLayer('vectorlayer',{
     reproject: false,
     style: {
         fill: 'none',
@@ -100,8 +115,8 @@ var mylayer = new d3.mappu.VectorLayer('mylayer',{
         }
     }]
 }).addTo(map);
-*/
-/*
+
+
 d3.json("provincie_4326.topojson", function(error, data) {
   if (error) return console.error(error);
   var counter = 0;
@@ -111,24 +126,74 @@ d3.json("provincie_4326.topojson", function(error, data) {
   });
   mylayer.data = feats;
 });
-*/
+
 /*
 d3.json("gemeenten.topojson", function(error, data) {
   if (error) return console.error(error);
   mylayer.data = topojson.feature(data, data.objects.gemeenten).features;
 });
 */
-
+/*
 var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
 		//url: "http://{s}.tile.openstreetmap.us/vectiles-highroad/{z}/{x}/{y}.json",
-		url: "http://tile.mapzen.com/mapzen/vector/v1/roads/{z}/{x}/{y}.topojson?api_key=vector-tiles--R28NDY",
+		//url: "http://tile.mapzen.com/mapzen/vector/v1/roads/{z}/{x}/{y}.topojson?api_key=vector-tiles--R28NDY",
 		//url: "http://192.168.40.8:3389/geoserver/gwc/service/tms/1.0.0/research%3Apand@World_3857@geojson/{z}/{x}/{y}.topojson",
-		layername: 'roads',
+		url: "http://localhost:3001/bgt/pand_2d/{z}/{x}/{y}.mvt",
+		layername: 'pand_2d',
 		style: {
-			stroke: 'blue',
-			'stroke-width': '1px'
+			fill: '#fff3ce',
+			stroke: '#fff3ce',
 		}
 }).addTo(map);
+var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
+		url: "http://localhost:3001/bgt/waterdeel_2d/{z}/{x}/{y}.mvt",
+		layername: 'waterdeel_2d',
+		style: {
+			fill: '#a5bfdd',
+			stroke: '#a5bfdd'
+		}
+}).addTo(map);
+var roadScale = d3.scaleOrdinal()
+	.domain(['woonerf','voetgangersgebied','voetpad','ruiterpad','spoorbaan','transitie','rijbaan autosnelweg','rijbaan autoweg','rijbaan regionale weg','rijbaan lokale weg'])
+	.range(['#fff7f1','#fff7f1','#fff7f1','#c9ac99','#626262','ivory','#c9c9c9','#c9c9c9','#c9c9c9', '#e9cdbb']);
+
+var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
+		url: "http://localhost:3001/bgt/wegdeel_2d/{z}/{x}/{y}.mvt",
+		layername: 'wegdeel_2d',
+		style: {
+			fill: function(d){return roadScale(d.properties.kind)},
+			stroke: 'grey'
+		}
+}).addTo(map);
+
+var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
+		url: "http://localhost:3001/bgt/ondersteunendwegdeel_2d/{z}/{x}/{y}.mvt",
+		layername: 'ondersteunendwegdeel_2d',
+		style: {
+			fill: 'grey',
+			stroke: 'grey'
+		}
+}).addTo(map);
+var veggieScale = d3.scaleOrdinal()
+	.domain(['loofbos','naaldbos','heide','grasland overig', 'grasland groenvoorziening'])
+	.range(['#58993c','#58993c','#f2a0ed','#badd69','#badd69']);
+var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
+		url: "http://localhost:3001/bgt/begroeidterreindeel_2d/{z}/{x}/{y}.mvt",
+		layername: 'begroeidterreindeel_2d',
+		style: {
+			fill: function(d){return veggieScale(d.properties.kind);},
+			stroke: 'green'
+		}
+}).addTo(map);
+var vectortileLayer = new d3.mappu.VectorTileLayer('vtile',{
+		url: "http://localhost:3001/bgt/onbegroeidterreindeel_2d/{z}/{x}/{y}.mvt",
+		layername: 'onbegroeidterreindeel_2d',
+		style: {
+			"fill": 'ivory',
+			"stroke": 'ivory'
+		}
+}).addTo(map);
+*/
 
 </script>
 

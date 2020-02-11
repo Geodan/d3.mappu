@@ -16,9 +16,11 @@
       var _options = config; //Te be leaflet compatible in g-layercatalogus
       layer.options = _options;
       layer.visibility = layer.visible; //leaflet compat
+      var _opacity = config.opacity;
       var _layers = config.layers;
       var _duration = 0;
       var _cqlfilter = null;
+      var _time = null;
 
       Object.defineProperty(layer, 'url', {
         get: function() {
@@ -26,6 +28,7 @@
         },
         set: function(val) {
             _url = val;
+            clear();
             draw();
         }
       });
@@ -36,6 +39,7 @@
         },
         set: function(val) {
             _layers = val;
+            clear();
             draw();
         }
       });
@@ -46,19 +50,29 @@
         },
         set: function(val) {
             _cqlfilter = val;
+            clear();
             draw();
         }
       });
 
-      //Clear all tiles
-      layer.clear = function(){
-      };
+      Object.defineProperty(layer, 'time', {
+        get: function() {
+            return _time;
+        },
+        set: function(val) {
+            _time = val;
+            clear();
+            draw();
+        }
+      });
+
+      
 
       var getbbox = function(d){
-        var numtiles = 2 << (d[2]-1);
+        var numtiles = 2 << (d.z-1);
         var tilesize = (20037508.34 * 2) / (numtiles);
-        var x = -20037508.34 + (d[0] * tilesize);
-        var y = 20037508.34 - ((d[1]+1) * tilesize);//shift 1 down, because we want LOWER left
+        var x = -20037508.34 + (d.x * tilesize);
+        var y = 20037508.34 - ((d.y+1) * tilesize);//shift 1 down, because we want LOWER left
         var bbox = x + ","+ y + "," + (x + tilesize) + "," + (y + tilesize);
         return bbox;
       };
@@ -68,14 +82,14 @@
           if (_ogc_type == 'tms') {
               url = _url
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('{z}',d[2])
-				.replace('{x}',d[0])
-				.replace('{y}',d[1])
+				.replace('{z}',d.z)
+				.replace('{x}',d.x)
+				.replace('{y}',d.y)
 				//FIXME: why are these curly brackets killed when used with polymer?
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('%7Bz%7D',d[2])
-				.replace('%7Bx%7D',d[0])
-				.replace('%7By%7D',d[1]);
+				.replace('%7Bz%7D',d.z)
+				.replace('%7Bx%7D',d.x)
+				.replace('%7By%7D',d.y);
           }
           else if (_ogc_type == 'wmts'){
           	  //TODO: working on this
@@ -95,7 +109,7 @@
           	}
           	url = _url +
           		"&layer=" + _layers +
-          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[0]+"&TILECOL="+d[1]+"&FORMAT=image%2Fpng";
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d.z+ "&TILEROW="+d.x+"&TILECOL="+d.y+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
           	if (_url.indexOf('?') < 0){
@@ -107,10 +121,13 @@
 				 "&bbox=" + bbox +
 				 "&styles=" + _style +
 				 "&layers=" + _layers +
-				 "&service=WMS&version=1.1.0&request=GetMap&tiled=true&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
+				 "&service=WMS&version=1.3.0&request=GetMap&CRS=EPSG:3857&tiled=true&width=256&height=256&srs=EPSG:3857&transparent=TRUE&format=image%2Fpng";
 			if (_cqlfilter){
 				url += '&cql_filter='+_cqlfilter;
-			}
+            }
+            if (_time){
+                url += '&time='+_time;
+            }
           }
           else if(_ogc_type == 'esri'){
           	  if (_url.indexOf('?') < 0){
@@ -197,19 +214,25 @@
           }
       };
       function matrix3d(scale, translate) {
-		var k = scale / 256, r = scale % 1 ? Number : Math.round;
-		return "matrix3d(" + [k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, r(translate[0] * scale), r(translate[1] * scale), 0, 1 ] + ")";
-	  }
-
+        var k = scale / 256, r = scale % 1 ? Number : Math.round;
+        /*
+		return "matrix3d(" + [
+            k, 0, 0, 0, 
+            0, k, 0, 0, 
+            0, 0, k, 0, 
+            r(translate[0] * scale), r(translate[1] * scale), 0, 1 
+        ] + ")";*/
+        return "matrix(" + [k,0,0,k,r(translate[0] * scale), r(translate[1] * scale)]+")";
+      }
 
       //Draw the tiles (based on data-update)
       var draw = function(){
          var drawboard = layer.drawboard;
          var tiles = layer.map.tiles;
          var image = drawboard
-         		.style("transform", matrix3d(tiles.scale, tiles.translate))
+                 .style("transform", matrix3d(tiles.scale, tiles.translate))
          		.selectAll(".tile")
-            .data(tiles, function(d) { return d; });
+                .data(tiles, function(d) { return [d.tx, d.ty, d.z]; });
 
          var imageEnter = image.enter();
          if (layer.visible){
@@ -220,9 +243,15 @@
               .style('width','256px')
               .style('height','256px')
               .style('position','absolute')
-              .attr('opacity', this.opacity)
-              .style("left", function(d) { return (d[0] << 8) + "px"; })
-              .style("top", function(d) { return (d[1] << 8) + "px"; })
+              .style('opacity', _opacity)
+              .style("left", function(d) {
+                  //return (d.x << 8) + "px"; 
+                  return d.tx + "px"; 
+                })
+              .style("top", function(d) { 
+                  //return (d.y << 8) + "px"; 
+                  return d.ty + "px";
+                })
               //TODO: working on this
               .on('click', getFeatureInfo);
          }
@@ -234,9 +263,14 @@
 
       var refresh = function(){
           draw();
-          layer.drawboard.style('opacity', this.opacity).style('display',this.visible?'block':'none');
+          layer.drawboard.style('opacity', _opacity).style('display',this.visible?'block':'none');
+      };
+      //Clear all tiles
+      var clear = function(){
+          layer.drawboard.selectAll('.tile').remove();
       };
 
+      layer.clear = clear;
       layer.refresh = refresh;
       layer.draw = draw;
       return layer;

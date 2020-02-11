@@ -68,14 +68,14 @@
           if (_ogc_type == 'tms') {
               url = _url
 				.replace('{s}',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('{z}',d[2])
-				.replace('{x}',d[0])
-				.replace('{y}',d[1])
+				.replace('{z}',d.z)
+				.replace('{x}',d.x)
+				.replace('{y}',d.y)
 				//FIXME: why are these curly brackets killed when used with polymer?
 				.replace('%7Bs%7D',["a", "b", "c", "d"][Math.random() * 3 | 0])
-				.replace('%7Bz%7D',d[2])
-				.replace('%7Bx%7D',d[0])
-				.replace('%7By%7D',d[1]);
+				.replace('%7Bz%7D',d.z)
+				.replace('%7Bx%7D',d.x)
+				.replace('%7By%7D',d.y);
           }
           else if (_ogc_type == 'wmts'){
           	  //TODO: working on this
@@ -95,7 +95,7 @@
           	}
           	url = _url +
           		"&layer=" + _layers +
-          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d[2]+ "&TILEROW="+d[1]+"&TILECOL="+d[0]+"&FORMAT=image%2Fpng";
+          		"&SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&STYLE=default&TILEMATRIXSET=nltilingschema&TILEMATRIX="+d.z+ "&TILEROW="+d.y+"&TILECOL="+d.x+"&FORMAT=image%2Fpng";
       	  }
           else if (_ogc_type == 'wms'){
           	if (_url.indexOf('?') < 0){
@@ -214,8 +214,8 @@
               .attr("width", 1)
               .attr("height", 1)
               .attr('opacity', this.opacity)
-              .attr("x", function(d) { return d[0]; })
-              .attr("y", function(d) { return d[1]; })
+              .attr("x", function(d) { return d.tx; })
+              .attr("y", function(d) { return d.ty; })
               //TODO: working on this
               //.on('click', getFeatureInfo);
          }
